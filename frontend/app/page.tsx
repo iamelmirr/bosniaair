@@ -6,6 +6,7 @@ import LiveAqiCard from '../components/LiveAqiCard'
 import PollutantCard from '../components/PollutantCard'
 import Header from '../components/Header'
 import HistorySlider from '../components/HistorySlider'
+import WeeklyAqiSlider from '../components/WeeklyAqiSlider'
 import GroupCard from '../components/GroupCard'
 import CityComparison from '../components/CityComparison'
 
@@ -109,15 +110,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Historical Data Section */}
+        {/* Weekly AQI Trend Section */}
         <div className="mb-12">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Istorijski podaci
-            </h2>
-            
-            <HistorySlider city="Sarajevo" />
-          </div>
+          <WeeklyAqiSlider city="Sarajevo" />
         </div>
 
         {/* Health Information Section */}
