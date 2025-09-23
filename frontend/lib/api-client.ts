@@ -108,8 +108,8 @@ class ApiClient {
   private baseUrl: string
 
   constructor() {
-    // Use environment variable for production, fallback to localhost:8080 for development
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+    // Use environment variable for production, fallback to localhost:5000 for development
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
   }
 
   private async request<T>(

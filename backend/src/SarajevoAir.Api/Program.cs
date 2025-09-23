@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SarajevoAir.Api.Middleware;
+using SarajevoAir.Api.Configuration;
+using SarajevoAir.Api.Services;
 using SarajevoAir.Application.Interfaces;
 using SarajevoAir.Application.Services;
 using SarajevoAir.Domain.Aqi;
 using SarajevoAir.Infrastructure.Data;
 using SarajevoAir.Infrastructure.OpenAq;
-using SarajevoAir.Worker;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,7 +67,14 @@ builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredServic
 // Caching
 builder.Services.AddMemoryCache();
 
+// Configuration
+builder.Services.Configure<AqicnConfiguration>(builder.Configuration.GetSection("Aqicn"));
+
 // HTTP clients with Polly
+builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
+    .AddStandardResilienceHandler();
+
+// Add temporary stub for IOpenAqClient to maintain compatibility
 builder.Services.AddHttpClient<IOpenAqClient, OpenAqClient>()
     .AddStandardResilienceHandler();
 
@@ -74,9 +82,6 @@ builder.Services.AddHttpClient<IOpenAqClient, OpenAqClient>()
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddSingleton<IAqiCalculator, AqiCalculator>();
 builder.Services.AddScoped<IShareService, ShareService>();
-
-// Background services
-builder.Services.AddHostedService<BackgroundFetcher>();
 
 // Health checks  
 builder.Services.AddHealthChecks();
@@ -108,7 +113,7 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 
 // API routes
-app.MapControllers().RequireRateLimiting("Api");
+app.MapControllers();
 
 // Health checks
 app.MapHealthChecks("/health", new HealthCheckOptions
