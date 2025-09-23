@@ -96,15 +96,15 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
     if (isLoading) {
       return (
-        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-6 shadow-card">
+        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-4 md:p-6 shadow-card">
           <div className="animate-pulse">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded"></div>
-              <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+            <div className="flex items-center gap-2 mb-3 md:mb-4">
+              <div className="w-4 h-4 md:w-6 md:h-6 bg-gray-300 dark:bg-gray-600 rounded"></div>
+              <div className="h-4 md:h-6 bg-gray-300 dark:bg-gray-600 rounded w-16 md:w-20"></div>
             </div>
-            <div className="h-20 bg-gray-300 dark:bg-gray-600 rounded-lg mb-4"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2"></div>
-            <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+            <div className="h-16 md:h-20 bg-gray-300 dark:bg-gray-600 rounded-lg mb-3 md:mb-4"></div>
+            <div className="h-3 md:h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2"></div>
+            <div className="h-2 md:h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
           </div>
         </div>
       )
@@ -112,14 +112,14 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
     if (error || !data) {
       return (
-        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-red-300 dark:border-red-600 p-6 shadow-card">
+        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-red-300 dark:border-red-600 p-4 md:p-6 shadow-card">
           <div className="text-center">
-            <div className="text-4xl mb-3">😞</div>
-            <h3 className="text-lg font-semibold text-[rgb(var(--text))] mb-2 flex items-center justify-center gap-2">
+            <div className="text-3xl md:text-4xl mb-2 md:mb-3">😞</div>
+            <h3 className="text-base md:text-lg font-semibold text-[rgb(var(--text))] mb-2 flex items-center justify-center gap-2">
               {cityInfo?.label || cityName}
             </h3>
             <div className="text-red-500 dark:text-red-400 text-sm mb-3">
-              Greška pri učitavanju podataka
+              Greška pri učitavanju
             </div>
             <button 
               onClick={() => window.location.reload()} 
@@ -136,10 +136,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     const translatedCategory = AQI_CATEGORY_TRANSLATIONS[data.aqiCategory as keyof typeof AQI_CATEGORY_TRANSLATIONS] || data.aqiCategory
 
     return (
-      <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-6 shadow-card hover:shadow-card-hover transition-all">
+      <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-4 md:p-6 shadow-card hover:shadow-card-hover transition-all">
         {/* City Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[rgb(var(--text))] flex items-center gap-2">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
+          <h3 className="text-base md:text-lg font-semibold text-[rgb(var(--text))] flex items-center gap-2">
             {cityInfo?.label || cityName}
           </h3>
           {isDefault && (
@@ -149,9 +149,9 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
           )}
         </div>
 
-        {/* AQI Display with modern gradient */}
+        {/* AQI Display with modern gradient - Compact on mobile */}
         <div 
-          className="rounded-xl p-6 mb-4 text-center transition-all duration-300 hover:scale-105 shadow-lg"
+          className="rounded-lg md:rounded-xl p-4 md:p-6 mb-3 md:mb-4 text-center transition-all duration-300 hover:scale-105 shadow-lg"
           style={{ 
             background: data.color 
               ? `linear-gradient(135deg, ${data.color}dd, ${data.color})`
@@ -159,31 +159,33 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
           }}
         >
           <div 
-            className="text-4xl font-bold mb-2"
+            className="text-2xl md:text-4xl font-bold mb-1 md:mb-2"
             style={{ color: textColor }}
           >
             {data.overallAqi}
           </div>
           <div 
-            className="text-sm opacity-90 uppercase tracking-wider font-medium"
+            className="text-xs md:text-sm opacity-90 uppercase tracking-wider font-medium"
             style={{ color: textColor }}
           >
             AQI
           </div>
         </div>
 
-        {/* Category and Details */}
-        <div className="space-y-3">
+        {/* Category and Details - More compact on mobile */}
+        <div className="space-y-2 md:space-y-3">
           <div className="text-center">
-            <div className="font-semibold text-[rgb(var(--text))] text-lg">
+            <div className="font-semibold text-[rgb(var(--text))] text-base md:text-lg">
               {translatedCategory}
             </div>
           </div>
           
           {data.dominantPollutant && (
             <div className="text-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                Glavni zagađivač: {data.dominantPollutant}
+              <span className="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs md:text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <span className="hidden md:inline">Glavni zagađivač: </span>
+                <span className="md:hidden">📍 </span>
+                {data.dominantPollutant}
               </span>
             </div>
           )}
@@ -204,10 +206,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
   const selectedCityInfo = AVAILABLE_CITIES.find(city => city.value === selectedCity)
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl shadow-card p-6 border border-[rgb(var(--border))]">
+    <section className="bg-[rgb(var(--card))] rounded-xl shadow-card p-4 md:p-6 border border-[rgb(var(--border))]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-[rgb(var(--text))]">
           Poređenje gradova
         </h2>
         
@@ -219,9 +221,9 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-[rgb(var(--card))] hover:bg-gray-50 dark:hover:bg-gray-700 text-[rgb(var(--text))] transition-colors min-w-40"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-[rgb(var(--card))] hover:bg-gray-50 dark:hover:bg-gray-700 text-[rgb(var(--text))] transition-colors min-w-32 md:min-w-40"
             >
-              <span className="font-medium">{selectedCityInfo?.label}</span>
+              <span className="font-medium text-sm md:text-base">{selectedCityInfo?.label}</span>
               <svg
                 className={`w-4 h-4 ml-auto transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                 fill="none"
@@ -233,7 +235,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[rgb(var(--card))] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-60 overflow-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[rgb(var(--card))] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-48 md:max-h-60 overflow-auto">
                 {AVAILABLE_CITIES
                   .filter(city => city.value !== defaultCity)
                   .map(city => (
@@ -243,11 +245,11 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
                         setSelectedCity(city.value)
                         setIsDropdownOpen(false)
                       }}
-                      className={`flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      className={`flex items-center gap-3 w-full px-3 md:px-4 py-2 md:py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                         city.value === selectedCity ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-[rgb(var(--text))]'
                       }`}
                     >
-                      <span className="font-medium">{city.label}</span>
+                      <span className="font-medium text-sm md:text-base">{city.label}</span>
                       {city.value === selectedCity && (
                         <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -263,14 +265,14 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
       </div>
 
       {/* Comparison Cards */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
         {/* Default City (Left) */}
         {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true)}
 
-        {/* VS Divider with modern styling */}
+        {/* VS Divider with modern styling - Smaller on mobile */}
         <div className="flex items-center justify-center lg:flex-col">
-          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
-            <span className="text-sm font-bold text-white">VS</span>
+          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-full w-8 h-8 md:w-12 md:h-12 flex items-center justify-center shadow-lg">
+            <span className="text-xs md:text-sm font-bold text-white">VS</span>
           </div>
         </div>
 
@@ -278,16 +280,16 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         {renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false)}
       </div>
 
-      {/* Comparison Summary with better styling */}
+      {/* Comparison Summary with better styling - More compact on mobile */}
       {defaultCityData && selectedCityData && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-4">
+        <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-3 md:p-4">
             <div className="text-center">
-              <div className="text-2xl mb-2">
+              <div className="text-xl md:text-2xl mb-1 md:mb-2">
                 {defaultCityData.overallAqi === selectedCityData.overallAqi ? '🤝' :
                  defaultCityData.overallAqi > selectedCityData.overallAqi ? '👆' : '👇'}
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
                 {defaultCityData.overallAqi > selectedCityData.overallAqi 
                   ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha (${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova niži)`
                   : defaultCityData.overallAqi < selectedCityData.overallAqi
