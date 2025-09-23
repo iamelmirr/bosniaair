@@ -75,3 +75,13 @@ body {
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Hide scrollbars for slider component */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
