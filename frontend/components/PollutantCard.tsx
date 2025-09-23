@@ -38,7 +38,7 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
       case 'unhealthy':
         return 'bg-aqi-unhealthy'
       case 'very-unhealthy':
-        return 'bg-aqi-very-unhealthy'
+        return 'bg-aqi-very'
       default:
         return 'bg-gray-400'
     }

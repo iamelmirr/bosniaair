@@ -207,7 +207,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
             <span className="block">Nezdravо<br />151-200</span>
           </div>
           <div className="text-center">
-            <div className="h-2 bg-aqi-very-unhealthy rounded mb-1"></div>
+            <div className="h-2 bg-aqi-very rounded mb-1"></div>
             <span className="block">Opasno<br />201-300</span>
           </div>
           <div className="text-center">
