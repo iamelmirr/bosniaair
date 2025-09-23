@@ -130,7 +130,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
       </div>
 
       {/* Slider Container */}
-      <div className="relative">
+      <div className="relative overflow-hidden py-2">
         {/* Left Scroll Button */}
         {showLeftButton && (
           <button
@@ -157,10 +157,10 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
           </button>
         )}
 
-        {/* Scrollable Cards Container */}
+        {/* Cards Container - Responsive Layout */}
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide px-8"
+          className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-8 cards-container"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onScroll={checkScrollButtons}
         >
@@ -171,7 +171,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
             return (
               <div
                 key={day.date}
-                className={`flex-shrink-0 w-24 p-4 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md ${
+                className={`flex-shrink-0 p-4 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md weekly-card ${
                   isToday 
                     ? 'ring-2 ring-blue-400 ring-opacity-50' 
                     : ''

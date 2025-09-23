@@ -85,3 +85,48 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* WebKit */
 }
+
+/* Weekly AQI Cards Responsive Layout */
+.cards-container {
+  justify-content: flex-start;
+}
+
+.weekly-card {
+  width: 6rem; /* 96px - minimum width for mobile */
+  min-width: 6rem;
+}
+
+/* On larger screens, distribute cards evenly if they fit */
+@media (min-width: 768px) {
+  .cards-container {
+    justify-content: center;
+  }
+  
+  .weekly-card {
+    width: calc((100% - 4rem - 6 * 1rem) / 7); /* Full width minus padding and gaps, divided by 7 cards */
+    min-width: 6rem;
+    max-width: 8rem;
+  }
+  
+  /* If cards would be too wide, fallback to fixed size and left align */
+  @supports not (width: calc((100% - 4rem - 6 * 1rem) / 7)) {
+    .weekly-card {
+      width: 7rem;
+    }
+  }
+}
+
+/* On very large screens, limit max width and center */
+@media (min-width: 1024px) {
+  .cards-container {
+    max-width: calc(7 * 8rem + 6 * 1rem);
+    margin: 0 auto;
+    justify-content: space-between;
+  }
+  
+  .weekly-card {
+    width: 7.5rem;
+    min-width: 7.5rem;
+    max-width: 7.5rem;
+  }
+}
