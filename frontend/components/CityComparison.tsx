@@ -30,9 +30,7 @@ const AVAILABLE_CITIES = [
   'Mostar',
   'Banja Luka',
   'Zenica',
-  'Bihac',
-  'Prijedor',
-  'Trebinje'
+  'Bihac'
 ]
 
 // Function to determine text color based on background
@@ -55,12 +53,22 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
   // Fetch data for both cities
   const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading } = useSWR<LiveAirQualityData>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/live?city=${defaultCity}`,
-    fetcher
+    fetcher,
+    {
+      refreshInterval: 15 * 60 * 1000, // Refresh every 15 minutes
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true
+    }
   )
 
   const { data: selectedCityData, error: selectedCityError, isLoading: selectedCityLoading } = useSWR<LiveAirQualityData>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/live?city=${selectedCity}`,
-    fetcher
+    fetcher,
+    {
+      refreshInterval: 15 * 60 * 1000, // Refresh every 15 minutes
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true
+    }
   )
 
   const renderCityCard = (

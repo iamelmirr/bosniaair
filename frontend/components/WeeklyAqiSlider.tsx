@@ -51,7 +51,12 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
 
   const { data, error, isLoading } = useSWR<DailyAqiResponse>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/daily?city=${encodeURIComponent(city)}`,
-    fetcher
+    fetcher,
+    {
+      refreshInterval: 15 * 60 * 1000, // Refresh every 15 minutes
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true
+    }
   )
 
   const scrollLeft = () => {

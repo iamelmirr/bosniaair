@@ -28,7 +28,12 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 export default function DailyAqiCard({ city }: DailyAqiCardProps) {
   const { data, error, isLoading } = useSWR<DailyAqiResponse>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/daily?city=${encodeURIComponent(city)}`,
-    fetcher
+    fetcher,
+    {
+      refreshInterval: 15 * 60 * 1000, // Refresh every 15 minutes
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true
+    }
   )
 
   if (isLoading) {
