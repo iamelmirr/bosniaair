@@ -174,7 +174,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
         {showLeftButton && (
           <button
             onClick={scrollLeft}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-[rgb(var(--card))] rounded-full shadow-lg border border-[rgb(var(--border))] p-2 hover:shadow-card-hover transition-all"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-[rgb(var(--card))] rounded-full shadow-lg border border-[rgb(var(--border))] p-2 hover:shadow-card-hover transition-all lg:hidden"
             aria-label="Pomjeri lijevo"
           >
             <svg className="w-4 h-4 text-[rgb(var(--text))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +187,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
         {showRightButton && (
           <button
             onClick={scrollRight}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-[rgb(var(--card))] rounded-full shadow-lg border border-[rgb(var(--border))] p-2 hover:shadow-card-hover transition-all"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-[rgb(var(--card))] rounded-full shadow-lg border border-[rgb(var(--border))] p-2 hover:shadow-card-hover transition-all lg:hidden"
             aria-label="Pomjeri desno"
           >
             <svg className="w-4 h-4 text-[rgb(var(--text))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +199,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
         {/* Cards Container */}
         <div
           ref={scrollRef}
-          className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-8"
+          className="flex gap-3 md:gap-4 overflow-x-auto lg:overflow-visible scrollbar-hide px-8 lg:px-0 lg:grid lg:grid-cols-7"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onScroll={checkScrollButtons}
         >
@@ -210,7 +210,7 @@ export default function WeeklyAqiSlider({ city }: WeeklyAqiSliderProps) {
             return (
               <div
                 key={day.date}
-                className={`flex-shrink-0 p-4 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md min-w-[80px] ${
+                className={`flex-shrink-0 lg:flex-shrink p-4 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md min-w-[80px] lg:min-w-0 ${
                   isToday 
                     ? 'ring-2 ring-blue-400 ring-opacity-50' 
                     : ''

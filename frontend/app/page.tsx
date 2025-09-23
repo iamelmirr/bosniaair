@@ -2,6 +2,7 @@
 
 import { useLiveAqi } from '../lib/hooks'
 import { shareData } from '../lib/utils'
+import { useState, useEffect } from 'react'
 import LiveAqiCard from '../components/LiveAqiCard'
 import PollutantCard from '../components/PollutantCard'
 import Header from '../components/Header'
@@ -11,10 +12,22 @@ import GroupCard from '../components/GroupCard'
 import CityComparison from '../components/CityComparison'
 
 export default function HomePage() {
+  const [isMobile, setIsMobile] = useState(false)
   
   // Fixed city as Sarajevo - no city selector
   const selectedCity = 'Sarajevo'
   const { data: aqiData, error, isLoading } = useLiveAqi(selectedCity)
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkIsMobile()
+    window.addEventListener('resize', checkIsMobile)
+    
+    return () => window.removeEventListener('resize', checkIsMobile)
+  }, [])
 
   const handleShare = async () => {
     try {
@@ -80,7 +93,7 @@ export default function HomePage() {
                   aqiData.measurements
                     .filter((measurement) => {
                       // On mobile, show only the most important pollutants
-                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                      if (isMobile) {
                         const important = ['pm25', 'pm10', 'o3', 'no2']
                         return important.includes(measurement.parameter.toLowerCase().replace('.', ''))
                       }
