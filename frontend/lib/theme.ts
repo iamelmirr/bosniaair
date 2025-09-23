@@ -5,14 +5,18 @@ import { useEffect, useState } from 'react'
 type Theme = 'light' | 'dark' | 'system'
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>('system')
+  const [theme, setTheme] = useState<Theme>('light') // Default to light instead of system
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
-    // Get theme from localStorage or default to system
+    // Get theme from localStorage or default to light
     const stored = localStorage.getItem('theme') as Theme | null
-    if (stored) {
+    if (stored && (stored === 'light' || stored === 'dark')) {
       setTheme(stored)
+    } else {
+      // Default to light theme for cleaner UX
+      setTheme('light')
+      localStorage.setItem('theme', 'light')
     }
   }, []) // Remove theme dependency to run only on mount
 
@@ -52,11 +56,12 @@ export function useTheme() {
   }
 
   const toggleTheme = () => {
-    const newTheme: Theme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+    // Simplified toggle: only between light and dark
+    const newTheme: Theme = resolvedTheme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
 
-    const isDark = newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const isDark = newTheme === 'dark'
     setResolvedTheme(isDark ? 'dark' : 'light')
     updateDocument(isDark ? 'dark' : 'light')
   }
