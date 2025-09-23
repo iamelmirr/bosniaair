@@ -23,14 +23,14 @@ interface CityComparisonProps {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-// List of available cities with display names and icons
+// List of available cities with display names
 const AVAILABLE_CITIES = [
-  { value: 'Sarajevo', label: 'Sarajevo', icon: '🏛️' },
-  { value: 'Tuzla', label: 'Tuzla', icon: '🏭' }, 
-  { value: 'Mostar', label: 'Mostar', icon: '🌉' },
-  { value: 'Banja Luka', label: 'Banja Luka', icon: '🌲' },
-  { value: 'Zenica', label: 'Zenica', icon: '⚙️' },
-  { value: 'Bihac', label: 'Bihać', icon: '🏞️' }
+  { value: 'Sarajevo', label: 'Sarajevo' },
+  { value: 'Tuzla', label: 'Tuzla' }, 
+  { value: 'Mostar', label: 'Mostar' },
+  { value: 'Banja Luka', label: 'Banja Luka' },
+  { value: 'Zenica', label: 'Zenica' },
+  { value: 'Bihac', label: 'Bihać' }
 ]
 
 // Bosnian AQI category translations
@@ -116,7 +116,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
           <div className="text-center">
             <div className="text-4xl mb-3">😞</div>
             <h3 className="text-lg font-semibold text-[rgb(var(--text))] mb-2 flex items-center justify-center gap-2">
-              {cityInfo?.icon} {cityInfo?.label || cityName}
+              {cityInfo?.label || cityName}
             </h3>
             <div className="text-red-500 dark:text-red-400 text-sm mb-3">
               Greška pri učitavanju podataka
@@ -140,7 +140,6 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         {/* City Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-[rgb(var(--text))] flex items-center gap-2">
-            <span className="text-xl">{cityInfo?.icon}</span>
             {cityInfo?.label || cityName}
           </h3>
           {isDefault && (
@@ -222,7 +221,6 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-[rgb(var(--card))] hover:bg-gray-50 dark:hover:bg-gray-700 text-[rgb(var(--text))] transition-colors min-w-40"
             >
-              <span className="text-lg">{selectedCityInfo?.icon}</span>
               <span className="font-medium">{selectedCityInfo?.label}</span>
               <svg
                 className={`w-4 h-4 ml-auto transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
@@ -249,7 +247,6 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
                         city.value === selectedCity ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-[rgb(var(--text))]'
                       }`}
                     >
-                      <span className="text-lg">{city.icon}</span>
                       <span className="font-medium">{city.label}</span>
                       {city.value === selectedCity && (
                         <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
