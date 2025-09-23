@@ -36,16 +36,16 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
-            Unable to load air quality data
+            Greška pri učitavanju podataka
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {error.message || 'Please check your internet connection and try again.'}
+            {error.message || 'Molimo proverite internetsku konekciju i pokušajte ponovo.'}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
-            Retry
+            Pokušaj ponovo
           </button>
         </div>
       </section>
@@ -56,7 +56,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card">
         <div className="text-center text-gray-600 dark:text-gray-400">
-          No data available for {city}
+          Nema dostupnih podataka za {city}
         </div>
       </section>
     )
@@ -81,22 +81,41 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     }
   }
 
+  const translateAqiCategory = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'good':
+        return 'Dobro'
+      case 'moderate':
+        return 'Umjereno'
+      case 'unhealthy for sensitive groups':
+        return 'Nezdravо za osjetljive grupe'
+      case 'unhealthy':
+        return 'Nezdravо'
+      case 'very unhealthy':
+        return 'Veoma nezdravо'
+      case 'hazardous':
+        return 'Opasno'
+      default:
+        return category
+    }
+  }
+
   const getHealthAdvice = (category: string) => {
     switch (category.toLowerCase()) {
       case 'good':
-        return 'Air quality is satisfactory. Enjoy outdoor activities!'
+        return 'Kvaliteta zraka je zadovoljavajuća. Uživajte u aktivnostima na otvorenom!'
       case 'moderate':
-        return 'Acceptable for most people. Unusually sensitive people should consider reducing prolonged outdoor exertion.'
+        return 'Prihvatljivo za većinu ljudi. Osjetljive osobe treba da ograniče dugotrajan boravak na otvorenom.'
       case 'unhealthy for sensitive groups':
-        return 'Members of sensitive groups may experience health effects. The general public is not likely to be affected.'
+        return 'Osjetljive grupe mogu osjetiti zdravstvene efekte. Ostala populacija vjerojatno neće biti pogođena.'
       case 'unhealthy':
-        return 'Everyone may begin to experience health effects. Members of sensitive groups may experience more serious health effects.'
+        return 'Svi mogu početi da osjeća zdravstvene efekte. Osjetljive grupe mogu imati ozbiljnije zdravstvene probleme.'
       case 'very unhealthy':
-        return 'Health warnings of emergency conditions. The entire population is more likely to be affected.'
+        return 'Zdravstvena upozorenja hitnih uslova. Cijela populacija je vjerojatnija da bude pogođena.'
       case 'hazardous':
-        return 'Health alert: everyone may experience more serious health effects.'
+        return 'Zdravstvena uzbuna: svi mogu imati ozbiljnije zdravstvene efekte.'
       default:
-        return 'Monitor air quality conditions.'
+        return 'Pratite uslove kvaliteta zraka.'
     }
   }
 
@@ -112,11 +131,11 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       {/* Header */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-          Current AQI — {aqiData.city}
+          Trenutni AQI — {city}
         </h2>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm text-gray-500">Live Data</span>
+          <span className="text-sm text-gray-500">Uživo</span>
         </div>
       </div>
       
@@ -127,11 +146,11 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
         </div>
         <div className="flex flex-col">
           <div className={`text-2xl font-medium ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)}`}>
-            {aqiData.aqiCategory}
+            {translateAqiCategory(aqiData.aqiCategory)}
           </div>
           {aqiData.dominantPollutant && (
             <div className="text-sm text-gray-500">
-              Primary: {aqiData.dominantPollutant}
+              Glavni: {aqiData.dominantPollutant}
             </div>
           )}
         </div>
@@ -146,36 +165,54 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       
       {/* Timestamp */}
       <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>Last updated: {formatTimestamp(aqiData.timestamp)}</span>
-        <span>{aqiData.measurements?.length || 0} measurements</span>
+        <span>Zadnje ažuriranje: {formatTimestamp(aqiData.timestamp)}</span>
+        <button 
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: 'Kvaliteta zraka u ' + city,
+                text: 'Trenutni AQI: ' + aqiData.overallAqi + ' (' + translateAqiCategory(aqiData.aqiCategory) + ')',
+                url: window.location.href
+              })
+            } else {
+              navigator.clipboard.writeText(window.location.href)
+            }
+          }}
+          className="flex items-center gap-1 hover:text-blue-600 transition-colors p-1 -m-1"
+          title="Podijeli"
+        >
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+          </svg>
+        </button>
       </div>
       
-      {/* AQI Scale Reference (hidden on mobile, shown on larger screens) */}
-      <div className="hidden md:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-6 gap-1 text-xs">
+      {/* AQI Scale Reference */}
+      <div className="hidden lg:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-6 gap-2 text-xs">
           <div className="text-center">
             <div className="h-2 bg-aqi-good rounded mb-1"></div>
-            <span>Good<br />0-50</span>
+            <span className="block">Dobro<br />0-50</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-moderate rounded mb-1"></div>
-            <span>Moderate<br />51-100</span>
+            <span className="block">Umjereno<br />51-100</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-usg rounded mb-1"></div>
-            <span>USG<br />101-150</span>
+            <span className="block">Nezdrav. za osjetljive<br />101-150</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-unhealthy rounded mb-1"></div>
-            <span>Unhealthy<br />151-200</span>
+            <span className="block">Nezdravо<br />151-200</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-very-unhealthy rounded mb-1"></div>
-            <span>Very Unhealthy<br />201-300</span>
+            <span className="block">Veoma nezdravо<br />201-300</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-hazardous rounded mb-1"></div>
-            <span>Hazardous<br />301+</span>
+            <span className="block">Opasno<br />301+</span>
           </div>
         </div>
       </div>
