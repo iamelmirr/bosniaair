@@ -54,7 +54,7 @@ body {
 .aqi-moderate { @apply bg-aqi-moderate text-black; }
 .aqi-usg { @apply bg-aqi-usg text-white; }
 .aqi-unhealthy { @apply bg-aqi-unhealthy text-white; }
-.aqi-very { @apply bg-aqi-very text-white; }
+.aqi-very-unhealthy { @apply bg-aqi-very text-white; }
 .aqi-hazardous { @apply bg-aqi-hazardous text-white; }
 
 /* Loading animations */

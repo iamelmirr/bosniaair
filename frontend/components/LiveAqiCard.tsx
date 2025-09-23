@@ -88,13 +88,13 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       case 'moderate':
         return 'Umjereno'
       case 'unhealthy for sensitive groups':
-        return 'Nezdravо za osjetljive grupe'
+        return 'Osjetljivo'
       case 'unhealthy':
         return 'Nezdravо'
       case 'very unhealthy':
-        return 'Veoma nezdravо'
-      case 'hazardous':
         return 'Opasno'
+      case 'hazardous':
+        return 'Fatalno'
       default:
         return category
     }
@@ -188,8 +188,8 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
       
       {/* AQI Scale Reference */}
-      <div className="hidden lg:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-6 gap-2 text-xs">
+      <div className="hidden md:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-6 gap-1 text-[10px] leading-tight">
           <div className="text-center">
             <div className="h-2 bg-aqi-good rounded mb-1"></div>
             <span className="block">Dobro<br />0-50</span>
@@ -200,7 +200,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-usg rounded mb-1"></div>
-            <span className="block">Nezdrav. za osjetljive<br />101-150</span>
+            <span className="block">Osjetljivo<br />101-150</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-unhealthy rounded mb-1"></div>
@@ -208,11 +208,11 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-very-unhealthy rounded mb-1"></div>
-            <span className="block">Veoma nezdravо<br />201-300</span>
+            <span className="block">Opasno<br />201-300</span>
           </div>
           <div className="text-center">
             <div className="h-2 bg-aqi-hazardous rounded mb-1"></div>
-            <span className="block">Opasno<br />301+</span>
+            <span className="block">Fatalno<br />301+</span>
           </div>
         </div>
       </div>
