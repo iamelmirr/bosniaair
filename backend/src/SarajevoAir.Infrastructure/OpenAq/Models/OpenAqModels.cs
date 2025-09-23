@@ -15,13 +15,20 @@ public record OpenAqMeta(
 );
 
 public record OpenAqLocation(
-    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("id")] int Id,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("coordinates")] OpenAqCoordinates? Coordinates,
-    [property: JsonPropertyName("country")] string? Country,
-    [property: JsonPropertyName("city")] string? City,
+    [property: JsonPropertyName("country")] OpenAqCountry? Country,
+    [property: JsonPropertyName("locality")] string? Locality,
+    [property: JsonPropertyName("timezone")] string? Timezone,
     [property: JsonPropertyName("isMobile")] bool? IsMobile,
-    [property: JsonPropertyName("isAnalysis")] bool? IsAnalysis
+    [property: JsonPropertyName("isMonitor")] bool? IsMonitor
+);
+
+public record OpenAqCountry(
+    [property: JsonPropertyName("id")] int Id,
+    [property: JsonPropertyName("code")] string Code,
+    [property: JsonPropertyName("name")] string Name
 );
 
 public record OpenAqCoordinates(

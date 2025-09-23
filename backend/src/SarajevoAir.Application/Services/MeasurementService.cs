@@ -4,13 +4,12 @@ using SarajevoAir.Application.Dtos;
 using SarajevoAir.Application.Interfaces;
 using SarajevoAir.Domain.Aqi;
 using SarajevoAir.Domain.Entities;
-using SarajevoAir.Infrastructure.Data;
 
 namespace SarajevoAir.Application.Services;
 
 public class MeasurementService : IMeasurementService
 {
-    private readonly AppDbContext _context;
+    private readonly IAppDbContext _context;
     private readonly IOpenAqClient _openAqClient;
     private readonly IAqiCalculator _aqiCalculator;
     private readonly ILogger<MeasurementService> _logger;
@@ -18,10 +17,10 @@ public class MeasurementService : IMeasurementService
     // Default coordinates for Sarajevo
     private const double SarajevoLat = 43.8563;
     private const double SarajevoLon = 18.4131;
-    private const int DefaultRadiusKm = 50;
+    private const int DefaultRadiusKm = 25; // Updated to match API limit
 
     public MeasurementService(
-        AppDbContext context,
+        IAppDbContext context,
         IOpenAqClient openAqClient,
         IAqiCalculator aqiCalculator,
         ILogger<MeasurementService> logger)
@@ -285,15 +284,15 @@ public class MeasurementService : IMeasurementService
                     {
                         LocationId = location.Id,
                         Date = date,
-                        AvgPm25 = measurements.Where(m => m.Pm25.HasValue).Average(m => m.Pm25),
-                        MaxPm25 = measurements.Where(m => m.Pm25.HasValue).Max(m => m.Pm25),
-                        MinPm25 = measurements.Where(m => m.Pm25.HasValue).Min(m => m.Pm25),
-                        AvgPm10 = measurements.Where(m => m.Pm10.HasValue).Average(m => m.Pm10),
-                        MaxPm10 = measurements.Where(m => m.Pm10.HasValue).Max(m => m.Pm10),
-                        MinPm10 = measurements.Where(m => m.Pm10.HasValue).Min(m => m.Pm10),
-                        AvgAqi = measurements.Where(m => m.ComputedAqi.HasValue).Average(m => m.ComputedAqi),
-                        MaxAqi = measurements.Where(m => m.ComputedAqi.HasValue).Max(m => m.ComputedAqi),
-                        MinAqi = measurements.Where(m => m.ComputedAqi.HasValue).Min(m => m.ComputedAqi)
+                        AvgPm25 = (decimal?)measurements.Where(m => m.Pm25.HasValue).Average(m => m.Pm25),
+                        MaxPm25 = (decimal?)measurements.Where(m => m.Pm25.HasValue).Max(m => m.Pm25),
+                        MinPm25 = (decimal?)measurements.Where(m => m.Pm25.HasValue).Min(m => m.Pm25),
+                        AvgPm10 = (decimal?)measurements.Where(m => m.Pm10.HasValue).Average(m => m.Pm10),
+                        MaxPm10 = (decimal?)measurements.Where(m => m.Pm10.HasValue).Max(m => m.Pm10),
+                        MinPm10 = (decimal?)measurements.Where(m => m.Pm10.HasValue).Min(m => m.Pm10),
+                        AvgAqi = (int?)measurements.Where(m => m.ComputedAqi.HasValue).Average(m => m.ComputedAqi),
+                        MaxAqi = (int?)measurements.Where(m => m.ComputedAqi.HasValue).Max(m => m.ComputedAqi),
+                        MinAqi = (int?)measurements.Where(m => m.ComputedAqi.HasValue).Min(m => m.ComputedAqi)
                     };
 
                     _context.DailyAggregates.Add(aggregate);

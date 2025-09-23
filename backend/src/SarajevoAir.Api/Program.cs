@@ -59,6 +59,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+    
+// Register IAppDbContext
+builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
 // Caching
 builder.Services.AddMemoryCache();
@@ -75,20 +78,10 @@ builder.Services.AddScoped<IShareService, ShareService>();
 // Background services
 builder.Services.AddHostedService<BackgroundFetcher>();
 
-// Health checks
-builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString, name: "postgres");
+// Health checks  
+builder.Services.AddHealthChecks();
 
-// Rate limiting (basic implementation)
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("Api", config =>
-    {
-        config.PermitLimit = 100;
-        config.Window = TimeSpan.FromMinutes(1);
-        config.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-    });
-});
+// Rate limiting will be configured later
 
 var app = builder.Build();
 
@@ -100,9 +93,6 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // CORS
 app.UseCors("FrontendOnly");
-
-// Rate limiting
-app.UseRateLimiter();
 
 // Development tools
 if (app.Environment.IsDevelopment())

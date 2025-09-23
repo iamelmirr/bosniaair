@@ -22,9 +22,9 @@ public class BackgroundFetcher : BackgroundService
         _serviceProvider = serviceProvider;
         
         _fetchInterval = TimeSpan.FromMinutes(
-            configuration.GetValue("Worker:FetchIntervalMinutes", 10));
+            int.Parse(configuration["Worker:FetchIntervalMinutes"] ?? "10"));
         _aggregateInterval = TimeSpan.FromHours(
-            configuration.GetValue("Worker:AggregateIntervalHours", 1));
+            int.Parse(configuration["Worker:AggregateIntervalHours"] ?? "1"));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -63,20 +63,21 @@ public class BackgroundFetcher : BackgroundService
     private async Task FetchDataCycleAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
+        var openAqClient = scope.ServiceProvider.GetRequiredService<IOpenAqClient>();
         var measurementService = scope.ServiceProvider.GetRequiredService<IMeasurementService>();
 
         try
         {
-            _logger.LogInformation("Starting data fetch cycle");
-            
-            // Fetch data for Sarajevo and surrounding areas
+            _logger.LogInformation("Starting data fetch cycle for Sarajevo area");
+
+            // Use the service method that handles the full flow
             await measurementService.FetchAndStoreAsync("Sarajevo", cancellationToken);
-            
-            _logger.LogInformation("Data fetch cycle completed successfully");
+
+            _logger.LogInformation("Successfully completed data fetch and store for Sarajevo");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Data fetch cycle failed");
+            _logger.LogError(ex, "Error during data fetch cycle for Sarajevo");
         }
     }
 

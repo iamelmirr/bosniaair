@@ -22,4 +22,8 @@ public interface IOpenAqClient
         int limit = 1000,
         CancellationToken cancellationToken = default
     );
+
+    Task<List<MeasurementDto>> GetLatestMeasurementsAsync(
+        CancellationToken cancellationToken = default
+    );
 }

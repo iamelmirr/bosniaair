@@ -108,8 +108,8 @@ class ApiClient {
   private baseUrl: string
 
   constructor() {
-    // Use environment variable for production, fallback to localhost for development
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+    // Use environment variable for production, fallback to localhost:8080 for development
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
   }
 
   private async request<T>(
@@ -164,11 +164,11 @@ class ApiClient {
 
   // Live AQI endpoints
   async getLiveAqi(city: string): Promise<AqiResponse> {
-    return this.request<AqiResponse>(`/live/aqi?city=${encodeURIComponent(city)}`)
+    return this.request<AqiResponse>(`/live?city=${encodeURIComponent(city)}`)
   }
 
   async getLiveMeasurements(city: string): Promise<Measurement[]> {
-    return this.request<Measurement[]>(`/live/measurements?city=${encodeURIComponent(city)}`)
+    return this.request<Measurement[]>(`/live?city=${encodeURIComponent(city)}`)
   }
 
   // History endpoints

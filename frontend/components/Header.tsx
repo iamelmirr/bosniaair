@@ -2,27 +2,21 @@
 
 import { useState } from 'react'
 import { useTheme, getThemeIcon } from '../lib/theme'
-import { CITIES, shareData, type City } from '../lib/utils'
+import { shareData } from '../lib/utils'
 
 interface HeaderProps {
-  selectedCity: City
-  onCityChange: (city: City) => void
   onShare?: () => void
 }
 
-export default function Header({ 
-  selectedCity, 
-  onCityChange, 
-  onShare 
-}: HeaderProps) {
+export default function Header({ onShare }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { theme, resolvedTheme, toggleTheme } = useTheme()
 
   const handleShare = async () => {
     try {
       await shareData(
-        'SarajevoAir - Air Quality',
-        `Check out the current air quality in ${selectedCity}!`,
+        'SarajevoAir - Kvaliteta vazduha',
+        'Proverite trenutnu kvalitet vazduha u Sarajevu!',
         window.location.href
       )
       if (onShare) onShare()
@@ -52,29 +46,11 @@ export default function Header({
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
-          {/* City Selector */}
-          <div className="relative">
-            <select 
-              value={selectedCity}
-              onChange={(e) => onCityChange(e.target.value as City)}
-              className="px-4 py-2 pr-8 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              {CITIES.map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
             className="p-2 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
-            title={`Current theme: ${theme} (click to cycle)`}
+            title={`Trenutna tema: ${theme} (klikni za promenu)`}
           >
             <div className="w-5 h-5 relative">
               {/* Sun icon (visible in light mode) */}
@@ -134,25 +110,6 @@ export default function Header({
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden mt-4 pt-4 border-t border-[rgb(var(--border))] space-y-4">
-          {/* Mobile City Selector */}
-          <div>
-            <label className="block text-sm font-medium text-[rgb(var(--text))] mb-2">
-              Select City
-            </label>
-            <select 
-              value={selectedCity}
-              onChange={(e) => {
-                onCityChange(e.target.value as City)
-                setIsMenuOpen(false)
-              }}
-              className="w-full px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {CITIES.map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-          </div>
-          
           {/* Mobile Action Buttons */}
           <div className="flex gap-2">
             <button 
@@ -162,7 +119,7 @@ export default function Header({
               }}
               className="flex-1 px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
             >
-              {getThemeIcon(theme, resolvedTheme)} Toggle Theme
+              {getThemeIcon(theme, resolvedTheme)} Tema
             </button>
             
             <button 

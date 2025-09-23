@@ -12,6 +12,12 @@ public class OpenAqClient : IOpenAqClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<OpenAqClient> _logger;
     private readonly string _apiKey;
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    // Sarajevo coordinates
+    const double SarajevoLatitude = 43.8563;
+        const double SarajevoLongitude = 18.4131;
+        const int RadiusInMeters = 25000; // 25km radius around Sarajevo (API max limit)
 
     public OpenAqClient(HttpClient httpClient, IConfiguration configuration, ILogger<OpenAqClient> logger)
     {
@@ -21,6 +27,94 @@ public class OpenAqClient : IOpenAqClient
 
         _httpClient.BaseAddress = new Uri("https://api.openaq.org/v3/");
         _httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+        
+        _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        };
+
+        _logger.LogInformation("OpenAQ Client initialized for Sarajevo area with API key");
+    }
+
+    public async Task<List<MeasurementDto>> GetLatestMeasurementsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get latest measurements for Sarajevo area
+            var url = $"measurements/latest?coordinates={SarajevoLatitude},{SarajevoLongitude}&radius={RadiusInMeters}&limit=1000&order_by=datetime&sort=desc";
+            
+            _logger.LogInformation("Fetching latest Sarajevo measurements from OpenAQ: {Url}", url);
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("OpenAQ API returned {StatusCode}: {Error}", response.StatusCode, error);
+                return new List<MeasurementDto>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogInformation("OpenAQ Response Length: {Length} characters", json.Length);
+
+            var apiResponse = JsonSerializer.Deserialize<OpenAqResponse<OpenAqMeasurement>>(json, _jsonOptions);
+            
+            if (apiResponse?.Results == null || !apiResponse.Results.Any())
+            {
+                _logger.LogWarning("No measurements returned from OpenAQ API for Sarajevo area");
+                return new List<MeasurementDto>();
+            }
+
+            var measurements = apiResponse.Results
+                .Where(m => !string.IsNullOrEmpty(m.Parameter) && m.Value.HasValue && m.DatetimeUtc.HasValue)
+                .Select(m => new MeasurementDto(
+                    m.SensorId,
+                    m.DatetimeUtc!.Value,
+                    m.Value!.Value,
+                    MapParameter(m.Parameter!),
+                    m.Unit ?? "µg/m³"
+                ))
+                .Where(m => IsValidParameter(m.Parameter))
+                .ToList();
+
+            _logger.LogInformation("Retrieved {Count} valid measurements for Sarajevo from OpenAQ", measurements.Count);
+            
+            // Log parameter distribution for debugging
+            var parameterCounts = measurements.GroupBy(m => m.Parameter).ToDictionary(g => g.Key, g => g.Count());
+            foreach (var param in parameterCounts)
+            {
+                _logger.LogInformation("Parameter {Parameter}: {Count} measurements", param.Key, param.Value);
+            }
+
+            return measurements;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch Sarajevo measurements from OpenAQ");
+            return new List<MeasurementDto>();
+        }
+    }
+
+    private string MapParameter(string parameter)
+    {
+        // Map OpenAQ parameters to our standard format
+        return parameter.ToLowerInvariant() switch
+        {
+            "pm25" or "pm2.5" => "pm25",
+            "pm10" => "pm10",
+            "no2" => "no2",
+            "so2" => "so2",
+            "o3" => "o3",
+            "co" => "co",
+            _ => parameter.ToLowerInvariant()
+        };
+    }
+
+    private bool IsValidParameter(string parameter)
+    {
+        var validParameters = new[] { "pm25", "pm10", "no2", "so2", "o3", "co" };
+        return validParameters.Contains(parameter.ToLowerInvariant());
     }
 
     public async Task<List<LocationDto>> GetLocationsAsync(
@@ -52,12 +146,12 @@ public class OpenAqClient : IOpenAqClient
             var locations = apiResponse.Results
                 .Where(l => !string.IsNullOrEmpty(l.Name))
                 .Select(l => new LocationDto(
-                    l.Id,
+                    l.Id.ToString(),
                     l.Name,
                     l.Coordinates?.Latitude,
                     l.Coordinates?.Longitude,
-                    l.Country ?? "Unknown",
-                    l.City
+                    l.Country?.Name ?? "Unknown",
+                    l.Locality
                 ))
                 .ToList();
 
