@@ -7,7 +7,7 @@ import PollutantCard from '../components/PollutantCard'
 import Header from '../components/Header'
 import HistorySlider from '../components/HistorySlider'
 import GroupCard from '../components/GroupCard'
-import ComparePanel from '../components/ComparePanel'
+import CityComparison from '../components/CityComparison'
 
 export default function HomePage() {
   
@@ -116,7 +116,7 @@ export default function HomePage() {
 
         {/* Compare Section - Optional for nearby cities */}
         <div className="mb-12">
-          <ComparePanel currentCity="Sarajevo" />
+          <CityComparison defaultCity="Sarajevo" />
         </div>
 
         {/* Info Section */}
