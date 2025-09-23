@@ -68,6 +68,51 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
     return descriptions[parameter.toLowerCase().replace('.', '')] || 'Air pollutant'
   }
 
+  const getHealthAdvice = (parameter: string, value: number, status: string) => {
+    const paramKey = parameter.toLowerCase().replace('.', '')
+    
+    const advice: Record<string, Record<string, string>> = {
+      'pm25': {
+        'good': 'Kvalitet zraka je dobar. Bez ograničenja aktivnosti.',
+        'moderate': 'Osjetljive grupe treba da ograniče naporne aktivnosti na otvorenom.',
+        'unhealthy': 'Svi treba da ograniče naporne aktivnosti napolju. Astmatičari i ljudi sa srčanim problemima budu posebno pažljivi.',
+        'very-unhealthy': 'Izbegavajte aktivnosti napolju. Zatvorite prozore i koristite prečišćavače zraka.'
+      },
+      'pm10': {
+        'good': 'Dobri uslovi za sve aktivnosti na otvorenom.',
+        'moderate': 'Osjetljivi na respiratory problemi mogu osjetiti manje iritacije.',
+        'unhealthy': 'Ograničite duže boravke napolju. Prišće češće kašaljki i iritacije grla.',
+        'very-unhealthy': 'Svi treba da ostanu unutra. Posebno opasno za djecu i starije.'
+      },
+      'o3': {
+        'good': 'Idealni uslovi za aktivnosti na otvorenom.',
+        'moderate': 'Osjetljive osobe mogu osjetiti blage respiratory simptome.',
+        'unhealthy': 'Ograničite vrijeme napolju tokom najvrelijih delova dana. Ozon je najjači po podne.',
+        'very-unhealthy': 'Ostanite unutra između 10h i 18h. Ozon može izazvati ozbiljne respiratory probleme.'
+      },
+      'no2': {
+        'good': 'Nema zdravstvenih rizika od azot dioksida.',
+        'moderate': 'Astmatičari mogu biti osjetljiviji na respiratory iritacije.',
+        'unhealthy': 'Ograničite aktivnosti blizu promenih saobraćajnica. NO₂ potiče uglavnom od vozila.',
+        'very-unhealthy': 'Izbegavajte saobraćajne zone. Zatvorite prozore okrenutи ka putevima.'
+      },
+      'so2': {
+        'good': 'Sumpor dioksid nije problem za zdravlje.',
+        'moderate': 'Osobe sa astmom mogu biti osjetljivije.',
+        'unhealthy': 'Astmatičari i osobe sa respiratory problemima treba da ograniče vrijeme napolju.',
+        'very-unhealthy': 'Svi treba da ograniče aktivnosti napolju. SO₂ može izazvati ozbiljne respiratory probleme.'
+      },
+      'co': {
+        'good': 'Bezbjedni nivoi ugljen monoksida.',
+        'moderate': 'Osjetljive grupe mogu osjetiti blagu glavobolju ili umor.',
+        'unhealthy': 'Ograničite aktivnosti u zatvorenim prostorima sa lošom ventilacijom. CO je posebno opasan.',
+        'very-unhealthy': 'Opasni nivoi! Provjerite izvore grijanja i ventilaciju. Ugljen monoksid može biti fatalan.'
+      }
+    }
+
+    return advice[paramKey]?.[status] || 'Pratite uslove kvaliteta zraka i prilagodite aktivnosti.'
+  }
+
   const formatValue = (value: number) => {
     if (value < 1) {
       return value.toFixed(2)
@@ -115,9 +160,9 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
         </span>
       </div>
       
-      {/* Parameter description */}
+      {/* Health advice */}
       <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-        {getParameterDescription(measurement.parameter)}
+        {getHealthAdvice(measurement.parameter, measurement.value, status)}
       </p>
       
       {/* Additional info */}
@@ -148,13 +193,6 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
             </span>
           </div>
         )}
-      </div>
-      
-      {/* Hover effect indicator */}
-      <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="text-xs text-blue-600 dark:text-blue-400">
-          View details →
-        </div>
       </div>
     </div>
   )

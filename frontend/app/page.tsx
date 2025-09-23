@@ -74,9 +74,18 @@ export default function HomePage() {
               <h2 className="text-lg font-semibold mb-4 text-[rgb(var(--text))] lg:hidden">
                 Merenja zagađivača
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {aqiData?.measurements ? (
-                  aqiData.measurements.map((measurement) => (
+                  aqiData.measurements
+                    .filter((measurement) => {
+                      // On mobile, show only the most important pollutants
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        const important = ['pm25', 'pm10', 'o3', 'no2']
+                        return important.includes(measurement.parameter.toLowerCase().replace('.', ''))
+                      }
+                      return true
+                    })
+                    .map((measurement) => (
                     <PollutantCard 
                       key={measurement.parameter}
                       measurement={measurement}

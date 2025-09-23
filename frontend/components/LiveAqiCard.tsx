@@ -159,7 +159,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       {/* Health Message */}
       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
         <p className="text-sm text-gray-700 dark:text-gray-300">
-          {aqiData.healthMessage || getHealthAdvice(aqiData.aqiCategory)}
+          {getHealthAdvice(aqiData.aqiCategory)}
         </p>
       </div>
       
