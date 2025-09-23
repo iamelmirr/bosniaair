@@ -14,7 +14,9 @@ export function useTheme() {
     if (stored) {
       setTheme(stored)
     }
+  }, []) // Remove theme dependency to run only on mount
 
+  useEffect(() => {
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = () => {
@@ -26,13 +28,13 @@ export function useTheme() {
 
     mediaQuery.addEventListener('change', handleChange)
     
-    // Initial theme setup
+    // Initial theme setup - always run when theme changes
     const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches)
     setResolvedTheme(isDark ? 'dark' : 'light')
     updateDocument(isDark ? 'dark' : 'light')
 
     return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [theme])
+  }, [theme]) // Keep theme dependency for when theme changes
 
   const updateDocument = (newTheme: 'light' | 'dark') => {
     const root = document.documentElement

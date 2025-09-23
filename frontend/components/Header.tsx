@@ -66,7 +66,7 @@ export default function Header({ onShare }: HeaderProps) {
               
               {/* Moon icon (visible in dark mode) */}
               <svg 
-                className={`absolute inset-0 w-5 h-5 text-gray-700 transition-opacity group-hover:scale-110 transform duration-200 ${
+                className={`absolute inset-0 w-5 h-5 text-gray-300 transition-opacity group-hover:scale-110 transform duration-200 ${
                   resolvedTheme === 'dark' ? 'opacity-100' : 'opacity-0'
                 }`}
                 fill="currentColor" 

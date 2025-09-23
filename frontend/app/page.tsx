@@ -69,31 +69,33 @@ export default function HomePage() {
             <LiveAqiCard city="Sarajevo" />
           </div>
           
-          <div className="lg:col-span-2">
-            <h2 className="text-lg font-semibold mb-4 text-[rgb(var(--text))]">
-              Merenja zagađivača
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {aqiData?.measurements ? (
-                aqiData.measurements.map((measurement) => (
-                  <PollutantCard 
-                    key={measurement.parameter}
-                    measurement={measurement}
-                  />
-                ))
-              ) : isLoading ? (
-                // Loading state
-                <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-                  <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
-                    <span className="sr-only">Loading...</span>
+          <div className="lg:col-span-2 lg:flex lg:items-center">
+            <div className="w-full">
+              <h2 className="text-lg font-semibold mb-4 text-[rgb(var(--text))] lg:hidden">
+                Merenja zagađivača
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                {aqiData?.measurements ? (
+                  aqiData.measurements.map((measurement) => (
+                    <PollutantCard 
+                      key={measurement.parameter}
+                      measurement={measurement}
+                    />
+                  ))
+                ) : isLoading ? (
+                  // Loading state
+                  <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+                    <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
+                      <span className="sr-only">Loading...</span>
+                    </div>
+                    <p className="mt-2">Učitavam podatke...</p>
                   </div>
-                  <p className="mt-2">Učitavam podatke...</p>
-                </div>
-              ) : (
-                <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-                  Nema dostupnih podataka o zagađivačima
-                </div>
-              )}
+                ) : (
+                  <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+                    Nema dostupnih podataka o zagađivačima
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
