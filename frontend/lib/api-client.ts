@@ -97,6 +97,22 @@ export interface GroupsResponse {
   timestamp: Date
 }
 
+export interface DailyData {
+  date: string
+  dayName: string
+  shortDay: string
+  aqi: number
+  category: string
+  color: string
+}
+
+export interface DailyResponse {
+  city: string
+  period: string
+  data: DailyData[]
+  timestamp: Date
+}
+
 export interface ShareResponse {
   shareUrl: string
   shareText: string
@@ -223,6 +239,11 @@ class ApiClient {
     if (country) params.append('country', country)
     
     return this.request<LocationResponse>(`/locations?${params}`)
+  }
+
+  // Daily endpoints
+  async getDailyData(city: string): Promise<DailyResponse> {
+    return this.request<DailyResponse>(`/daily?city=${encodeURIComponent(city)}`)
   }
 
   // Groups endpoints

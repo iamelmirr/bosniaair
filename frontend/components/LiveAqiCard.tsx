@@ -140,8 +140,8 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
       
       {/* Main AQI Display */}
-      <div className="flex items-end gap-6 mb-6">
-        <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)}`}>
+      <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left">
+        <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0`}>
           {aqiData.overallAqi}
         </div>
         <div className="flex flex-col">

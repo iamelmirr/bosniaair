@@ -44,6 +44,21 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
     }
   }
 
+  const getBorderColorClass = (status: string) => {
+    switch (status) {
+      case 'good':
+        return 'border-aqi-good/30'
+      case 'moderate':
+        return 'border-aqi-moderate/30'
+      case 'unhealthy':
+        return 'border-aqi-unhealthy/30'
+      case 'very-unhealthy':
+        return 'border-aqi-very/30'
+      default:
+        return 'border-[rgb(var(--border))]'
+    }
+  }
+
   const getParameterName = (parameter: string) => {
     const names: Record<string, string> = {
       'pm25': 'PM2.5',
@@ -69,15 +84,10 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
 
   const status = getStatusColor(measurement.parameter, measurement.value)
   const colorClass = getStatusColorClass(status)
+  const borderClass = getBorderColorClass(status)
 
   return (
-    <div className={`bg-[rgb(var(--card))] rounded-lg p-3 border transition-shadow hover:shadow-md ${
-      status === 'good' ? 'border-green-200 hover:border-green-300' :
-      status === 'moderate' ? 'border-yellow-200 hover:border-yellow-300' :
-      status === 'unhealthy' ? 'border-orange-200 hover:border-orange-300' :
-      status === 'very-unhealthy' ? 'border-red-200 hover:border-red-300' :
-      'border-[rgb(var(--border))]'
-    }`}>
+    <div className={`bg-[rgb(var(--card))] rounded-lg p-3 border ${borderClass} hover:shadow-md transition-all`}>
       {/* Parameter name - centered */}
       <div className="text-center mb-3">
         <h3 className="text-sm font-medium text-[rgb(var(--text))]">

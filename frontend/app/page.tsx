@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react'
 import LiveAqiCard from '../components/LiveAqiCard'
 import PollutantCard from '../components/PollutantCard'
 import Header from '../components/Header'
-import HistorySlider from '../components/HistorySlider'
-import WeeklyAqiSlider from '../components/WeeklyAqiSlider'
+import DailyTimeline from '../components/DailyTimeline'
 import GroupCard from '../components/GroupCard'
 import CityComparison from '../components/CityComparison'
 
@@ -120,9 +119,9 @@ export default function HomePage() {
               </div>
         </div>
 
-        {/* Weekly AQI Trend Section */}
+        {/* Daily Timeline Section */}
         <div className="mb-12">
-          <WeeklyAqiSlider city="Sarajevo" />
+          <DailyTimeline city="Sarajevo" />
         </div>
 
         {/* Health Information Section */}
