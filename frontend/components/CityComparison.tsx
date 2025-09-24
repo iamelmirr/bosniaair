@@ -65,8 +65,8 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Fetch data for both cities
-  const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading } = useSWR<LiveAirQualityData>(
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/live?city=${defaultCity}`,
+  const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading, mutate: mutateDefaultCity } = useSWR<LiveAirQualityData>(
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${defaultCity}`,
     fetcher,
     {
       refreshInterval: 15 * 60 * 1000,
@@ -75,8 +75,8 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     }
   )
 
-  const { data: selectedCityData, error: selectedCityError, isLoading: selectedCityLoading } = useSWR<LiveAirQualityData>(
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/live?city=${selectedCity}`,
+  const { data: selectedCityData, error: selectedCityError, isLoading: selectedCityLoading, mutate: mutateSelectedCity } = useSWR<LiveAirQualityData>(
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${selectedCity}`,
     fetcher,
     {
       refreshInterval: 15 * 60 * 1000,
@@ -244,9 +244,11 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
                       onClick={() => {
                         setSelectedCity(city.value)
                         setIsDropdownOpen(false)
+                        // Force refresh of selected city data
+                        mutateSelectedCity()
                       }}
                       className={`flex items-center gap-3 w-full px-3 md:px-4 py-2 md:py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                        city.value === selectedCity ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-[rgb(var(--text))]'
+                        city.value === selectedCity ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'text-[rgb(var(--text))]'
                       }`}
                     >
                       <span className="font-medium text-sm md:text-base">{city.label}</span>
@@ -269,10 +271,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         {/* Default City (Left) */}
         {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true)}
 
-        {/* VS Divider with modern styling - Smaller on mobile */}
+        {/* VS Divider with minimal styling */}
         <div className="flex items-center justify-center lg:flex-col">
-          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-full w-8 h-8 md:w-12 md:h-12 flex items-center justify-center shadow-lg">
-            <span className="text-xs md:text-sm font-bold text-white">VS</span>
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 md:w-12 md:h-12 flex items-center justify-center">
+            <span className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">VS</span>
           </div>
         </div>
 
@@ -280,20 +282,16 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         {renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false)}
       </div>
 
-      {/* Comparison Summary with better styling - More compact on mobile */}
+      {/* Comparison Summary with minimal styling */}
       {defaultCityData && selectedCityData && (
         <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-3 md:p-4">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4">
             <div className="text-center">
-              <div className="text-xl md:text-2xl mb-1 md:mb-2">
-                {defaultCityData.overallAqi === selectedCityData.overallAqi ? '🤝' :
-                 defaultCityData.overallAqi > selectedCityData.overallAqi ? '👆' : '👇'}
-              </div>
-              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                 {defaultCityData.overallAqi > selectedCityData.overallAqi 
-                  ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha (${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova niži)`
+                  ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
                   : defaultCityData.overallAqi < selectedCityData.overallAqi
-                  ? `${AVAILABLE_CITIES.find(c => c.value === defaultCity)?.label} ima bolji kvalitet vazduha (${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova niži)`
+                  ? `${AVAILABLE_CITIES.find(c => c.value === defaultCity)?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
                   : 'Oba grada imaju sličan kvalitet vazduha'
                 }
               </p>
