@@ -10,11 +10,6 @@ interface LiveAirQualityData {
   color: string
   timestamp: string
   dominantPollutant?: string
-  healthMessage?: string
-  coordinates?: {
-    latitude: number
-    longitude: number
-  }
 }
 
 interface CityComparisonProps {
@@ -23,7 +18,7 @@ interface CityComparisonProps {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-// List of available cities with display names
+// Available cities
 const AVAILABLE_CITIES = [
   { value: 'Sarajevo', label: 'Sarajevo' },
   { value: 'Tuzla', label: 'Tuzla' }, 
@@ -38,34 +33,19 @@ const AQI_CATEGORY_TRANSLATIONS = {
   'Good': 'Dobro',
   'Moderate': 'Umjereno',
   'Unhealthy for Sensitive Groups': 'Osjetljivo',
-  'Unhealthy': 'Nezdravо',
+  'Unhealthy': 'Nezdravo',
   'Very Unhealthy': 'Opasno',
   'Hazardous': 'Fatalno'
 } as const
-
-// Function to determine text color based on background
-const getTextColor = (backgroundColor: string | undefined): string => {
-  if (!backgroundColor || typeof backgroundColor !== 'string') {
-    return '#1f2937'
-  }
-  
-  const hex = backgroundColor.replace('#', '')
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.6 ? '#1f2937' : '#ffffff'
-}
 
 export default function CityComparison({ defaultCity = 'Sarajevo' }: CityComparisonProps) {
   const [selectedCity, setSelectedCity] = useState(() => {
     const available = AVAILABLE_CITIES.find(city => city.value !== defaultCity)
     return available?.value || 'Tuzla'
   })
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Fetch data for both cities
-  const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading, mutate: mutateDefaultCity } = useSWR<LiveAirQualityData>(
+  const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading } = useSWR<LiveAirQualityData>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${defaultCity}`,
     fetcher,
     {
@@ -85,26 +65,48 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     }
   )
 
+  // Get AQI colors that match app theme
+  const getAqiBackgroundColor = (aqi: number) => {
+    if (aqi <= 50) return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+    if (aqi <= 100) return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+    if (aqi <= 150) return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+    if (aqi <= 200) return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+    if (aqi <= 300) return 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+    return 'bg-red-200 dark:bg-red-900/40 border-red-400 dark:border-red-600'
+  }
+
+  const getAqiTextColor = (aqi: number) => {
+    if (aqi <= 50) return 'text-green-700 dark:text-green-400'
+    if (aqi <= 100) return 'text-yellow-700 dark:text-yellow-400'
+    if (aqi <= 150) return 'text-orange-700 dark:text-orange-400'
+    if (aqi <= 200) return 'text-red-700 dark:text-red-400'
+    if (aqi <= 300) return 'text-red-800 dark:text-red-300'
+    return 'text-red-900 dark:text-red-200'
+  }
+
   const renderCityCard = (
     data: LiveAirQualityData | undefined,
     error: any,
     isLoading: boolean,
     cityName: string,
-    isDefault: boolean = false
+    isMain: boolean = false
   ) => {
     const cityInfo = AVAILABLE_CITIES.find(c => c.value === cityName)
 
     if (isLoading) {
       return (
-        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-4 md:p-6 shadow-card">
-          <div className="animate-pulse">
-            <div className="flex items-center gap-2 mb-3 md:mb-4">
-              <div className="w-4 h-4 md:w-6 md:h-6 bg-gray-300 dark:bg-gray-600 rounded"></div>
-              <div className="h-4 md:h-6 bg-gray-300 dark:bg-gray-600 rounded w-16 md:w-20"></div>
+        <div className={`rounded-xl border border-gray-200 dark:border-gray-700 ${isMain ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-[rgb(var(--card))]'} p-6 shadow-card`}>
+          <div className="animate-pulse space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
             </div>
-            <div className="h-16 md:h-20 bg-gray-300 dark:bg-gray-600 rounded-lg mb-3 md:mb-4"></div>
-            <div className="h-3 md:h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2"></div>
-            <div className="h-2 md:h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+            <div className="text-center space-y-2">
+              <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded w-16 mx-auto"></div>
+              <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-12 mx-auto"></div>
+            </div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20 mx-auto"></div>
+            <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-24 mx-auto"></div>
           </div>
         </div>
       )
@@ -112,90 +114,62 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
     if (error || !data) {
       return (
-        <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-red-300 dark:border-red-600 p-4 md:p-6 shadow-card">
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl mb-2 md:mb-3">😞</div>
-            <h3 className="text-base md:text-lg font-semibold text-[rgb(var(--text))] mb-2 flex items-center justify-center gap-2">
-              {cityInfo?.label || cityName}
-            </h3>
-            <div className="text-red-500 dark:text-red-400 text-sm mb-3">
-              Greška pri učitavanju
+        <div className={`rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-6 shadow-card`}>
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <div className="text-sm font-semibold text-[rgb(var(--text))]">
+                {cityInfo?.label || cityName}
+              </div>
             </div>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm underline transition-colors"
-            >
-              Pokušaj ponovo
-            </button>
+            <div className="text-xs text-red-600 dark:text-red-400">Nema podataka</div>
           </div>
         </div>
       )
     }
 
-    const textColor = getTextColor(data.color)
     const translatedCategory = AQI_CATEGORY_TRANSLATIONS[data.aqiCategory as keyof typeof AQI_CATEGORY_TRANSLATIONS] || data.aqiCategory
 
     return (
-      <div className="flex-1 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-4 md:p-6 shadow-card hover:shadow-card-hover transition-all">
+      <div className={`rounded-xl border ${getAqiBackgroundColor(data.overallAqi)} p-6 shadow-card ${isMain ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}`}>
         {/* City Header */}
-        <div className="flex items-center justify-between mb-3 md:mb-4">
-          <h3 className="text-base md:text-lg font-semibold text-[rgb(var(--text))] flex items-center gap-2">
-            {cityInfo?.label || cityName}
-          </h3>
-          {isDefault && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isMain ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+            <div className="text-sm font-semibold text-[rgb(var(--text))]">
+              {cityInfo?.label || cityName}
+            </div>
+          </div>
+          {isMain && (
+            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
               Glavni
             </span>
           )}
         </div>
 
-        {/* AQI Display with modern gradient - Compact on mobile */}
-        <div 
-          className="rounded-lg md:rounded-xl p-4 md:p-6 mb-3 md:mb-4 text-center transition-all duration-300 hover:scale-105 shadow-lg"
-          style={{ 
-            background: data.color 
-              ? `linear-gradient(135deg, ${data.color}dd, ${data.color})`
-              : 'linear-gradient(135deg, #6b7280dd, #6b7280)'
-          }}
-        >
-          <div 
-            className="text-2xl md:text-4xl font-bold mb-1 md:mb-2"
-            style={{ color: textColor }}
-          >
+        {/* AQI Display */}
+        <div className="text-center mb-6">
+          <div className={`text-4xl font-bold ${getAqiTextColor(data.overallAqi)} mb-2`}>
             {data.overallAqi}
           </div>
-          <div 
-            className="text-xs md:text-sm opacity-90 uppercase tracking-wider font-medium"
-            style={{ color: textColor }}
-          >
-            AQI
+          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
+            AQI Indeks
           </div>
         </div>
 
-        {/* Category and Details - More compact on mobile */}
-        <div className="space-y-2 md:space-y-3">
-          <div className="text-center">
-            <div className="font-semibold text-[rgb(var(--text))] text-base md:text-lg">
-              {translatedCategory}
-            </div>
-          </div>
-          
-          {data.dominantPollutant && (
-            <div className="text-center">
-              <span className="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs md:text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <span className="hidden md:inline">Glavni zagađivač: </span>
-                <span className="md:hidden">📍 </span>
-                {data.dominantPollutant}
-              </span>
-            </div>
-          )}
+        {/* Category */}
+        <div className="text-center mb-4">
+          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getAqiTextColor(data.overallAqi)} ${getAqiBackgroundColor(data.overallAqi)} border`}>
+            {translatedCategory}
+          </span>
+        </div>
 
-          <div className="text-center text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
-            Ažurirano: {new Date(data.timestamp).toLocaleString('bs-BA', {
+        {/* Timestamp */}
+        <div className="text-center">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Ažurirano {new Date(data.timestamp).toLocaleString('bs-BA', {
               hour: '2-digit',
-              minute: '2-digit',
-              day: '2-digit',
-              month: '2-digit'
+              minute: '2-digit'
             })}
           </div>
         </div>
@@ -206,106 +180,77 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
   const selectedCityInfo = AVAILABLE_CITIES.find(city => city.value === selectedCity)
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl shadow-card p-4 md:p-6 border border-[rgb(var(--border))]">
+    <section className="bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-6 shadow-card">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 mb-4 md:mb-6">
-        <h2 className="text-lg md:text-xl font-semibold text-[rgb(var(--text))]">
-          Poređenje gradova
-        </h2>
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+            <span className="text-blue-600 dark:text-blue-400 text-sm">⚖️</span>
+          </div>
+          <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+            Poređenje gradova
+          </h2>
+        </div>
         
-        {/* Custom Dropdown */}
-        <div className="relative">
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-            Poredi sa:
-          </label>
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-[rgb(var(--card))] hover:bg-gray-50 dark:hover:bg-gray-700 text-[rgb(var(--text))] transition-colors min-w-32 md:min-w-40"
-            >
-              <span className="font-medium text-sm md:text-base">{selectedCityInfo?.label}</span>
-              <svg
-                className={`w-4 h-4 ml-auto transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        {/* City Selector */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {AVAILABLE_CITIES
+            .filter(city => city.value !== defaultCity)
+            .map(city => (
+              <button
+                key={city.value}
+                onClick={() => {
+                  setSelectedCity(city.value)
+                  mutateSelectedCity()
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  city.value === selectedCity
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                }`}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 9-7 7-7-7" />
-              </svg>
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[rgb(var(--card))] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-48 md:max-h-60 overflow-auto">
-                {AVAILABLE_CITIES
-                  .filter(city => city.value !== defaultCity)
-                  .map(city => (
-                    <button
-                      key={city.value}
-                      onClick={() => {
-                        setSelectedCity(city.value)
-                        setIsDropdownOpen(false)
-                        // Force refresh of selected city data
-                        mutateSelectedCity()
-                      }}
-                      className={`flex items-center gap-3 w-full px-3 md:px-4 py-2 md:py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                        city.value === selectedCity ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'text-[rgb(var(--text))]'
-                      }`}
-                    >
-                      <span className="font-medium text-sm md:text-base">{city.label}</span>
-                      {city.value === selectedCity && (
-                        <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                  ))
-                }
-              </div>
-            )}
-          </div>
+                {city.label}
+              </button>
+            ))
+          }
         </div>
       </div>
 
-      {/* Comparison Cards */}
-      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
-        {/* Default City (Left) */}
-        {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true)}
+      {/* Cards */}
+      <div className="space-y-4 md:space-y-0 md:flex md:items-start md:gap-6">
+        {/* Main City */}
+        <div className="flex-1">
+          {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true)}
+        </div>
 
-        {/* VS Divider with minimal styling */}
-        <div className="flex items-center justify-center lg:flex-col">
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 md:w-12 md:h-12 flex items-center justify-center">
-            <span className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">VS</span>
+        {/* VS Divider */}
+        <div className="flex justify-center md:flex-col md:items-center md:mt-8">
+          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-600">
+            <span className="text-gray-600 dark:text-gray-400 font-semibold text-sm">VS</span>
           </div>
         </div>
 
-        {/* Selected City (Right) */}
-        {renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false)}
+        {/* Selected City */}
+        <div className="flex-1">
+          {renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false)}
+        </div>
       </div>
 
-      {/* Comparison Summary with minimal styling */}
+      {/* Results Panel */}
       {defaultCityData && selectedCityData && (
-        <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {defaultCityData.overallAqi > selectedCityData.overallAqi 
-                  ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
-                  : defaultCityData.overallAqi < selectedCityData.overallAqi
-                  ? `${AVAILABLE_CITIES.find(c => c.value === defaultCity)?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
-                  : 'Oba grada imaju sličan kvalitet vazduha'
-                }
-              </p>
-            </div>
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="text-center">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Rezultat poređenja</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {defaultCityData.overallAqi > selectedCityData.overallAqi 
+                ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
+                : defaultCityData.overallAqi < selectedCityData.overallAqi
+                ? `${AVAILABLE_CITIES.find(c => c.value === defaultCity)?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
+                : 'Oba grada imaju sličan kvalitet vazduha'
+              }
+            </p>
           </div>
         </div>
-      )}
-
-      {/* Click outside to close dropdown */}
-      {isDropdownOpen && (
-        <div 
-          className="fixed inset-0 z-5" 
-          onClick={() => setIsDropdownOpen(false)}
-        />
       )}
     </section>
   )
