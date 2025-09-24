@@ -279,7 +279,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
       </div>
 
       {/* Cards */}
-      <div className="space-y-4 md:space-y-0 md:flex md:items-start md:gap-6">
+      <div className="space-y-4 md:space-y-0 md:flex md:items-center md:gap-6">
         {/* Main City */}
         <div className="flex-1">
           {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true, false)}
