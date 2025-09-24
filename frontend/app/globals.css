@@ -57,13 +57,31 @@ body {
 .aqi-very { @apply bg-aqi-very text-white; }
 .aqi-hazardous { @apply bg-aqi-hazardous text-white; }
 
-/* AQI Text Colors */
-.text-aqi-good { color: #00E400; }
-.text-aqi-moderate { color: #FFFF00; }
-.text-aqi-usg { color: #FF7E00; }
-.text-aqi-unhealthy { color: #FF0000; }
-.text-aqi-very-unhealthy { color: #99004C; }
-.text-aqi-hazardous { color: #7E0023; }
+/* AQI Text Colors - Natural progression with enhanced readability */
+.text-aqi-good { 
+  color: #22C55E; 
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.text-aqi-moderate { 
+  color: #EAB308; 
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.text-aqi-usg { 
+  color: #F97316; 
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.text-aqi-unhealthy { 
+  color: #EF4444; 
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.text-aqi-very-unhealthy { 
+  color: #A855F7; 
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.text-aqi-hazardous { 
+  color: #7C2D12; 
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
 
 /* Loading animations */
 @keyframes shimmer {

@@ -71,13 +71,18 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
   const colorClass = getStatusColorClass(status)
 
   return (
-    <div className="bg-[rgb(var(--card))] rounded-lg p-3 border border-[rgb(var(--border))] hover:shadow-md transition-shadow">
-      {/* Header with parameter name and status indicator */}
-      <div className="flex items-center justify-between mb-3">
+    <div className={`bg-[rgb(var(--card))] rounded-lg p-3 border transition-shadow hover:shadow-md ${
+      status === 'good' ? 'border-green-200 hover:border-green-300' :
+      status === 'moderate' ? 'border-yellow-200 hover:border-yellow-300' :
+      status === 'unhealthy' ? 'border-orange-200 hover:border-orange-300' :
+      status === 'very-unhealthy' ? 'border-red-200 hover:border-red-300' :
+      'border-[rgb(var(--border))]'
+    }`}>
+      {/* Parameter name - centered */}
+      <div className="text-center mb-3">
         <h3 className="text-sm font-medium text-[rgb(var(--text))]">
           {getParameterName(measurement.parameter)}
         </h3>
-        <div className={`w-3 h-3 rounded-full ${colorClass}`}></div>
       </div>
       
       {/* Value display - clean and minimal */}
