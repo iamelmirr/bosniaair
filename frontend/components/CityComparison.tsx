@@ -45,6 +45,10 @@ const AQI_CATEGORY_TRANSLATIONS = {
 } as const
 
 export default function CityComparison({ defaultCity = 'Sarajevo' }: CityComparisonProps) {
+  console.log('🎯 CityComparison komponenta se renderuje!', { defaultCity })
+  
+
+  
   const [selectedCity, setSelectedCity] = useState(() => {
     const available = AVAILABLE_CITIES.find(city => city.value !== defaultCity)
     return available?.value || 'Tuzla'
@@ -231,25 +235,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
           </span>
         </div>
 
-        {/* Timestamp */}
-        <div className="text-center">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {isRefreshingData ? (
-              <span className="text-blue-600 dark:text-blue-400">🔄 Ažurira se...</span>
-            ) : (
-              <>
-                Ažurirano {new Date(data.timestamp).toLocaleString('bs-BA', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-                {/* Show "fresh" indicator if timestamp is very recent (less than 1 minute ago) */}
-                {new Date().getTime() - new Date(data.timestamp).getTime() < 60000 && (
-                  <span className="ml-2 text-green-600 dark:text-green-400">🔥 novo</span>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+
       </div>
     )
   }
@@ -260,14 +246,9 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     <section className="bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] p-6 shadow-card">
       {/* Header */}
       <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-            <span className="text-blue-600 dark:text-blue-400 text-sm">⚖️</span>
-          </div>
-          <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-            Poređenje gradova
-          </h2>
-        </div>
+        <h2 className="text-xl font-semibold text-[rgb(var(--text))] mb-4">
+          Poređenje gradova
+        </h2>
         
         {/* City Selector */}
         <div className="flex flex-wrap justify-center gap-2">
@@ -276,7 +257,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
             .map(city => (
               <button
                 key={city.value}
-                onClick={() => handleCitySelect(city.value)}
+                onClick={() => {
+                  console.log('🔥 BUTTON KLIK!', city.value)
+                  handleCitySelect(city.value)
+                }}
                 disabled={isRefreshing}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   city.value === selectedCity
@@ -302,7 +286,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         </div>
 
         {/* VS Divider */}
-        <div className="flex justify-center md:flex-col md:items-center md:mt-8">
+        <div className="flex justify-center items-center">
           <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-600">
             <span className="text-gray-600 dark:text-gray-400 font-semibold text-sm">VS</span>
           </div>
@@ -332,7 +316,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
       {/* Results Panel */}
       {defaultCityData && selectedCityData && (
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200/30 dark:border-gray-700/30">
           <div className="text-center">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Rezultat poređenja</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">

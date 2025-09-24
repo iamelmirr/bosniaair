@@ -135,45 +135,44 @@ export default function HomePage() {
         </div>
 
         {/* Info Section */}
-        <div className="mb-12">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
-              O podacima
+        <div className="mb-8">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800/50">
+            <h3 className="text-base font-semibold text-blue-900 dark:text-blue-100 mb-3">
+              O aplikaciji
             </h3>
             <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-              <p>
-                • Podaci se ažuriraju svakih 30 minuta sa OpenAQ platforme
-              </p>
-              <p>
-                • AQI (Indeks kvaliteta vazduha) se računa prema EPA standardima
-              </p>
-              <p>
-                • Merenja pokrivaju područje Sarajeva i najbližu okolinu
-              </p>
-              <p>
-                • Podaci su dostupni javnosti za edukaciju i informisanje
-              </p>
+              <p>• Real-time praćenje kvaliteta vazduha u Bosni i Hercegovini</p>
+              <p>• 7-dnevni timeline sa prošlim i budućim podacima</p>
+              <p>• Poređenje između gradova za bolji pregled situacije</p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="text-center py-8 border-t border-gray-200 dark:border-gray-700">
+        <footer className="text-center py-6 border-t border-gray-200 dark:border-gray-700">
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
             <p>
-              Podaci o kvalitetu vazduha prikupljeni putem{' '}
+              Podaci se preuzimaju sa{' '}
               <a 
-                href="https://openaq.org" 
+                href="https://aqicn.org" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
-                OpenAQ platforme
+                aqicn.org
               </a>
             </p>
-            <p>
-              AQI kalkulacija u skladu sa EPA standardima • Podaci za edukaciju i informisanje
-            </p>
+            <div className="pt-2">
+              <p className="text-gray-500 dark:text-gray-500">Say hi :)</p>
+              <p>
+                <a 
+                  href="mailto:besirovicelmir36@gmail.com"
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  besirovicelmir36@gmail.com
+                </a>
+              </p>
+            </div>
           </div>
         </footer>
       </div>
