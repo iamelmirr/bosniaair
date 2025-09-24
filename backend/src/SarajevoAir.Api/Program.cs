@@ -84,8 +84,8 @@ builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddSingleton<IAqiCalculator, AqiCalculator>();
 builder.Services.AddScoped<IShareService, ShareService>();
 
-// Background services
-builder.Services.AddHostedService<AqiBackgroundService>();
+// Background services disabled - frontend will trigger data saving
+// builder.Services.AddHostedService<AqiBackgroundService>();
 
 // Health checks  
 builder.Services.AddHealthChecks();
@@ -113,6 +113,9 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 }
+
+// Static files (for admin dashboard)
+app.UseStaticFiles();
 
 app.UseRouting();
 

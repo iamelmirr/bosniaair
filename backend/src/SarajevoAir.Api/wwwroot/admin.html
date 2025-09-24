@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SarajevoAir - Database Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #28a745;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+        
+        .stat-label {
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        .records-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .records-table th,
+        .records-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .records-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+        
+        .aqi-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        
+        .refresh-btn {
+            background: #4fc3f7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        
+        .refresh-btn:hover {
+            background: #29b6f6;
+        }
+        
+        .auto-refresh {
+            margin-left: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .timestamp {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 SarajevoAir Database Monitor</h1>
+            <div class="status" id="status">🟢 Connecting...</div>
+        </div>
+        
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be populated here -->
+        </div>
+        
+        <div class="records-section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>📊 Recent AQI Records</h2>
+                <div>
+                    <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+                    <label class="auto-refresh">
+                        <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                        Auto-refresh (30s)
+                    </label>
+                </div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            <div id="loading" class="loading">Loading data...</div>
+            
+            <table class="records-table" id="recordsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Timestamp</th>
+                        <th>AQI Value</th>
+                        <th>Category</th>
+                        <th>City</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+        let isAutoRefreshEnabled = true;
+
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const recordsTable = document.getElementById('recordsTable');
+            const status = document.getElementById('status');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            
+            try {
+                // Load stats
+                const statsResponse = await fetch('/api/v1/admin/stats');
+                const stats = await statsResponse.json();
+                
+                // Load records
+                const recordsResponse = await fetch('/api/v1/admin/aqi-records?limit=15');
+                const recordsData = await recordsResponse.json();
+                
+                // Update status
+                status.textContent = '🟢 Connected';
+                status.className = 'status';
+                
+                // Update stats
+                updateStats(stats);
+                
+                // Update records table
+                updateRecordsTable(recordsData.records);
+                
+                loading.style.display = 'none';
+                recordsTable.style.display = 'table';
+                
+            } catch (err) {
+                console.error('Error loading data:', err);
+                error.textContent = `❌ Error loading data: ${err.message}`;
+                error.style.display = 'block';
+                loading.style.display = 'none';
+                
+                status.textContent = '🔴 Connection Error';
+                status.className = 'status';
+                status.style.background = '#dc3545';
+            }
+        }
+        
+        function updateStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            const lastRecord = stats.lastRecord;
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.database.totalRecords}</div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.database.last24Hours}</div>
+                    <div class="stat-label">Last 24 Hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${lastRecord ? lastRecord.aqiValue : 'N/A'}</div>
+                    <div class="stat-label">Current AQI</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${lastRecord ? Math.round(lastRecord.minutesAgo) : 'N/A'}</div>
+                    <div class="stat-label">Minutes Since Last Update</div>
+                </div>
+            `;
+        }
+        
+        function updateRecordsTable(records) {
+            const tbody = document.getElementById('recordsBody');
+            
+            tbody.innerHTML = records.map(record => `
+                <tr data-timestamp="${record.timestamp}">
+                    <td>${record.id}</td>
+                    <td>
+                        <div>${new Date(record.timestamp).toLocaleString('sr-RS', { 
+                            timeZone: 'Europe/Belgrade',
+                            year: 'numeric',
+                            month: '2-digit', 
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        })}</div>
+                        <div class="timestamp">${timeAgo(record.timestamp)}</div>
+                    </td>
+                    <td>
+                        <span class="aqi-badge" style="background-color: ${record.color}; color: ${record.aqiValue > 100 ? 'white' : 'black'};">
+                            ${record.aqiValue}
+                        </span>
+                    </td>
+                    <td>${record.category}</td>
+                    <td>${record.city}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function timeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+            
+            if (diffInMinutes < 1) return 'just now';
+            if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours}h ago`;
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            return `${diffInDays}d ago`;
+        }
+        
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            isAutoRefreshEnabled = checkbox.checked;
+            
+            if (isAutoRefreshEnabled) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+        
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear existing interval
+            autoRefreshInterval = setInterval(loadData, 30000); // 30 seconds
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        // Initialize
+        loadData();
+        if (isAutoRefreshEnabled) {
+            startAutoRefresh();
+        }
+        
+        // Update timestamps every minute
+        setInterval(() => {
+            const timestamps = document.querySelectorAll('.timestamp');
+            timestamps.forEach(ts => {
+                const tr = ts.closest('tr');
+                const recordData = tr.dataset.timestamp;
+                if (recordData) {
+                    ts.textContent = timeAgo(recordData);
+                }
+            });
+        }, 60000);
+    </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using SarajevoAir.Api.Services;
+using SarajevoAir.Application.Interfaces;
+using SarajevoAir.Domain.Entities;
 
 namespace SarajevoAir.Api.Controllers;
 
@@ -11,15 +13,18 @@ public class LiveController : ControllerBase
     private readonly IAqicnClient _aqicnClient;
     private readonly IMemoryCache _cache;
     private readonly ILogger<LiveController> _logger;
+    private readonly IAppDbContext _dbContext;
 
     public LiveController(
         IAqicnClient aqicnClient,
         IMemoryCache cache,
-        ILogger<LiveController> logger)
+        ILogger<LiveController> logger,
+        IAppDbContext dbContext)
     {
         _aqicnClient = aqicnClient;
         _cache = cache;
         _logger = logger;
+        _dbContext = dbContext;
     }
 
     /// <summary>
@@ -40,7 +45,7 @@ public class LiveController : ControllerBase
             
             if (_cache.TryGetValue(cacheKey, out var cachedData))
             {
-                _logger.LogDebug("Returning cached live data for {City}", city);
+                _logger.LogDebug("Returning cached live data for {City} - no database save needed", city);
                 return Ok(cachedData);
             }
 
@@ -63,6 +68,12 @@ public class LiveController : ControllerBase
                 measurements = GetMeasurements(aqicnResponse.Data, city),
                 dominantPollutant = aqicnResponse.Data.DominentPol ?? "pm25"
             };
+
+            // Save AQI data to database (triggered by frontend call every 10 minutes)
+            if (city.ToLowerInvariant() == "sarajevo")
+            {
+                await SaveAqiToDatabase(aqicnResponse.Data.Aqi, cancellationToken);
+            }
 
             // Cache the result for 5 minutes
             _cache.Set(cacheKey, responseData, TimeSpan.FromMinutes(5));
@@ -225,5 +236,44 @@ public class LiveController : ControllerBase
         }
 
         return measurements.ToArray();
+    }
+
+    /// <summary>
+    /// Save AQI data to database - triggered by frontend calls every 10 minutes
+    /// </summary>
+    private async Task SaveAqiToDatabase(int aqiValue, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Check if we already have a recent record (within last 5 minutes) to avoid duplicates  
+            var recentRecord = _dbContext.SimpleAqiRecords
+                .Where(r => r.City == "Sarajevo" && r.Timestamp > DateTime.UtcNow.AddMinutes(-5))
+                .OrderByDescending(r => r.Timestamp)
+                .FirstOrDefault();
+
+            if (recentRecord != null)
+            {
+                _logger.LogDebug("Skipping database save - recent record exists from {Timestamp}", recentRecord.Timestamp);
+                return;
+            }
+
+            // Create new AQI record
+            var aqiRecord = new SimpleAqiRecord
+            {
+                Timestamp = DateTime.UtcNow,
+                AqiValue = aqiValue,
+                City = "Sarajevo"
+            };
+
+            _dbContext.SimpleAqiRecords.Add(aqiRecord);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Saved AQI record to database: AQI {Aqi} at {Timestamp} (triggered by frontend)", 
+                aqiValue, aqiRecord.Timestamp);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save AQI data to database");
+        }
     }
 }

@@ -3,7 +3,7 @@ import { apiClient, AqiResponse, Measurement, HistoryResponse, GroupsResponse, C
 
 // Default SWR configuration
 const defaultConfig: SWRConfiguration = {
-  refreshInterval: 5 * 60 * 1000, // 5 minutes
+  refreshInterval: 10 * 60 * 1000, // 10 minutes - synchronized with backend storage
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
   errorRetryCount: 3,
