@@ -11,6 +11,7 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<DailyAggregate> DailyAggregates => Set<DailyAggregate>();
+    public DbSet<SimpleAqiRecord> SimpleAqiRecords => Set<SimpleAqiRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

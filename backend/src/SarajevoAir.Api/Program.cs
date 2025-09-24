@@ -9,6 +9,7 @@ using SarajevoAir.Application.Services;
 using SarajevoAir.Domain.Aqi;
 using SarajevoAir.Infrastructure.Data;
 using SarajevoAir.Infrastructure.OpenAq;
+using SarajevoAir.Worker;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,7 +60,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
                        ?? "Host=localhost;Database=sarajevoair;Username=dev;Password=dev";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseSqlite(connectionString));
     
 // Register IAppDbContext
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
@@ -82,6 +83,9 @@ builder.Services.AddHttpClient<IOpenAqClient, OpenAqClient>()
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddSingleton<IAqiCalculator, AqiCalculator>();
 builder.Services.AddScoped<IShareService, ShareService>();
+
+// Background services
+builder.Services.AddHostedService<AqiBackgroundService>();
 
 // Health checks  
 builder.Services.AddHealthChecks();

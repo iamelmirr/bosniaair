@@ -8,6 +8,7 @@ public interface IAppDbContext
     DbSet<Location> Locations { get; }
     DbSet<Measurement> Measurements { get; }
     DbSet<DailyAggregate> DailyAggregates { get; }
+    DbSet<SimpleAqiRecord> SimpleAqiRecords { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
