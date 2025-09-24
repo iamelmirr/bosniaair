@@ -11,7 +11,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   if (isLoading) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300">
         <div className="animate-pulse">
           <div className="flex items-baseline justify-between mb-4">
             <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48"></div>
@@ -32,7 +32,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   if (error) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-red-300 dark:border-red-600 shadow-card">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-red-300 dark:border-red-600 shadow-card hover:shadow-card-hover transition-all duration-300">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
@@ -127,7 +127,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
   }
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
       {/* Header */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
@@ -140,12 +140,12 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
       
       {/* Main AQI Display */}
-      <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left">
-        <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0`}>
+      <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left animate-fade-in">
+        <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0 transition-all duration-500`}>
           {aqiData.overallAqi}
         </div>
         <div className="flex flex-col">
-          <div className={`text-2xl font-medium ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)}`}>
+          <div className={`text-2xl font-medium ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} transition-all duration-300`}>
             {translateAqiCategory(aqiData.aqiCategory)}
           </div>
           {aqiData.dominantPollutant && (
@@ -157,7 +157,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
       
       {/* Health Message */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-700">
         <p className="text-sm text-gray-700 dark:text-gray-300">
           {getHealthAdvice(aqiData.aqiCategory)}
         </p>

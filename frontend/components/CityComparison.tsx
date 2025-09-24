@@ -163,21 +163,21 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
     if (isLoading || isRefreshingData) {
       return (
-        <div className={`rounded-xl border border-gray-200 dark:border-gray-700 ${isMain ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-[rgb(var(--card))]'} p-6 shadow-card`}>
+        <div className={`rounded-xl border border-gray-200 dark:border-gray-700 ${isMain ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-[rgb(var(--card))]'} p-6 shadow-card hover:shadow-card-hover transition-all duration-300`}>
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20 loading-shimmer"></div>
               {isRefreshingData && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">ažurira...</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-fade-in">ažurira...</span>
               )}
             </div>
             <div className="text-center space-y-2">
-              <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded w-16 mx-auto"></div>
-              <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-12 mx-auto"></div>
+              <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded w-16 mx-auto loading-shimmer"></div>
+              <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-12 mx-auto loading-shimmer"></div>
             </div>
-            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20 mx-auto"></div>
-            <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-24 mx-auto"></div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20 mx-auto loading-shimmer"></div>
+            <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-24 mx-auto loading-shimmer"></div>
           </div>
         </div>
       )
@@ -202,7 +202,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     const translatedCategory = AQI_CATEGORY_TRANSLATIONS[data.aqiCategory as keyof typeof AQI_CATEGORY_TRANSLATIONS] || data.aqiCategory
 
     return (
-      <div className={`rounded-xl border ${getAqiBackgroundColor(data.overallAqi)} p-6 shadow-card ${isMain ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}`}>
+      <div className={`rounded-xl border ${getAqiBackgroundColor(data.overallAqi)} p-6 shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in ${isMain ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}`}>
         {/* City Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
         {/* AQI Display */}
         <div className="text-center mb-6">
-          <div className={`text-4xl font-bold ${getAqiTextColor(data.overallAqi)} mb-2`}>
+          <div className={`text-4xl font-bold ${getAqiTextColor(data.overallAqi)} mb-2 transition-all duration-500`}>
             {data.overallAqi}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
@@ -262,10 +262,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
                   handleCitySelect(city.value)
                 }}
                 disabled={isRefreshing}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 ${
                   city.value === selectedCity
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 hover:shadow-md'
                 }`}
               >
                 {city.label}
@@ -316,10 +316,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
       {/* Results Panel */}
       {defaultCityData && selectedCityData && (
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200/30 dark:border-gray-700/30">
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200/30 dark:border-gray-700/30 animate-fade-in">
           <div className="text-center">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Rezultat poređenja</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 transition-all duration-300">
               {defaultCityData.overallAqi > selectedCityData.overallAqi 
                 ? `${selectedCityInfo?.label} ima bolji kvalitet vazduha za ${Math.abs(defaultCityData.overallAqi - selectedCityData.overallAqi)} AQI bodova`
                 : defaultCityData.overallAqi < selectedCityData.overallAqi

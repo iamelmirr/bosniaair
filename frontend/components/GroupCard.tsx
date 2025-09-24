@@ -50,7 +50,7 @@ export default function GroupCard({ city }: GroupCardProps) {
 
   if (isLoading) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-64 mb-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -69,7 +69,7 @@ export default function GroupCard({ city }: GroupCardProps) {
 
   if (error) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-red-300 dark:border-red-600 shadow-card">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-red-300 dark:border-red-600 shadow-card hover:shadow-card-hover transition-all duration-300">
         <div className="text-center">
           <div className="text-4xl mb-4">👥</div>
           <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
@@ -100,7 +100,7 @@ export default function GroupCard({ city }: GroupCardProps) {
   }
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -128,7 +128,7 @@ export default function GroupCard({ city }: GroupCardProps) {
         {data.groups.map(({ group, currentRecommendation, riskLevel }) => (
           <div
             key={group.groupName}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300 dark:hover:border-blue-600"
           >
             {/* Group Header */}
             <div className="flex items-start justify-between mb-3">

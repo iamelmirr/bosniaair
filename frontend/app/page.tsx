@@ -97,11 +97,12 @@ export default function HomePage() {
                       }
                       return true
                     })
-                    .map((measurement) => (
-                    <PollutantCard 
-                      key={measurement.parameter}
-                      measurement={measurement}
-                    />
+                    .map((measurement, index) => (
+                    <div key={measurement.parameter} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <PollutantCard 
+                        measurement={measurement}
+                      />
+                    </div>
                   ))
                 ) : isLoading ? (
                   // Loading state
