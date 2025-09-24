@@ -222,7 +222,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   }
 
   const getCardStyles = (day: TimelineData): string => {
-    let baseStyles = 'relative w-full h-28 p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md flex flex-col justify-between text-center '
+    let baseStyles = 'relative w-full h-44 p-5 rounded-lg border-2 transition-all duration-200 hover:shadow-md flex flex-col text-center '
     
     if (day.isToday) {
       baseStyles += 'bg-[rgb(var(--card))] border-blue-500 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800 '
@@ -236,9 +236,9 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   // DayCard component
   const DayCard = ({ day }: { day: TimelineData }) => {
     return (
-      <>
+      <div className="h-full flex flex-col justify-between">
         <div className="text-center">
-          <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
             {day.shortDay}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-500">
@@ -246,18 +246,18 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           </div>
         </div>
         
-        <div className="flex-1 flex items-center justify-center">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAqiColorClass(day.aqi)}`}>
+        <div className="flex items-center justify-center my-4">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold ${getAqiColorClass(day.aqi)}`}>
             {day.aqi}
           </div>
         </div>
         
         <div className="text-center">
-          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+          <div className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">
             {day.category}
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
@@ -294,11 +294,11 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
       <div className="p-4">
         {/* Mobile: Horizontal scrollable slider */}
         <div className="md:hidden">
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2">
             {timelineData.map((day, index) => (
               <div 
                 key={day.date}
-                className={`${getCardStyles(day)} min-w-[120px] flex-shrink-0 snap-center`}
+                className={`${getCardStyles(day)} min-w-[160px] max-w-[160px] flex-shrink-0 snap-center`}
               >
                 <DayCard day={day} />
               </div>
