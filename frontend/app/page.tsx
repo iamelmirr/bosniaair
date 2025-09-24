@@ -77,18 +77,17 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Current Air Quality Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          <div className="lg:col-span-1">
-            <LiveAqiCard city="Sarajevo" />
-          </div>
-          
-          <div className="lg:col-span-2 lg:flex lg:items-center">
-            <div className="w-full">
-              <h2 className="text-lg font-semibold mb-4 text-[rgb(var(--text))] lg:hidden">
-                Merenja zagađivača
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        {/* Main AQI Card - Full Width */}
+        <div className="mb-8">
+          <LiveAqiCard city="Sarajevo" />
+        </div>
+
+        {/* Pollutants Section */}
+        <div className="mb-12">
+          <h2 className="text-lg font-semibold mb-6 text-[rgb(var(--text))]">
+            Merenja zagađivača
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {aqiData?.measurements ? (
                   aqiData.measurements
                     .filter((measurement) => {
@@ -119,8 +118,6 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
         </div>
 
         {/* Weekly AQI Trend Section */}
