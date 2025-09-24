@@ -35,6 +35,16 @@ const RISK_TRANSLATIONS = {
   'very-high': 'Vrlo visok rizik',
 } as const
 
+// AQI Category translations to Bosnian
+const getAqiCategoryBosnian = (aqi: number): string => {
+  if (aqi <= 50) return 'Dobro'
+  if (aqi <= 100) return 'Umjereno'
+  if (aqi <= 150) return 'Osjetljivo'
+  if (aqi <= 200) return 'Nezdravo'
+  if (aqi <= 300) return 'Opasno'
+  return 'Fatalno'
+}
+
 export default function GroupCard({ city }: GroupCardProps) {
   const { data, error, isLoading } = useGroups(city)
 
@@ -95,7 +105,7 @@ export default function GroupCard({ city }: GroupCardProps) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-            Zdravstveni savjeti — {data.city}
+            Zdravstveni savjeti
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Preporuke za osjetljive grupe stanovništva
@@ -108,7 +118,7 @@ export default function GroupCard({ city }: GroupCardProps) {
             {data.currentAqi}
           </div>
           <div className="text-xs text-gray-500 uppercase tracking-wide">
-            {data.aqiCategory}
+            {getAqiCategoryBosnian(data.currentAqi)}
           </div>
         </div>
       </div>
