@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import useSWR from 'swr'
+import useSWR, { mutate } from 'swr'
 
 interface LiveAirQualityData {
   city: string
@@ -16,7 +16,13 @@ interface CityComparisonProps {
   defaultCity?: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = (url: string) => {
+  console.log('🔄 AJAX poziv:', url)
+  return fetch(url).then(res => {
+    console.log('✅ AJAX odgovor:', url, res.status)
+    return res.json()
+  })
+}
 
 // Available cities
 const AVAILABLE_CITIES = [
@@ -43,8 +49,12 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     const available = AVAILABLE_CITIES.find(city => city.value !== defaultCity)
     return available?.value || 'Tuzla'
   })
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Fetch data for both cities
+  // Track which cities have been loaded
+  const [loadedCities, setLoadedCities] = useState<Set<string>>(new Set([defaultCity, 'Tuzla']))
+
+  // Fetch data for default city (always loaded)
   const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading } = useSWR<LiveAirQualityData>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${defaultCity}`,
     fetcher,
@@ -55,8 +65,19 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     }
   )
 
+  // Fetch data for selected city (only if it's been loaded)
+  const shouldLoadSelectedCity = loadedCities.has(selectedCity)
+  const selectedCityUrl = shouldLoadSelectedCity ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${selectedCity}` : null
+  
+  console.log('🔍 SWR state:', { 
+    selectedCity, 
+    shouldLoadSelectedCity, 
+    selectedCityUrl,
+    loadedCities: Array.from(loadedCities) 
+  })
+  
   const { data: selectedCityData, error: selectedCityError, isLoading: selectedCityLoading, mutate: mutateSelectedCity } = useSWR<LiveAirQualityData>(
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${selectedCity}`,
+    selectedCityUrl,
     fetcher,
     {
       refreshInterval: 15 * 60 * 1000,
@@ -64,6 +85,48 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
       revalidateOnReconnect: true
     }
   )
+
+  // Function to handle city selection with forced refresh
+  const handleCitySelect = async (cityValue: string) => {
+    console.log('🏙️ Selektovan grad:', cityValue)
+    setIsRefreshing(true)
+    
+    // Add city to loaded set if not already there
+    setLoadedCities(prev => {
+      const newSet = new Set(prev)
+      newSet.add(cityValue)
+      return newSet
+    })
+    
+    try {
+      // Create the URL for the new city
+      const newCityUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${cityValue}`
+      console.log('🔄 Direktan AJAX poziv za:', cityValue, newCityUrl)
+      
+      // Make direct fetch call to force fresh data
+      const response = await fetch(newCityUrl)
+      const freshData = await response.json()
+      console.log('✅ Dobijeni svježi podaci za:', cityValue, freshData)
+      
+      // Now update the selected city state
+      setSelectedCity(cityValue)
+      
+      // Add delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Also trigger SWR revalidation for the new city URL
+      setTimeout(() => {
+        mutate(newCityUrl)
+        console.log('🔄 SWR mutate pozvan za:', newCityUrl)
+      }, 100)
+      
+    } catch (error) {
+      console.error('❌ Greška pri ažuriranju:', error)
+      setSelectedCity(cityValue) // Still update the city even if fetch fails
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   // Get AQI colors that match app theme
   const getAqiBackgroundColor = (aqi: number) => {
@@ -89,17 +152,21 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     error: any,
     isLoading: boolean,
     cityName: string,
-    isMain: boolean = false
+    isMain: boolean = false,
+    isRefreshingData: boolean = false
   ) => {
     const cityInfo = AVAILABLE_CITIES.find(c => c.value === cityName)
 
-    if (isLoading) {
+    if (isLoading || isRefreshingData) {
       return (
         <div className={`rounded-xl border border-gray-200 dark:border-gray-700 ${isMain ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-[rgb(var(--card))]'} p-6 shadow-card`}>
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
               <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+              {isRefreshingData && (
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">ažurira...</span>
+              )}
             </div>
             <div className="text-center space-y-2">
               <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded w-16 mx-auto"></div>
@@ -167,10 +234,20 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
         {/* Timestamp */}
         <div className="text-center">
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            Ažurirano {new Date(data.timestamp).toLocaleString('bs-BA', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
+            {isRefreshingData ? (
+              <span className="text-blue-600 dark:text-blue-400">🔄 Ažurira se...</span>
+            ) : (
+              <>
+                Ažurirano {new Date(data.timestamp).toLocaleString('bs-BA', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+                {/* Show "fresh" indicator if timestamp is very recent (less than 1 minute ago) */}
+                {new Date().getTime() - new Date(data.timestamp).getTime() < 60000 && (
+                  <span className="ml-2 text-green-600 dark:text-green-400">🔥 novo</span>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -199,17 +276,18 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
             .map(city => (
               <button
                 key={city.value}
-                onClick={() => {
-                  setSelectedCity(city.value)
-                  mutateSelectedCity()
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                onClick={() => handleCitySelect(city.value)}
+                disabled={isRefreshing}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   city.value === selectedCity
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                 }`}
               >
                 {city.label}
+                {isRefreshing && city.value === selectedCity && (
+                  <span className="ml-2 animate-spin">⟳</span>
+                )}
               </button>
             ))
           }
@@ -220,7 +298,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
       <div className="space-y-4 md:space-y-0 md:flex md:items-start md:gap-6">
         {/* Main City */}
         <div className="flex-1">
-          {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true)}
+          {renderCityCard(defaultCityData, defaultCityError, defaultCityLoading, defaultCity, true, false)}
         </div>
 
         {/* VS Divider */}
@@ -232,7 +310,23 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
         {/* Selected City */}
         <div className="flex-1">
-          {renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false)}
+          {!shouldLoadSelectedCity ? (
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-[rgb(var(--card))] p-6 shadow-card">
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <div className="text-sm font-semibold text-[rgb(var(--text))]">
+                    {AVAILABLE_CITIES.find(c => c.value === selectedCity)?.label}
+                  </div>
+                </div>
+                <div className="text-gray-500 dark:text-gray-400 text-sm">
+                  Kliknite da učitate podatke
+                </div>
+              </div>
+            </div>
+          ) : (
+            renderCityCard(selectedCityData, selectedCityError, selectedCityLoading, selectedCity, false, isRefreshing)
+          )}
         </div>
       </div>
 
