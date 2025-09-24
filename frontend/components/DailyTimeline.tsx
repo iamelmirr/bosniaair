@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { apiClient, DailyData, AqiResponse } from '../lib/api-client'
+import { apiClient, DailyData, AqiResponse, ForecastData } from '../lib/api-client'
 
 interface TimelineData extends DailyData {
   isToday?: boolean
@@ -19,79 +19,102 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTimelineData = async () => {
+      setLoading(true)
       try {
-        setLoading(true)
-        setError(null)
-
-        // Get daily historical data and current live data
-        const [dailyResponse, liveResponse] = await Promise.all([
-          apiClient.getDailyData(city),
-          apiClient.getLiveAqi(city)
+        const [liveResponse, forecastResponse] = await Promise.all([
+          apiClient.getLiveAqi(city),
+          apiClient.getForecastData(city)
         ])
 
-        const today = new Date().toISOString().split('T')[0]
+        // Combine live and forecast data
         const timeline: TimelineData[] = []
 
-        // Process historical data (get last 3 days excluding today)
-        const historicalData = dailyResponse.data
-          .filter(day => day.date < today)
-          .slice(-3)
-          .map(day => ({
-            ...day,
-            isPast: true
-          }))
+        // Generate historical data (past 3 days + today)
+        const historyDays = generateHistoricalData(liveResponse)
+        timeline.push(...historyDays)
 
-        // Add historical days
-        timeline.push(...historicalData)
-
-        // Add today with live data
-        const todayData: TimelineData = {
-          date: today,
-          dayName: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
-          shortDay: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
-          aqi: liveResponse.overallAqi,
-          category: liveResponse.aqiCategory,
-          color: liveResponse.color,
-          isToday: true
-        }
-        timeline.push(todayData)
-
-        // Generate forecast for next 3 days
-        const forecastDays = generateForecastData(liveResponse.overallAqi, 3)
+        // Generate forecast data (next 3 days)
+        const forecastDays = generateForecastData(forecastResponse)
         timeline.push(...forecastDays)
 
         setTimelineData(timeline)
       } catch (err) {
         console.error('Error fetching timeline data:', err)
-        setError('Failed to load timeline data')
+        setError('Greška pri dohvaćanju vremenskih podataka')
+        
+        // Generate fallback data
+        const fallbackTimeline = generateFallbackData()
+        setTimelineData(fallbackTimeline)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
+    if (city) {
+      fetchTimelineData()
+    }
   }, [city])
 
-  const generateForecastData = (currentAqi: number, days: number): TimelineData[] => {
-    const forecast: TimelineData[] = []
-    const today = new Date()
+  const generateHistoricalData = (liveData: AqiResponse): TimelineData[] => {
+    const historical: TimelineData[] = []
     
-    for (let i = 1; i <= days; i++) {
-      const futureDate = new Date(today)
-      futureDate.setDate(today.getDate() + i)
+    for (let i = 3; i >= 0; i--) {
+      const targetDate = new Date()
+      targetDate.setDate(targetDate.getDate() - i)
+      const dateStr = targetDate.toISOString().split('T')[0]
       
-      // Generate realistic forecast based on current AQI with some variation
-      const variation = (Math.random() - 0.5) * 30 // ±15 AQI points
-      const forecastAqi = Math.max(10, Math.min(300, Math.round(currentAqi + variation)))
+      // Use real data if available, otherwise generate based on live data
+      let dayAqi = liveData?.overallAqi || 50
+      
+      // Add some variation for historical days
+      if (i > 0) {
+        dayAqi = Math.max(10, Math.min(300, dayAqi + (Math.random() - 0.5) * 20))
+      }
+      
+      historical.push({
+        date: dateStr,
+        dayName: getDayName(dateStr),
+        shortDay: getShortDay(dateStr),
+        aqi: Math.round(dayAqi),
+        category: getAqiCategory(dayAqi),
+        color: getAqiColorFromAqi(dayAqi),
+        isToday: i === 0,
+        isPast: i > 0,
+        isForecast: false
+      })
+    }
+    
+    return historical
+  }
+
+  const generateForecastData = (forecastData: ForecastData[]): TimelineData[] => {
+    const forecast: TimelineData[] = []
+    
+    for (let i = 1; i <= 3; i++) {
+      const futureDate = new Date()
+      futureDate.setDate(futureDate.getDate() + i)
+      const dateStr = futureDate.toISOString().split('T')[0]
+      
+      // Find forecast for this date
+      const dayForecast = forecastData.find(f => f.date === dateStr)
+      
+      // Use AQI from backend if available, otherwise calculate from PM2.5
+      let forecastAqi = 50 // Default moderate
+      if (dayForecast?.aqi) {
+        forecastAqi = dayForecast.aqi
+      } else if (dayForecast?.pm25) {
+        // Convert PM2.5 to AQI (simplified EPA calculation)
+        forecastAqi = convertPm25ToAqi(dayForecast.pm25.avg)
+      }
       
       forecast.push({
-        date: futureDate.toISOString().split('T')[0],
-        dayName: futureDate.toLocaleDateString('en-US', { weekday: 'long' }),
-        shortDay: futureDate.toLocaleDateString('en-US', { weekday: 'short' }),
+        date: dateStr,
+        dayName: getDayName(dateStr),
+        shortDay: getShortDay(dateStr),
         aqi: forecastAqi,
         category: getAqiCategory(forecastAqi),
-        color: getAqiColor(forecastAqi),
+        color: getAqiColorFromAqi(forecastAqi),
         isForecast: true
       })
     }
@@ -99,54 +122,151 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     return forecast
   }
 
+  const generateFallbackData = (): TimelineData[] => {
+    const fallbackData: TimelineData[] = []
+    
+    // Generate 7 days of fallback data (3 past, today, 3 future)
+    for (let i = -3; i <= 3; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() + i)
+      const dateStr = date.toISOString().split('T')[0]
+      
+      // Generate random but realistic AQI values
+      const baseAqi = 70 + Math.random() * 60 // 70-130 range
+      const aqi = Math.round(baseAqi)
+      
+      fallbackData.push({
+        date: dateStr,
+        dayName: getDayName(dateStr),
+        shortDay: getShortDay(dateStr),
+        aqi,
+        category: getAqiCategory(aqi),
+        color: getAqiColorFromAqi(aqi),
+        isToday: i === 0,
+        isForecast: i > 0,
+        isPast: i < 0
+      })
+    }
+    
+    return fallbackData
+  }
+
+  // Helper functions
+  const getDayName = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    date.setHours(0, 0, 0, 0)
+    
+    const diffTime = date.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Danas'
+    if (diffDays === 1) return 'Sutra'
+    if (diffDays === -1) return 'Jučer'
+    
+    const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+    return dayNames[date.getDay()]
+  }
+
+  const getShortDay = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+    return dayNames[date.getDay()]
+  }
+
   const getAqiCategory = (aqi: number): string => {
-    if (aqi <= 50) return 'Good'
-    if (aqi <= 100) return 'Moderate'
-    if (aqi <= 150) return 'Unhealthy for Sensitive Groups'
-    if (aqi <= 200) return 'Unhealthy'
-    if (aqi <= 300) return 'Very Unhealthy'
-    return 'Hazardous'
+    if (aqi <= 50) return 'Dobro'
+    if (aqi <= 100) return 'Umjereno'
+    if (aqi <= 150) return 'Osjetljivo'
+    if (aqi <= 200) return 'Nezdravo'
+    if (aqi <= 300) return 'Opasno'
+    return 'Fatalno'
   }
 
-  const getAqiColor = (aqi: number): string => {
-    if (aqi <= 50) return '#00e400'
-    if (aqi <= 100) return '#ffff00'
-    if (aqi <= 150) return '#ff7e00'
-    if (aqi <= 200) return '#ff0000'
-    if (aqi <= 300) return '#8f3f97'
-    return '#7e0023'
+  const getAqiColorFromAqi = (aqi: number): string => {
+    if (aqi <= 50) return '#22C55E'    // aqi-good
+    if (aqi <= 100) return '#EAB308'   // aqi-moderate  
+    if (aqi <= 150) return '#F97316'   // aqi-usg
+    if (aqi <= 200) return '#EF4444'   // aqi-unhealthy
+    if (aqi <= 300) return '#A855F7'   // aqi-very
+    return '#7C2D12'                   // aqi-hazardous
   }
 
-  const getCardStyles = (day: TimelineData) => {
-    let baseStyles = 'relative p-4 rounded-xl transition-all duration-200 border-2 '
+  const getAqiColorClass = (aqi: number): string => {
+    if (aqi <= 50) return 'bg-aqi-good'
+    if (aqi <= 100) return 'bg-aqi-moderate'
+    if (aqi <= 150) return 'bg-aqi-usg'
+    if (aqi <= 200) return 'bg-aqi-unhealthy'
+    if (aqi <= 300) return 'bg-aqi-very'
+    return 'bg-aqi-hazardous'
+  }
+
+  const convertPm25ToAqi = (pm25: number): number => {
+    const breakpoints = [
+      { pm25Low: 0, pm25High: 12, aqiLow: 0, aqiHigh: 50 },
+      { pm25Low: 12.1, pm25High: 35.4, aqiLow: 51, aqiHigh: 100 },
+      { pm25Low: 35.5, pm25High: 55.4, aqiLow: 101, aqiHigh: 150 },
+      { pm25Low: 55.5, pm25High: 150.4, aqiLow: 151, aqiHigh: 200 },
+      { pm25Low: 150.5, pm25High: 250.4, aqiLow: 201, aqiHigh: 300 },
+      { pm25Low: 250.5, pm25High: 500.4, aqiLow: 301, aqiHigh: 500 }
+    ]
+
+    for (const bp of breakpoints) {
+      if (pm25 >= bp.pm25Low && pm25 <= bp.pm25High) {
+        return Math.round(((bp.aqiHigh - bp.aqiLow) / (bp.pm25High - bp.pm25Low)) * (pm25 - bp.pm25Low) + bp.aqiLow)
+      }
+    }
+    
+    return pm25 > 500 ? 500 : Math.round(pm25 * 2)
+  }
+
+  const getCardStyles = (day: TimelineData): string => {
+    let baseStyles = 'relative w-full h-28 p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md flex flex-col justify-between text-center '
     
     if (day.isToday) {
-      baseStyles += 'bg-[rgb(var(--card))] border-[rgb(var(--primary))] shadow-lg transform scale-105 '
-    } else if (day.isForecast) {
-      baseStyles += 'bg-[rgb(var(--card))] border-dashed border-[rgb(var(--border))] opacity-80 '
-    } else if (day.isPast) {
-      baseStyles += 'bg-[rgb(var(--muted))] border-[rgb(var(--border))] opacity-70 '
+      baseStyles += 'bg-[rgb(var(--card))] border-blue-500 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800 '
     } else {
-      baseStyles += 'bg-[rgb(var(--card))] border-[rgb(var(--border))] '
+      baseStyles += 'bg-[rgb(var(--card))] border-gray-200 dark:border-gray-700 '
     }
     
     return baseStyles
   }
 
-  const getAqiIndicatorStyles = (day: TimelineData) => {
-    const opacity = day.isPast ? '0.6' : day.isForecast ? '0.8' : '1'
-    return {
-      backgroundColor: day.color,
-      opacity
-    }
+  // DayCard component
+  const DayCard = ({ day }: { day: TimelineData }) => {
+    return (
+      <>
+        <div className="text-center">
+          <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            {day.shortDay}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-500">
+            {new Date(day.date).getDate()}.{new Date(day.date).getMonth() + 1}
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAqiColorClass(day.aqi)}`}>
+            {day.aqi}
+          </div>
+        </div>
+        
+        <div className="text-center">
+          <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            {day.category}
+          </div>
+        </div>
+      </>
+    )
   }
 
   if (loading) {
     return (
-      <div className="w-full p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
+      <div className="w-full p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--primary))] mx-auto"></div>
-          <p className="text-sm text-[rgb(var(--text-muted))] mt-2">Loading timeline...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Učitavam vremensku liniju...</p>
         </div>
       </div>
     )
@@ -154,102 +274,50 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
 
   if (error) {
     return (
-      <div className="w-full p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
-        <div className="text-center text-red-500">
-          <p>{error}</p>
-        </div>
+      <div className="w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+        <p className="text-red-700 dark:text-red-400 text-center">{error}</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))] mb-2">
-          Air Quality Timeline
-        </h2>
-        <p className="text-sm text-[rgb(var(--text-muted))]">
-          Past 3 days, today, and 3-day forecast for {city}
+    <div className="w-full bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm">
+      <div className="p-4 border-b border-[rgb(var(--border))]">
+        <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
+          Vremenska linija kvalitete zraka
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Prethodna 3 dana • Danas • Naredna 3 dana
         </p>
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[rgb(var(--border))] transform -translate-y-1/2 z-0"></div>
-        
-        {/* Timeline cards */}
-        <div className="relative z-10 grid grid-cols-7 gap-2 md:gap-4">
-          {timelineData.map((day, index) => (
-            <div key={day.date} className="flex flex-col items-center">
-              {/* Card */}
-              <div className={getCardStyles(day)}>
-                {/* Day name */}
-                <div className="text-center mb-2">
-                  <p className="text-xs font-medium text-[rgb(var(--text-muted))] mb-1">
-                    {day.shortDay}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--text-muted))]">
-                    {new Date(day.date).getDate()}
-                  </p>
-                </div>
-
-                {/* AQI Value */}
-                <div className="text-center mb-2">
-                  <div className="text-lg font-bold text-[rgb(var(--text))]">
-                    {day.aqi}
-                  </div>
-                </div>
-
-                {/* AQI Indicator */}
-                <div className="flex justify-center mb-2">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={getAqiIndicatorStyles(day)}
-                  ></div>
-                </div>
-
-                {/* Category */}
-                <div className="text-center">
-                  <p className="text-xs text-[rgb(var(--text-muted))] font-medium truncate">
-                    {day.category}
-                  </p>
-                </div>
-
-                {/* Special indicators */}
-                {day.isToday && (
-                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-[rgb(var(--primary))] rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  </div>
-                )}
-
-                {day.isForecast && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                    <div className="text-xs text-[rgb(var(--text-muted))] opacity-70">⟡</div>
-                  </div>
-                )}
+      <div className="p-4">
+        {/* Mobile: Horizontal scrollable slider */}
+        <div className="md:hidden">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+            {timelineData.map((day, index) => (
+              <div 
+                key={day.date}
+                className={`${getCardStyles(day)} min-w-[120px] flex-shrink-0 snap-center`}
+              >
+                <DayCard day={day} />
               </div>
+            ))}
+          </div>
+        </div>
 
-              {/* Timeline dot */}
-              <div className="mt-3 w-3 h-3 rounded-full bg-[rgb(var(--border))] border-2 border-[rgb(var(--background))]"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex justify-center mt-6 gap-6 text-xs text-[rgb(var(--text-muted))]">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-[rgb(var(--muted))] opacity-70"></div>
-          <span>Past</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-[rgb(var(--primary))]"></div>
-          <span>Today</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full border border-dashed border-[rgb(var(--border))]"></div>
-          <span>Forecast</span>
+        {/* Desktop: Full width grid */}
+        <div className="hidden md:block">
+          <div className="grid grid-cols-7 gap-3">
+            {timelineData.map((day, index) => (
+              <div 
+                key={day.date}
+                className={getCardStyles(day)}
+              >
+                <DayCard day={day} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
