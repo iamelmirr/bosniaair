@@ -94,26 +94,11 @@ public class SarajevoService : ISarajevoService
             // Calculate AQI category and color from numeric AQI
             var (category, color, healthMessage) = GetAqiInfo(data.Aqi);
 
-            // 🔥 SAČUVAJ U BAZU SA LOKALNIM TIMESTAMP-OM
-            var localTimestamp = DateTime.UtcNow; // Uvek koristi trenutno vreme kada je podatak dobijen
-            var aqiRecord = new SimpleAqiRecord
-            {
-                City = "Sarajevo",
-                AqiValue = data.Aqi,
-                Timestamp = localTimestamp
-            };
-
-            try 
-            {
-                await _aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
-                _logger.LogInformation("💾 Saved AQI record to database: Sarajevo AQI {Aqi} at {Timestamp}", 
-                    data.Aqi, localTimestamp);
-            }
-            catch (Exception dbEx)
-            {
-                _logger.LogWarning(dbEx, "❌ Failed to save AQI record to database, continuing with response");
-                // Ne prekidaj request ako database save ne uspe
-            }
+            // � NE ČUVAJ U BAZU - AirQualityRefreshService je JEDINI koji čuva podatke
+            // SarajevoService je samo za čitanje i fallback API pozive
+            var localTimestamp = DateTime.UtcNow; // Koristi trenutno vreme za response
+            
+            _logger.LogInformation("⚠️ SarajevoService API fallback - Background service should handle data collection!");
 
             _logger.LogInformation("Successfully retrieved WAQI data for Sarajevo, AQI: {Aqi}", data.Aqi);
 
