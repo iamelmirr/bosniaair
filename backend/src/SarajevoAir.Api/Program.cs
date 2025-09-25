@@ -79,10 +79,10 @@ builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
 builder.Services.AddHttpClient<IOpenAqClient, OpenAqClient>()
     .AddStandardResilienceHandler();
 
-// Application services
-builder.Services.AddScoped<IMeasurementService, MeasurementService>();
-builder.Services.AddSingleton<IAqiCalculator, AqiCalculator>();
-builder.Services.AddScoped<IShareService, ShareService>();
+// Application services - all removed after simplification
+// IMeasurementService removed - no longer needed after simplification
+// IAqiCalculator removed - no longer used 
+// IShareService removed - using Web Share API instead
 
 // Background services disabled - frontend will trigger data saving
 // builder.Services.AddHostedService<AqiBackgroundService>();

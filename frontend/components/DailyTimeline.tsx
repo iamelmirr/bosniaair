@@ -27,14 +27,14 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           apiClient.getForecastData(city)
         ])
 
-        // Combine live and forecast data
+        // Combine today + forecast data (no mock historical data)
         const timeline: TimelineData[] = []
 
-        // Generate historical data (past 3 days + today)
-        const historyDays = generateHistoricalData(liveResponse)
-        timeline.push(...historyDays)
+        // Add today (live data)
+        const todayData = generateTodayData(liveResponse)
+        timeline.push(todayData)
 
-        // Generate forecast data (next 3 days)
+        // Add forecast data (next 6 days from AQICN)
         const forecastDays = generateForecastData(forecastResponse)
         timeline.push(...forecastDays)
 
@@ -56,68 +56,46 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     }
   }, [city])
 
-  const generateHistoricalData = (liveData: AqiResponse): TimelineData[] => {
-    const historical: TimelineData[] = []
+  const generateTodayData = (liveData: AqiResponse): TimelineData => {
+    const today = new Date()
+    const dateStr = today.toISOString().split('T')[0]
     
-    for (let i = 3; i >= 0; i--) {
-      const targetDate = new Date()
-      targetDate.setDate(targetDate.getDate() - i)
-      const dateStr = targetDate.toISOString().split('T')[0]
-      
-      // Use real data if available, otherwise generate based on live data
-      let dayAqi = liveData?.overallAqi || 50
-      
-      // Add some variation for historical days
-      if (i > 0) {
-        dayAqi = Math.max(10, Math.min(300, dayAqi + (Math.random() - 0.5) * 20))
-      }
-      
-      historical.push({
-        date: dateStr,
-        dayName: getDayName(dateStr),
-        shortDay: getShortDay(dateStr),
-        aqi: Math.round(dayAqi),
-        category: getAqiCategory(dayAqi),
-        color: getAqiColorFromAqi(dayAqi),
-        isToday: i === 0,
-        isPast: i > 0,
-        isForecast: false
-      })
+    return {
+      date: dateStr,
+      dayName: getDayName(dateStr),
+      shortDay: getShortDay(dateStr),
+      aqi: liveData?.overallAqi || 50,
+      category: getAqiCategory(liveData?.overallAqi || 50),
+      color: getAqiColorFromAqi(liveData?.overallAqi || 50),
+      isToday: true,
+      isPast: false,
+      isForecast: false
     }
-    
-    return historical
   }
 
   const generateForecastData = (forecastData: ForecastData[]): TimelineData[] => {
     const forecast: TimelineData[] = []
     
-    for (let i = 1; i <= 3; i++) {
-      const futureDate = new Date()
-      futureDate.setDate(futureDate.getDate() + i)
-      const dateStr = futureDate.toISOString().split('T')[0]
-      
-      // Find forecast for this date
-      const dayForecast = forecastData.find(f => f.date === dateStr)
-      
-      // Use AQI from backend if available, otherwise calculate from PM2.5
-      let forecastAqi = 50 // Default moderate
-      if (dayForecast?.aqi) {
-        forecastAqi = dayForecast.aqi
-      } else if (dayForecast?.pm25) {
-        // Convert PM2.5 to AQI (simplified EPA calculation)
-        forecastAqi = convertPm25ToAqi(dayForecast.pm25.avg)
-      }
-      
+    // Use only real forecast data from AQICN (skip today's data which is index 0)
+    const realForecastData = forecastData.filter((f, index) => {
+      // Skip today (index 0) and only include days with actual AQI data
+      return index > 0 && f.aqi && f.aqi > 0
+    })
+    
+    realForecastData.forEach(dayForecast => {
+      const aqiValue = dayForecast.aqi! // We already filtered for valid AQI values
       forecast.push({
-        date: dateStr,
-        dayName: getDayName(dateStr),
-        shortDay: getShortDay(dateStr),
-        aqi: forecastAqi,
-        category: getAqiCategory(forecastAqi),
-        color: getAqiColorFromAqi(forecastAqi),
-        isForecast: true
+        date: dayForecast.date,
+        dayName: getDayName(dayForecast.date),
+        shortDay: getShortDay(dayForecast.date),
+        aqi: aqiValue,
+        category: getAqiCategory(aqiValue),
+        color: getAqiColorFromAqi(aqiValue),
+        isForecast: true,
+        isPast: false,
+        isToday: false
       })
-    }
+    })
     
     return forecast
   }
@@ -125,8 +103,8 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   const generateFallbackData = (): TimelineData[] => {
     const fallbackData: TimelineData[] = []
     
-    // Generate 7 days of fallback data (3 past, today, 3 future)
-    for (let i = -3; i <= 3; i++) {
+    // Generate 7 days of fallback data (today + 6 future)
+    for (let i = 0; i <= 6; i++) {
       const date = new Date()
       date.setDate(date.getDate() + i)
       const dateStr = date.toISOString().split('T')[0]
@@ -144,7 +122,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
         color: getAqiColorFromAqi(aqi),
         isToday: i === 0,
         isForecast: i > 0,
-        isPast: i < 0
+        isPast: false
       })
     }
     
@@ -287,7 +265,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           Vremenska linija kvalitete zraka
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Prethodna 3 dana • Danas • Naredna 3 dana
+          Danas • Forecast narednih {timelineData.length - 1} dana
         </p>
       </div>
 
@@ -306,9 +284,9 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           </div>
         </div>
 
-        {/* Desktop: Full width grid */}
+        {/* Desktop: Full width adaptive grid */}
         <div className="hidden md:block">
-          <div className="grid grid-cols-7 gap-3">
+          <div className={`grid gap-3 ${timelineData.length === 6 ? 'grid-cols-6' : timelineData.length === 7 ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {timelineData.map((day, index) => (
               <div 
                 key={day.date}

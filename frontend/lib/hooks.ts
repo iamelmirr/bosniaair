@@ -1,5 +1,5 @@
 import useSWR, { SWRConfiguration, mutate } from 'swr'
-import { apiClient, AqiResponse, Measurement, HistoryResponse, GroupsResponse, CompareResponse } from './api-client'
+import { apiClient, AqiResponse, Measurement, GroupsResponse } from './api-client'
 
 // Default SWR configuration
 const defaultConfig: SWRConfiguration = {
@@ -41,36 +41,7 @@ export function useLiveMeasurements(city: string, config?: SWRConfiguration) {
   }
 }
 
-// History hooks
-export function useHistory(
-  city: string,
-  parameter: string,
-  startDate: Date,
-  endDate: Date,
-  aggregation: 'hourly' | 'daily' = 'hourly',
-  config?: SWRConfiguration
-) {
-  const key = city && parameter && startDate && endDate 
-    ? `history-${city}-${parameter}-${startDate.toISOString()}-${endDate.toISOString()}-${aggregation}`
-    : null
-
-  const { data, error, isLoading, mutate } = useSWR<HistoryResponse>(
-    key,
-    () => apiClient.getHistory(city, parameter, startDate, endDate, aggregation),
-    { 
-      ...defaultConfig, 
-      refreshInterval: 15 * 60 * 1000, // 15 minutes for history data
-      ...config 
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
+// History hooks removed - using today + forecast timeline instead
 
 // Groups hook
 export function useGroups(city: string, config?: SWRConfiguration) {
@@ -88,23 +59,7 @@ export function useGroups(city: string, config?: SWRConfiguration) {
   }
 }
 
-// Compare hook
-export function useCompare(cities: string[], config?: SWRConfiguration) {
-  const key = cities.length > 0 ? `compare-${cities.join('-')}` : null
-
-  const { data, error, isLoading, mutate } = useSWR<CompareResponse>(
-    key,
-    () => apiClient.compareCities(cities),
-    { ...defaultConfig, ...config }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
+// Compare hook removed - using multiple live calls instead
 
 // Utility hooks
 export function useRefreshAll() {

@@ -30,45 +30,7 @@ export interface AqiResponse {
   dominantPollutant?: string
 }
 
-export interface HistoryResponse {
-  city: string
-  parameter: string
-  data: Array<{
-    timestamp: Date
-    value: number
-    aqi?: number
-    category?: string
-  }>
-  aggregation: 'hourly' | 'daily'
-  startDate: Date
-  endDate: Date
-}
-
-export interface CompareResponse {
-  data: Array<{
-    city: string
-    currentAqi: number
-    aqiCategory: string
-    color: string
-    timestamp: Date
-    measurements: Measurement[]
-  }>
-}
-
-export interface LocationResponse {
-  locations: Array<{
-    id: string
-    name: string
-    city: string
-    country: string
-    coordinates: {
-      latitude: number
-      longitude: number
-    }
-    parameters: string[]
-    lastMeasurement?: Date
-  }>
-}
+// History, Compare, Location interfaces removed - simplified to today + forecast timeline
 
 export interface HealthGroup {
   groupName: 'Sportisti' | 'Djeca' | 'Stariji' | 'Astmatičari'
@@ -140,12 +102,7 @@ export interface AqicnForecastResponse {
   }
 }
 
-export interface ShareResponse {
-  shareUrl: string
-  shareText: string
-  imageUrl?: string
-  qrCodeUrl?: string
-}
+// ShareResponse interface removed - using Web Share API in utils instead
 
 class ApiClient {
   private baseUrl: string
@@ -214,59 +171,7 @@ class ApiClient {
     return this.request<Measurement[]>(`/live?city=${encodeURIComponent(city)}`)
   }
 
-  // History endpoints
-  async getHistory(
-    city: string,
-    parameter: string,
-    startDate: Date,
-    endDate: Date,
-    aggregation: 'hourly' | 'daily' = 'hourly'
-  ): Promise<HistoryResponse> {
-    const params = new URLSearchParams({
-      city,
-      parameter,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      aggregation,
-    })
-    
-    return this.request<HistoryResponse>(`/history?${params}`)
-  }
-
-  // Compare endpoints
-  async compareCities(cities: string[]): Promise<CompareResponse> {
-    const params = new URLSearchParams()
-    cities.forEach(city => params.append('cities', city))
-    
-    return this.request<CompareResponse>(`/compare/cities?${params}`)
-  }
-
-  async compareTimeframes(
-    city: string,
-    startDate1: Date,
-    endDate1: Date,
-    startDate2: Date,
-    endDate2: Date
-  ): Promise<any> {
-    const params = new URLSearchParams({
-      city,
-      startDate1: startDate1.toISOString(),
-      endDate1: endDate1.toISOString(),
-      startDate2: startDate2.toISOString(),
-      endDate2: endDate2.toISOString(),
-    })
-    
-    return this.request(`/compare/timeframes?${params}`)
-  }
-
-  // Location endpoints
-  async getLocations(city?: string, country?: string): Promise<LocationResponse> {
-    const params = new URLSearchParams()
-    if (city) params.append('city', city)
-    if (country) params.append('country', country)
-    
-    return this.request<LocationResponse>(`/locations?${params}`)
-  }
+  // History, Compare, and Locations endpoints removed - simplified to today + forecast timeline
 
   // Daily endpoints
   async getDailyData(city: string): Promise<DailyResponse> {
@@ -355,20 +260,7 @@ class ApiClient {
     return this.request<GroupsResponse>(`/groups?city=${encodeURIComponent(city)}`)
   }
 
-  // Share endpoints
-  async generateShareLink(
-    city: string,
-    includeChart: boolean = false,
-    includeMap: boolean = false
-  ): Promise<ShareResponse> {
-    const params = new URLSearchParams({
-      city,
-      includeChart: includeChart.toString(),
-      includeMap: includeMap.toString(),
-    })
-    
-    return this.request<ShareResponse>(`/share/link?${params}`)
-  }
+  // Share endpoints removed - using Web Share API in utils instead
 }
 
 // Export singleton instance
