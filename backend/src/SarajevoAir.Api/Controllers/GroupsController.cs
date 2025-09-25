@@ -4,7 +4,7 @@ using SarajevoAir.Api.Services;
 namespace SarajevoAir.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/groups")]
 public class GroupsController : ControllerBase
 {
     private readonly IHealthAdviceService _healthAdviceService;

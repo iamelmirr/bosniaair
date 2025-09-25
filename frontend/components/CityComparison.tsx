@@ -60,7 +60,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
   // Fetch data for default city (always loaded)
   const { data: defaultCityData, error: defaultCityError, isLoading: defaultCityLoading } = useSWR<LiveAirQualityData>(
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${defaultCity}`,
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/live?city=${defaultCity}`,
     fetcher,
     {
       refreshInterval: 15 * 60 * 1000,
@@ -71,7 +71,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
 
   // Fetch data for selected city (only if it's been loaded)
   const shouldLoadSelectedCity = loadedCities.has(selectedCity)
-  const selectedCityUrl = shouldLoadSelectedCity ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${selectedCity}` : null
+  const selectedCityUrl = shouldLoadSelectedCity ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/live?city=${selectedCity}` : null
   
   console.log('🔍 SWR state:', { 
     selectedCity, 
@@ -104,7 +104,7 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     
     try {
       // Create the URL for the new city
-      const newCityUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'}/live?city=${cityValue}`
+      const newCityUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/live?city=${cityValue}`
       console.log('🔄 Direktan AJAX poziv za:', cityValue, newCityUrl)
       
       // Make direct fetch call to force fresh data

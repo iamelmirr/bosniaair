@@ -4,7 +4,7 @@ using SarajevoAir.Api.Services;
 namespace SarajevoAir.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/admin")]
 public class AdminController : ControllerBase
 {
     private readonly IAqiAdminService _aqiAdminService;
