@@ -197,9 +197,18 @@ Ako WAQI API vrati 500 error, automatski će se pokušati ponovo 3 puta
 sa delays: 2s, 4s, 8s (exponential backoff)
 */
 
-// Registruje typed HTTP client sa Polly resilience policies
-builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
-    .AddStandardResilienceHandler();  // Dodaje retry, circuit breaker, timeout patterns
+// NEW: Registruje HTTP client za AqicnService (ostali gradovi)
+builder.Services.AddHttpClient<AqicnService>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri("https://api.waqi.info/");
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.DefaultRequestHeaders.Add("User-Agent", "SarajevoAir/1.0");
+    })
+    .AddStandardResilienceHandler();
+
+// Keep AqicnClient za SarajevoService dependency - temporarily disabled until implemented
+// builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
 
 /*
 === DEPENDENCY INJECTION REGISTRACIJA ===
@@ -221,18 +230,25 @@ Svaki layer ima svoju odgovornost i ne zna za implementaciju drugih layera
 */
 
 // SINGLETON SERVICES - žive kroz ceo lifecycle aplikacije
-builder.Services.AddSingleton<AirQualityCache>();          // In-memory cache za brže response-e
+// builder.Services.AddSingleton<AirQualityCache>();          // In-memory cache za brže response-e - temporarily disabled until implemented
 
 // SCOPED SERVICES - jedan objekat po HTTP request-u, automatski se dispose-uju
 builder.Services.AddScoped<IAqiRepository, AqiRepository>(); // Data access layer
 
-// BUSINESS LOGIC SERVICES - svaki ima specifičnu odgovornost (Single Responsibility Principle)
-builder.Services.AddScoped<IAirQualityService, AirQualityService>();           // Live AQI data processing
-builder.Services.AddScoped<IForecastService, ForecastService>();               // Weather forecast logic
-builder.Services.AddScoped<IHealthAdviceService, HealthAdviceService>();       // Health recommendations
-builder.Services.AddScoped<IDailyAqiService, DailyAqiService>();              // Daily aggregations
-builder.Services.AddScoped<ICityComparisonService, CityComparisonService>();   // Multi-city comparisons
-builder.Services.AddScoped<IAqiAdminService, AqiAdminService>();              // Admin operations
+// NEW: Simplified Business Logic Services - 2 core services only
+builder.Services.AddScoped<ISarajevoService, SarajevoService>();               // All Sarajevo operations (live + forecast + database)
+builder.Services.AddScoped<IAqicnService, AqicnService>();                     // Other cities on-demand data
+
+// REMOVED services (functionality consolidated):
+// - IAirQualityService, AirQualityService (merged into SarajevoService)
+// - IForecastService, ForecastService (merged into SarajevoService)  
+// - IHealthAdviceService, HealthAdviceService (moved to frontend)
+// - IDailyAqiService, DailyAqiService (not used in frontend)
+// - ICityComparisonService, CityComparisonService (simplified in frontend)
+// - IAqiAdminService, AqiAdminService (not implemented yet)
+
+// HTTP CLIENT za pozivanje vanjskih API-ja
+builder.Services.AddHttpClient();
 
 /*
 === BACKGROUND SERVICES ===
@@ -246,8 +262,8 @@ AirQualityRefreshService:
 - Ne blokira HTTP request-ove
 */
 
-// BACKGROUND SERVICE - radi kontinuirano u pozadini
-builder.Services.AddHostedService<AirQualityRefreshService>(); // Prikuplja podatke svakih 10min
+// BACKGROUND SERVICE - temporarily disabled until implemented
+// builder.Services.AddHostedService<AirQualityRefreshService>(); // Prikuplja podatke svakih 10min
 
 /*
 === HEALTH CHECKS ===

@@ -30,7 +30,7 @@ Balances data freshness sa API rate limiting i performance
 */
 
 import useSWR, { SWRConfiguration, mutate } from 'swr'
-import { apiClient, AqiResponse, Measurement, GroupsResponse } from './api-client'
+import { apiClient, AqiResponse, Measurement, SarajevoCompleteResponse, ForecastResponse } from './api-client'
 
 /*
 === SWR GLOBAL CONFIGURATION ===
@@ -54,30 +54,100 @@ const defaultConfig: SWRConfiguration = {
 
 /*
 ===========================================================================================
-                                   LIVE DATA HOOKS
+                                   NEW: SARAJEVO-SPECIFIC HOOKS
 ===========================================================================================
 
-REAL-TIME AIR QUALITY STATE:
-Hooks za current AQI data sa automatic background refresh
-Provides loading states, error handling, i manual refresh capabilities
+OPTIMIZED SARAJEVO OPERATIONS:
+Specialized hooks za glavnu funkcionalnost aplikacije
+Kombinovani pozivi za performance optimization
 */
 
 /// <summary>
-/// Hook za live AQI data sa SWR caching i background refresh
-/// Provides complete air quality information za specified city
+/// NEW: Kombinovani hook za sve Sarajevo podatke (live + forecast)
+/// Optimizovano za glavnu stranicu - jedan HTTP poziv umjesto dva
 /// </summary>
-export function useLiveAqi(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
-    city ? `live-aqi-${city}` : null,    // Conditional fetching - null disables
-    () => apiClient.getLiveAqi(city),    // API call function
-    { ...defaultConfig, ...config }     // Merge custom config sa defaults
+export function useSarajevoComplete(config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<SarajevoCompleteResponse>(
+    'sarajevo-complete',
+    () => apiClient.getSarajevoComplete(),
+    { ...defaultConfig, ...config }
   )
 
   return {
-    data,                 // AqiResponse ili undefined
-    error,               // Error object if request fails
-    isLoading,           // Boolean loading state
-    refresh: mutate,     // Manual refresh function
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
+  }
+}
+
+/// <summary>
+/// NEW: Hook za samo live AQI za Sarajevo
+/// </summary>
+export function useSarajevoLive(config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
+    'sarajevo-live',
+    () => apiClient.getSarajevoLive(),
+    { ...defaultConfig, ...config }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
+  }
+}
+
+/// <summary>
+/// NEW: Hook za samo forecast za Sarajevo
+/// </summary>
+export function useSarajevoForecast(config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
+    'sarajevo-forecast',
+    () => apiClient.getSarajevoForecast(),
+    { ...defaultConfig, ...config }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
+  }
+}
+
+/*
+===========================================================================================
+                                   CITIES DATA HOOKS
+===========================================================================================
+
+ON-DEMAND DATA ZA OSTALE GRADOVE:
+Smart routing na osnovu grada - Sarajevo vs ostali
+*/
+
+/// <summary>
+/// UPDATED: Smart routing hook za live AQI data
+/// Sarajevo → SarajevoService, ostali → CitiesService  
+/// </summary>
+export function useLiveAqi(city: string, config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
+    city ? `live-aqi-${city}` : null,
+    () => {
+      if (city.toLowerCase() === 'sarajevo') {
+        return apiClient.getSarajevoLive()
+      } else {
+        return apiClient.getCityLive(city)
+      }
+    },
+    { ...defaultConfig, ...config }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
   }
 }
 
@@ -102,29 +172,23 @@ export function useLiveMeasurements(city: string, config?: SWRConfiguration) {
 
 // History hooks removed - using today + forecast timeline instead
 
-// Groups hook
-export function useGroups(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<GroupsResponse>(
-    city ? `groups-${city}` : null,
-    () => apiClient.getGroups(city),
-    { ...defaultConfig, ...config }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
+// Groups hook - REMOVED: functionality moved to static health-advice.ts
+// Za health recommendations, koristi local getHealthAdvice() function
 
 // Compare hook removed - using multiple live calls instead
 
-// Forecast hook - added for DailyTimeline
+// Forecast hook - UPDATED for new architecture
 export function useForecast(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
     city ? `forecast-${city}` : null,
-    () => apiClient.getForecastData(city),
+    () => {
+      if (city.toLowerCase() === 'sarajevo') {
+        return apiClient.getSarajevoForecast()
+      } else {
+        // For other cities, forecast not implemented yet in simplified architecture
+        throw new Error(`Forecast not available for ${city}. Only Sarajevo supported.`)
+      }
+    },
     { ...defaultConfig, ...config }
   )
 
@@ -153,4 +217,38 @@ export function usePeriodicRefresh(intervalMs: number = 10 * 60 * 1000) {
   // Use effect would be added here in a real implementation
   // For now, this is a placeholder that can be enhanced
   return refreshAll
+}
+
+/*
+===========================================================================================
+                                   DAILY DATA HOOKS
+===========================================================================================
+
+HISTORICAL DAILY PATTERNS:
+Optimized za Sarajevo - koristi complete response for daily cards
+*/
+
+/// <summary>
+/// NEW: Hook za daily AQI data (optimized za Sarajevo)
+/// Za druge gradove, vraća error jer nisu supported u new architecture
+/// </summary>
+export function useDaily(city: string, config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<SarajevoCompleteResponse>(
+    city ? `daily-${city}` : null,
+    () => {
+      if (city.toLowerCase() === 'sarajevo') {
+        return apiClient.getSarajevoComplete()
+      } else {
+        throw new Error(`Daily data not available for ${city}. Only Sarajevo supported.`)
+      }
+    },
+    { ...defaultConfig, ...config }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
+  }
 }

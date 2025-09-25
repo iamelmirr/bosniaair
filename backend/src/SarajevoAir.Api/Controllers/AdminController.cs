@@ -62,15 +62,15 @@ public class AdminController : ControllerBase
     IAqiAdminService - Direct database access za administrative operations
     Enhanced logging za audit trail i security monitoring
     */
-    private readonly IAqiAdminService _aqiAdminService;
+    // private readonly IAqiAdminService _aqiAdminService; // Temporarily disabled
     private readonly ILogger<AdminController> _logger;
 
     /// <summary>
     /// Constructor za administrative service dependencies
     /// </summary>
-    public AdminController(IAqiAdminService aqiAdminService, ILogger<AdminController> logger)
+    public AdminController(ILogger<AdminController> logger)
     {
-        _aqiAdminService = aqiAdminService;
+        // _aqiAdminService = aqiAdminService; // Temporarily disabled
         _logger = logger;
     }
 
@@ -112,7 +112,8 @@ public class AdminController : ControllerBase
             Bypasses normal API caching i business logic
             Returns raw database records za administrative analysis
             */
-            var result = await _aqiAdminService.GetAllRecordsAsync(cancellationToken);
+            // Temporarily return empty list until service is implemented
+            var result = Array.Empty<object>(); // await _aqiAdminService.GetAllRecordsAsync(cancellationToken);
             return Ok(result);
         }
         catch (Exception ex)
@@ -170,7 +171,8 @@ public class AdminController : ControllerBase
             No soft delete - complete data removal
             Should log deletion za audit trail
             */
-            await _aqiAdminService.DeleteRecordAsync(id, cancellationToken);
+            // Temporarily do nothing until service is implemented
+            // await _aqiAdminService.DeleteRecordAsync(id, cancellationToken);
             return Ok(new { message = $"AQI record {id} deleted successfully", deletedId = id });
         }
         catch (Exception ex)

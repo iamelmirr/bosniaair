@@ -1,39 +1,14 @@
 'use client'
 
-import { useGroups } from '../lib/hooks'
+import { useSarajevoComplete } from '../lib/hooks'
 import { getHealthAdvice, getAqiCategoryClass, classNames } from '../lib/utils'
+import { getAllHealthAdvice, RISK_COLORS, RISK_TRANSLATIONS } from '../lib/health-advice'
 
 interface GroupCardProps {
   city: string
 }
 
-const GROUP_ICONS = {
-  'Sportisti': '🏃‍♂️',
-  'Djeca': '👶',
-  'Stariji': '👴',
-  'Astmatičari': '🫁',
-} as const
-
-const GROUP_DESCRIPTIONS = {
-  'Sportisti': 'Aktivni sportisti i rekreativci',
-  'Djeca': 'Djeca i mladi do 18 godina',
-  'Stariji': 'Odrasli stariji od 65 godina',
-  'Astmatičari': 'Osobe sa astmom i respiratory problemima',
-} as const
-
-const RISK_COLORS = {
-  'low': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  'moderate': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  'very-high': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-} as const
-
-const RISK_TRANSLATIONS = {
-  'low': 'Nizak rizik',
-  'moderate': 'Umjeren rizik',
-  'high': 'Visok rizik',
-  'very-high': 'Vrlo visok rizik',
-} as const
+// All group constants moved to health-advice.ts
 
 // AQI Category translations to Bosnian
 const getAqiCategoryBosnian = (aqi: number): string => {
@@ -46,7 +21,11 @@ const getAqiCategoryBosnian = (aqi: number): string => {
 }
 
 export default function GroupCard({ city }: GroupCardProps) {
-  const { data, error, isLoading } = useGroups(city)
+  // Only Sarajevo supported in new architecture
+  const { data: sarajevoData, error, isLoading } = useSarajevoComplete()
+  
+  // Generate health advice locally using current AQI  
+  const healthAdvice = sarajevoData ? getAllHealthAdvice(sarajevoData.liveData.overallAqi) : null
 
   if (isLoading) {
     return (
@@ -83,7 +62,7 @@ export default function GroupCard({ city }: GroupCardProps) {
     )
   }
 
-  if (!data) {
+  if (!sarajevoData || !healthAdvice) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card">
         <div className="text-center py-8">
@@ -114,34 +93,34 @@ export default function GroupCard({ city }: GroupCardProps) {
         
         {/* Overall AQI Badge */}
         <div className="text-center">
-          <div className={`text-2xl font-bold ${getAqiCategoryClass(data.currentAqi)}`}>
-            {data.currentAqi}
+          <div className={`text-2xl font-bold ${getAqiCategoryClass(sarajevoData.liveData.overallAqi)}`}>
+            {sarajevoData.liveData.overallAqi}
           </div>
           <div className="text-xs text-gray-500 uppercase tracking-wide">
-            {getAqiCategoryBosnian(data.currentAqi)}
+            {getAqiCategoryBosnian(sarajevoData.liveData.overallAqi)}
           </div>
         </div>
       </div>
 
       {/* Groups Grid - Single column on mobile, double column on tablet+ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {data.groups.map(({ group, currentRecommendation, riskLevel }) => (
+        {healthAdvice.map((advice) => (
           <div
-            key={group.groupName}
+            key={advice.group}
             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300 dark:hover:border-blue-600"
           >
             {/* Group Header */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-2xl" role="img" aria-label={group.groupName}>
-                  {GROUP_ICONS[group.groupName]}
+                <span className="text-2xl" role="img" aria-label={advice.group}>
+                  {advice.icon}
                 </span>
                 <div>
                   <h3 className="font-semibold text-[rgb(var(--text))]">
-                    {group.groupName}
+                    {advice.group}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {GROUP_DESCRIPTIONS[group.groupName]}
+                    {advice.description}
                   </p>
                 </div>
               </div>
@@ -150,17 +129,17 @@ export default function GroupCard({ city }: GroupCardProps) {
               <span
                 className={classNames(
                   'px-2 py-1 rounded-full text-xs font-medium flex-shrink-0',
-                  RISK_COLORS[riskLevel]
+                  RISK_COLORS[advice.riskLevel]
                 )}
               >
-                {RISK_TRANSLATIONS[riskLevel]}
+                {RISK_TRANSLATIONS[advice.riskLevel]}
               </span>
             </div>
 
             {/* Health Recommendation */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3">
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {currentRecommendation}
+                {advice.recommendation}
               </p>
             </div>
           </div>

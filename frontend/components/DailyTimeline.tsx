@@ -124,9 +124,11 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     }
     timeline.push(todayData)
 
-    // Add forecast data (skip today's data which is index 0)
-    const realForecastData = forecastData.filter((f, index) => {
-      return index > 0 && f.aqi && f.aqi > 0
+    // Add forecast data - backend sends forecast data for future days only
+    // forecastData is ForecastResponse object, need to access .forecast property
+    const forecastArray = forecastData?.forecast || []
+    const realForecastData = forecastArray.filter((f) => {
+      return f.aqi && f.aqi > 0
     })
     
     realForecastData.forEach(dayForecast => {

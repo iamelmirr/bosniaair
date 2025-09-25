@@ -76,17 +76,34 @@ export interface Measurement {
 }
 
 /*
+=== NEW: SARAJEVO-SPECIFIC INTERFACES ===
+
+Optimized interfaces za nove Sarajevo endpoints
+Eliminišu potrebu za multiple API pozive
+*/
+
+/// <summary>
+/// Kombinovani response za Sarajevo - live + forecast data u jednom pozivu
+/// Maps to backend SarajevoCompleteDto za performance optimization
+/// </summary>
+export interface SarajevoCompleteResponse {
+  liveData: AqiResponse;
+  forecastData: ForecastResponse;
+  timestamp: string;
+}
+
+/*
 === MAIN AQI API RESPONSE ===
 
 LIVE AIR QUALITY DATA:
 Primary interface za live AQI endpoint responses
 Contains complete air quality information za specified city
-Mirrors backend LiveAqiResponse za type safety
+Mirrors backend AqiDto za type safety
 */
 
 /// <summary>
 /// Complete live air quality response structure
-/// Maps to backend LiveAqiResponse DTO za type consistency
+/// Maps to backend AqiDto za type consistency
 /// </summary>
 export interface AqiResponse {
   /// Target city name
@@ -228,16 +245,28 @@ Supports planning i decision-making based on predicted conditions
 export interface ForecastData {
   /// Date za forecast u ISO format (YYYY-MM-DD)
   date: string
-  /// Predicted overall AQI value (optional - depends on data availability)
-  aqi?: number
-  /// EPA AQI category za predicted value (optional)
-  category?: string
-  /// Fine particulate matter prediction range (most health-relevant)
-  pm25?: { avg: number; min: number; max: number }
-  /// Coarse particulate matter prediction range
-  pm10?: { avg: number; min: number; max: number }
-  /// Ground-level ozone prediction range (photochemical smog)
-  o3?: { avg: number; min: number; max: number }
+  /// Predicted overall AQI value (required - backend always provides this)
+  aqi: number
+  /// EPA AQI category za predicted value
+  category: string
+  /// Hex color code za visual representation
+  color: string
+  /// Individual pollutant prediction ranges
+  pollutants: {
+    pm25?: { avg: number; min: number; max: number }
+    pm10?: { avg: number; min: number; max: number }
+    o3?: { avg: number; min: number; max: number } | null
+  }
+}
+
+/// <summary>
+/// Frontend forecast response structure
+/// Maps to backend ForecastResponse
+/// </summary>
+export interface ForecastResponse {
+  city: string
+  forecast: ForecastData[]
+  timestamp: string
 }
 
 export interface AqicnForecastResponse {
@@ -417,19 +446,75 @@ class ApiClient {
   */
 
   /*
-  === LIVE AQI ENDPOINTS ===
+  === NEW: SARAJEVO-SPECIFIC ENDPOINTS ===
   
-  REAL-TIME AIR QUALITY DATA:
-  Communicates sa backend /api/v1/live endpoint
-  Provides current AQI data sa detailed measurements
+  OPTIMIZED SARAJEVO OPERATIONS:
+  Specialized endpoints za glavnu funkcionalnost aplikacije
+  Kombinovani pozivi za performance optimization
   */
   
   /// <summary>
-  /// Fetches live air quality data za specified city
-  /// Calls backend /api/v1/live endpoint sa type-safe response handling
+  /// NEW: Kombinovani poziv za sve Sarajevo podatke (live + forecast)
+  /// Optimizovano za glavnu stranicu - jedan HTTP poziv umjesto dva
+  /// Calls backend /api/v1/sarajevo/complete endpoint
+  /// </summary>
+  async getSarajevoComplete(): Promise<SarajevoCompleteResponse> {
+    return this.request<SarajevoCompleteResponse>('/sarajevo/complete')
+  }
+
+  /// <summary>
+  /// NEW: Samo live AQI za Sarajevo
+  /// Calls backend /api/v1/sarajevo/live endpoint
+  /// </summary>
+  async getSarajevoLive(): Promise<AqiResponse> {
+    return this.request<AqiResponse>('/sarajevo/live')
+  }
+
+  /// <summary>
+  /// NEW: Samo forecast za Sarajevo
+  /// Calls backend /api/v1/sarajevo/forecast endpoint
+  /// </summary>
+  async getSarajevoForecast(): Promise<ForecastResponse> {
+    return this.request<ForecastResponse>('/sarajevo/forecast')
+  }
+
+  /*
+  === CITIES ENDPOINTS (OTHER CITIES) ===
+  
+  ON-DEMAND DATA ZA OSTALE GRADOVE:
+  Jednostavan pristup bez cache optimizacija
+  */
+  
+  /// <summary>
+  /// NEW: Live AQI za ostale gradove (ne-Sarajevo)
+  /// Calls backend /api/v1/cities/{city}/live endpoint
+  /// </summary>
+  async getCityLive(city: string): Promise<AqiResponse> {
+    if (city.toLowerCase() === 'sarajevo') {
+      throw new Error('Use getSarajevoLive() for Sarajevo data')
+    }
+    return this.request<AqiResponse>(`/cities/${encodeURIComponent(city)}/live`)
+  }
+
+  /*
+  === LEGACY ENDPOINTS (DEPRECATED) ===
+  
+  Kept for backward compatibility during transition
+  Will be removed after frontend migration is complete
+  */
+  
+  /// <summary>
+  /// DEPRECATED: Use getSarajevoLive() or getCityLive() instead
+  /// Legacy method for backward compatibility
   /// </summary>
   async getLiveAqi(city: string): Promise<AqiResponse> {
-    return this.request<AqiResponse>(`/live?city=${encodeURIComponent(city)}`)
+    console.warn('getLiveAqi() is deprecated. Use getSarajevoLive() or getCityLive() instead.')
+    
+    if (city.toLowerCase() === 'sarajevo') {
+      return this.getSarajevoLive()
+    } else {
+      return this.getCityLive(city)
+    }
   }
 
   /// <summary>
@@ -456,74 +541,36 @@ class ApiClient {
     return this.request<DailyResponse>(`/daily?city=${encodeURIComponent(city)}`)
   }
 
-  // Forecast endpoints
-  async getForecastData(city: string): Promise<ForecastData[]> {
-    try {
-      // Try to get forecast from our backend first
-      try {
-        const response = await this.request<any>(`/forecast?city=${encodeURIComponent(city)}`)
-        
-        if (response.forecast) {
-          return response.forecast.map((day: any) => ({
-            date: day.date,
-            aqi: day.aqi,
-            category: day.category,
-            pm25: day.pollutants?.pm25 ? {
-              avg: day.pollutants.pm25.avg,
-              min: day.pollutants.pm25.min,
-              max: day.pollutants.pm25.max
-            } : undefined,
-            pm10: day.pollutants?.pm10 ? {
-              avg: day.pollutants.pm10.avg,
-              min: day.pollutants.pm10.min,
-              max: day.pollutants.pm10.max
-            } : undefined,
-            o3: day.pollutants?.o3 ? {
-              avg: day.pollutants.o3.avg,
-              min: day.pollutants.o3.min,
-              max: day.pollutants.o3.max
-            } : undefined
-          }))
-        }
-      } catch (backendError) {
-        console.warn('Backend forecast unavailable, generating fallback forecast')
-      }
+  /*
+  === REMOVED ENDPOINTS ===
+  
+  These methods are no longer needed due to architecture simplification:
+  - getForecastData() - replaced with getSarajevoForecast()
+  - getGroups() - moved to frontend health-advice.ts
+  - getDailyData() - not used in current frontend
+  - comparison endpoints - simplified in components
+  */
 
-      // Fallback: Generate simple forecast based on current data trends
-      const dailyData = await this.getDailyData(city)
-      const liveData = await this.getLiveAqi(city)
-      
-      const forecast: ForecastData[] = []
-      const today = new Date()
-      
-      // Use recent trend from daily data to estimate forecast
-      const recentDays = dailyData.data.slice(-3)
-      const avgTrend = recentDays.length > 1 ? 
-        (recentDays[recentDays.length - 1].aqi - recentDays[0].aqi) / recentDays.length : 0
-      
-      for (let i = 1; i <= 3; i++) {
-        const futureDate = new Date(today)
-        futureDate.setDate(today.getDate() + i)
-        
-        // Simple forecast: current AQI + trend + some randomness
-        const baseForecast = liveData.overallAqi + (avgTrend * i)
-        const variation = (Math.random() - 0.5) * 20 // ±10 AQI points variation
-        const forecastAqi = Math.max(10, Math.min(300, Math.round(baseForecast + variation)))
-        
-        forecast.push({
-          date: futureDate.toISOString().split('T')[0],
-          aqi: forecastAqi,
-          category: this.getAqiCategory(forecastAqi)
-        })
-      }
-      
-      return forecast
-    } catch (error) {
-      console.error('Error fetching forecast data:', error)
-      return []
+  /// <summary>
+  /// DEPRECATED: Legacy forecast method
+  /// Use getSarajevoForecast() for Sarajevo forecast data
+  /// </summary>
+  async getForecastData(city: string): Promise<ForecastData[]> {
+    console.warn('getForecastData() is deprecated. Use getSarajevoForecast() for Sarajevo.')
+    
+    if (city.toLowerCase() === 'sarajevo') {
+      const response = await this.getSarajevoForecast()
+      return response.forecast
     }
+    
+    // Ostali gradovi currently don't have forecast support
+    return []
   }
 
+  /// <summary>
+  /// Helper method za AQI category determination
+  /// Used internally for backward compatibility
+  /// </summary>
   private getAqiCategory(aqi: number): string {
     if (aqi <= 50) return 'Good'
     if (aqi <= 100) return 'Moderate'
@@ -531,11 +578,6 @@ class ApiClient {
     if (aqi <= 200) return 'Unhealthy'
     if (aqi <= 300) return 'Very Unhealthy'
     return 'Hazardous'
-  }
-
-  // Groups endpoints
-  async getGroups(city: string): Promise<GroupsResponse> {
-    return this.request<GroupsResponse>(`/groups?city=${encodeURIComponent(city)}`)
   }
 
   // Share endpoints removed - using Web Share API in utils instead
