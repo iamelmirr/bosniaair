@@ -28,9 +28,18 @@ public class AqicnClient : IAqicnClient
         try
         {
             var targetCity = city ?? _config.City;
-            var url = $"{_config.ApiUrl}/feed/{targetCity}/?token={_config.ApiToken}";
             
-            _logger.LogInformation("Fetching air quality data from AQICN for city: {City}", targetCity);
+            // Get specific station ID for the city
+            if (!AqicnConfiguration.CityStations.TryGetValue(targetCity, out var stationId))
+            {
+                _logger.LogWarning("No station configured for city: {City}. Available cities: {Cities}", 
+                    targetCity, string.Join(", ", AqicnConfiguration.CityStations.Keys));
+                return null;
+            }
+            
+            var url = $"{_config.ApiUrl}/feed/{stationId}/?token={_config.ApiToken}";
+            
+            _logger.LogInformation("Fetching air quality data from AQICN for city: {City} using station: {StationId}", targetCity, stationId);
             
             var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
