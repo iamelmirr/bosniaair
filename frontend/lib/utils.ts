@@ -1,6 +1,47 @@
-// Common utility functions for the application
+/*
+===========================================================================================
+                                FRONTEND UTILITY FUNCTIONS
+===========================================================================================
 
+PURPOSE & CROSS-COMPONENT FUNCTIONALITY:
+Shared utility functions za data formatting, visualization, i common operations.
+Provides consistent behavior across all React components.
+
+UTILITY CATEGORIES:
+- Number Formatting: Precision handling za different value ranges
+- Date/Time Formatting: Localized temporal display
+- AQI Visualization: Color coding i category mapping
+- User Experience: Interactive features i accessibility
+- Web APIs: Browser feature integration
+
+DESIGN PRINCIPLES:
+- Pure Functions: No side effects, predictable outputs
+- Localization Ready: Bosnian locale support
+- Type Safety: Full TypeScript coverage
+- Browser Compatibility: Modern web API usage sa fallbacks
+*/
+
+// Common utility functions za aplikaciju
+
+/*
+=== NUMERIC FORMATTING ===
+
+ADAPTIVE PRECISION DISPLAY:
+Different decimal precision based on value magnitude
+Optimized za readability u different contexts
+*/
+
+/// <summary>
+/// Formats numeric values sa adaptive decimal precision
+/// Smaller values get more decimals za better readability
+/// </summary>
 export function formatNumber(value: number, decimals: number = 1): string {
+  /*
+  PRECISION STRATEGY:
+  < 1: Show 2 decimals za accuracy (0.25 μg/m³)
+  < 10: Show specified decimals (5.4 μg/m³)  
+  >= 10: Round to integers za cleaner display (127 μg/m³)
+  */
   if (value < 1) {
     return value.toFixed(2)
   } else if (value < 10) {
@@ -10,6 +51,18 @@ export function formatNumber(value: number, decimals: number = 1): string {
   }
 }
 
+/*
+=== DATE/TIME FORMATTING ===
+
+LOCALIZED TEMPORAL DISPLAY:
+Bosnian locale support za consistent date formatting
+Intl.DateTimeFormat provides browser-native localization
+*/
+
+/// <summary>
+/// Formats Date objects using Bosnian locale standards
+/// Provides consistent date/time display across application
+/// </summary>
 export function formatDate(date: Date, locale: string = 'bs-BA'): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
@@ -17,6 +70,18 @@ export function formatDate(date: Date, locale: string = 'bs-BA'): string {
   }).format(date)
 }
 
+/*
+=== RELATIVE TIME FORMATTING ===
+
+HUMAN-FRIENDLY TEMPORAL CONTEXT:
+Shows "ago" format za recent timestamps
+Falls back to absolute date za older content
+*/
+
+/// <summary>
+/// Formats dates relative to current time sa human-friendly labels
+/// Recent dates show "Xm ago", older dates show absolute format
+/// </summary>
 export function formatDateRelative(date: Date, locale: string = 'bs-BA'): string {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -24,6 +89,14 @@ export function formatDateRelative(date: Date, locale: string = 'bs-BA'): string
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
+  /*
+  RELATIVE TIME SCALE:
+  < 1min: "Just now" za immediate feedback
+  < 1hr: "Xm ago" za recent updates  
+  < 1day: "Xh ago" za same-day content
+  < 1week: "Xd ago" za recent history
+  >= 1week: Absolute date za older content
+  */
   if (diffMinutes < 1) {
     return 'Just now'
   } else if (diffMinutes < 60) {
@@ -37,15 +110,48 @@ export function formatDateRelative(date: Date, locale: string = 'bs-BA'): string
   }
 }
 
+/*
+=== AQI VISUALIZATION ===
+
+EPA COLOR STANDARD MAPPING:
+Official EPA Air Quality Index color scheme
+Provides consistent visual indicators across all components
+*/
+
+/// <summary>
+/// Maps AQI values to EPA standard color codes
+/// Returns RGB color strings za consistent visual representation
+/// </summary>
 export function getAqiColor(aqi: number): string {
-  if (aqi <= 50) return 'rgb(0, 153, 102)' // Good - Green
-  if (aqi <= 100) return 'rgb(255, 221, 0)' // Moderate - Yellow
-  if (aqi <= 150) return 'rgb(255, 153, 0)' // USG - Orange
-  if (aqi <= 200) return 'rgb(255, 0, 0)' // Unhealthy - Red
-  if (aqi <= 300) return 'rgb(153, 0, 153)' // Very Unhealthy - Purple
-  return 'rgb(126, 0, 35)' // Hazardous - Maroon
+  /*
+  EPA OFFICIAL COLOR SCHEME:
+  0-50: Green (Good air quality)
+  51-100: Yellow (Moderate - acceptable za most people)
+  101-150: Orange (Unhealthy za sensitive groups)
+  151-200: Red (Unhealthy za everyone)
+  201-300: Purple (Very unhealthy - health warnings)
+  301+: Maroon (Hazardous - emergency conditions)
+  */
+  if (aqi <= 50) return 'rgb(0, 153, 102)'    // Good - Green
+  if (aqi <= 100) return 'rgb(255, 221, 0)'   // Moderate - Yellow
+  if (aqi <= 150) return 'rgb(255, 153, 0)'   // USG - Orange
+  if (aqi <= 200) return 'rgb(255, 0, 0)'     // Unhealthy - Red
+  if (aqi <= 300) return 'rgb(153, 0, 153)'   // Very Unhealthy - Purple
+  return 'rgb(126, 0, 35)'                     // Hazardous - Maroon
 }
 
+/*
+=== AQI CATEGORY CLASSIFICATION ===
+
+EPA STANDARD CATEGORIES:
+Maps numeric AQI values to human-readable category names
+Essential za health advisory i user communication
+*/
+
+/// <summary>
+/// Maps AQI numeric values to EPA standard category names
+/// Returns string labels za user-facing displays
+/// </summary>
 export function getAqiCategory(aqi: number): string {
   if (aqi <= 50) return 'Good'
   if (aqi <= 100) return 'Moderate'
