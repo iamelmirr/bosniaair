@@ -22,6 +22,8 @@ DESIGN:
 
 using System.Text.Json;
 using SarajevoAir.Api.Dtos;
+using SarajevoAir.Api.Repositories;
+using SarajevoAir.Api.Entities;
 
 namespace SarajevoAir.Api.Services;
 
@@ -36,25 +38,41 @@ public class SarajevoService : ISarajevoService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<SarajevoService> _logger;
+    private readonly IAqiRepository _aqiRepository;
 
-    public SarajevoService(HttpClient httpClient, ILogger<SarajevoService> logger)
+    public SarajevoService(HttpClient httpClient, ILogger<SarajevoService> logger, IAqiRepository aqiRepository)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _aqiRepository = aqiRepository;
     }
 
     public async Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Fetching real WAQI data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
+        _logger.LogInformation("🔍 Sarajevo AQI request (forceFresh: {ForceFresh})", forceFresh);
 
+        // 🎯 DATABASE-FIRST APPROACH - proverava cache pre API poziva
+        if (!forceFresh)
+        {
+            var cachedRecord = await _aqiRepository.GetMostRecentAsync("Sarajevo", cancellationToken);
+            if (cachedRecord != null && IsRecordFresh(cachedRecord))
+            {
+                _logger.LogInformation("📦 Using cached data from database - AQI: {Aqi}, Age: {Age}min", 
+                    cachedRecord.AqiValue, (DateTime.UtcNow - cachedRecord.Timestamp).TotalMinutes);
+                return CreateResponseFromDatabaseRecord(cachedRecord);
+            }
+            
+            _logger.LogInformation("🔄 Cache miss or stale data, fetching from WAQI API");
+        }
+
+        // 🌐 FETCH FROM WAQI API
         try
         {
             const string sarajevoStationId = "@10557"; // Sarajevo US Embassy
             const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
             var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
             
-            _logger.LogInformation("🏛️ USING US EMBASSY STATION: {StationId}", sarajevoStationId);
-            _logger.LogDebug("Calling WAQI API for Sarajevo: {ApiUrl}", apiUrl);
+            _logger.LogInformation("🏛️ Calling WAQI API - Station: {StationId}", sarajevoStationId);
             
             var response = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
             var waqiResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(response, new JsonSerializerOptions
@@ -76,7 +94,26 @@ public class SarajevoService : ISarajevoService
             // Calculate AQI category and color from numeric AQI
             var (category, color, healthMessage) = GetAqiInfo(data.Aqi);
 
-            var timestamp = DateTime.TryParse(data.Time.Iso, out var parsedTime) ? parsedTime : DateTime.UtcNow;
+            // 🔥 SAČUVAJ U BAZU SA LOKALNIM TIMESTAMP-OM
+            var localTimestamp = DateTime.UtcNow; // Uvek koristi trenutno vreme kada je podatak dobijen
+            var aqiRecord = new SimpleAqiRecord
+            {
+                City = "Sarajevo",
+                AqiValue = data.Aqi,
+                Timestamp = localTimestamp
+            };
+
+            try 
+            {
+                await _aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
+                _logger.LogInformation("💾 Saved AQI record to database: Sarajevo AQI {Aqi} at {Timestamp}", 
+                    data.Aqi, localTimestamp);
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogWarning(dbEx, "❌ Failed to save AQI record to database, continuing with response");
+                // Ne prekidaj request ako database save ne uspe
+            }
 
             _logger.LogInformation("Successfully retrieved WAQI data for Sarajevo, AQI: {Aqi}", data.Aqi);
 
@@ -86,7 +123,7 @@ public class SarajevoService : ISarajevoService
                 AqiCategory: category,
                 Color: color,
                 HealthMessage: healthMessage,
-                Timestamp: timestamp,
+                Timestamp: localTimestamp, // 🔥 KORISTI LOKALNI TIMESTAMP
                 Measurements: Array.Empty<MeasurementDto>(),
                 DominantPollutant: MapDominantPollutant(data.Dominentpol)
             );
@@ -225,6 +262,35 @@ public class SarajevoService : ISarajevoService
             LiveData: liveData,
             ForecastData: forecastData,
             RetrievedAt: DateTime.UtcNow
+        );
+    }
+
+    /// <summary>
+    /// Proverava da li je cached record svež (mlađi od 15 minuta)
+    /// </summary>
+    private static bool IsRecordFresh(SimpleAqiRecord record)
+    {
+        var age = DateTime.UtcNow - record.Timestamp;
+        var maxAge = TimeSpan.FromMinutes(15); // 🕐 15 minuta cache window
+        return age <= maxAge;
+    }
+
+    /// <summary>
+    /// Kreira LiveAqiResponse iz database record-a
+    /// </summary>
+    private static LiveAqiResponse CreateResponseFromDatabaseRecord(SimpleAqiRecord record)
+    {
+        var (category, color, healthMessage) = GetAqiInfo(record.AqiValue);
+        
+        return new LiveAqiResponse(
+            City: record.City,
+            OverallAqi: record.AqiValue,
+            AqiCategory: category,
+            Color: color,
+            HealthMessage: healthMessage,
+            Timestamp: record.Timestamp, // 🔥 KORISTI TIMESTAMP IZ BAZE
+            Measurements: Array.Empty<MeasurementDto>(),
+            DominantPollutant: "PM2.5" // Default value za cached podatke
         );
     }
 

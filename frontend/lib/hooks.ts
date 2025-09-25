@@ -83,12 +83,19 @@ export function useSarajevoComplete(config?: SWRConfiguration) {
 
 /// <summary>
 /// NEW: Hook za samo live AQI za Sarajevo
+/// FORCE FRESH na prvom load-u da se podaci odmah ažuriraju
 /// </summary>
 export function useSarajevoLive(config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
     'sarajevo-live',
-    () => apiClient.getSarajevoLive(),
-    { ...defaultConfig, ...config }
+    () => apiClient.getSarajevoLive(false), // � KORISTI CACHED PODATKE IZ BACKGROUND SERVICE
+    { 
+      ...defaultConfig, 
+      ...config,
+      refreshInterval: 30 * 1000,      // 🔄 ČESTI REFRESH IZ BAZE (30s)
+      revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
+      revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
+    }
   )
 
   return {
@@ -101,12 +108,19 @@ export function useSarajevoLive(config?: SWRConfiguration) {
 
 /// <summary>
 /// NEW: Hook za samo forecast za Sarajevo
+/// FORCE FRESH na prvom load-u da se podaci odmah ažuriraju
 /// </summary>
 export function useSarajevoForecast(config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
     'sarajevo-forecast',
-    () => apiClient.getSarajevoForecast(),
-    { ...defaultConfig, ...config }
+    () => apiClient.getSarajevoForecast(false), // � KORISTI CACHED PODATKE IZ BACKGROUND SERVICE
+    { 
+      ...defaultConfig, 
+      ...config,
+      refreshInterval: 60 * 1000,      // 🔄 FORECAST SE MANJ ČESTO MENJA (60s)
+      revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
+      revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
+    }
   )
 
   return {
@@ -135,12 +149,20 @@ export function useLiveAqi(city: string, config?: SWRConfiguration) {
     city ? `live-aqi-${city}` : null,
     () => {
       if (city.toLowerCase() === 'sarajevo') {
-        return apiClient.getSarajevoLive()
+        // 🔄 NE FORCE FRESH - koristi cached podatke iz background service
+        return apiClient.getSarajevoLive(false) 
       } else {
         return apiClient.getCityLive(city)
       }
     },
-    { ...defaultConfig, ...config }
+    { 
+      ...defaultConfig, 
+      ...config,
+      // � OPTIMIZOVANE OPCIJE ZA SERVER-SIDE PROCESSING
+      refreshInterval: 30 * 1000, // 🔄 BRŽI REFRESH IZ BAZE (30s)
+      revalidateOnFocus: true,     // 🎯 REFRESH KAD SE VRATI NA TAB
+      revalidateOnMount: true,     // 🚀 REFRESH NA MOUNT
+    }
   )
 
   return {

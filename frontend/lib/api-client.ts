@@ -466,16 +466,16 @@ class ApiClient {
   /// NEW: Samo live AQI za Sarajevo
   /// Calls backend /api/v1/sarajevo/live endpoint
   /// </summary>
-  async getSarajevoLive(): Promise<AqiResponse> {
-    return this.request<AqiResponse>('/sarajevo/live')
+  async getSarajevoLive(forceFresh: boolean = false): Promise<AqiResponse> {
+    return this.request<AqiResponse>(`/sarajevo/live?forceFresh=${forceFresh}`)
   }
 
   /// <summary>
   /// NEW: Samo forecast za Sarajevo
   /// Calls backend /api/v1/sarajevo/forecast endpoint
   /// </summary>
-  async getSarajevoForecast(): Promise<ForecastResponse> {
-    return this.request<ForecastResponse>('/sarajevo/forecast')
+  async getSarajevoForecast(forceFresh: boolean = false): Promise<ForecastResponse> {
+    return this.request<ForecastResponse>(`/sarajevo/forecast?forceFresh=${forceFresh}`)
   }
 
   /*
