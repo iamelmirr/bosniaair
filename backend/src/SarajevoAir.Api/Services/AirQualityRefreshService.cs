@@ -13,6 +13,9 @@ ARCHITECTURE PATTERN: HostedService (ASP.NET Core background service)
 */
 
 using SarajevoAir.Api.Services;
+using SarajevoAir.Api.Repositories;
+using SarajevoAir.Api.Entities;
+using SarajevoAir.Api.Dtos;
 
 namespace SarajevoAir.Api.Services;
 
@@ -47,9 +50,9 @@ public class AirQualityRefreshService : BackgroundService
     {
         _logger.LogInformation("AirQualityRefreshService started");
         
-        // Čeka da se aplikacija potpuno pokrene
-        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
-
+        // 🚀 ODMAH POKRENI PRVI REFRESH - ne čekaj!
+        _logger.LogInformation("🚀 Starting initial refresh immediately...");
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -58,10 +61,12 @@ public class AirQualityRefreshService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during scheduled refresh cycle");
+                _logger.LogError(ex, "❌ Error during scheduled refresh cycle: {Error}", ex.Message);
             }
 
-            // Čeka sledeći ciklus
+            // Čeka sledeći ciklus (10 minuta)
+            _logger.LogInformation("⏰ Next refresh in {IntervalMinutes} minutes", _refreshInterval.TotalMinutes);
+            
             try
             {
                 await Task.Delay(_refreshInterval, stoppingToken);
@@ -121,7 +126,7 @@ public class AirQualityRefreshService : BackgroundService
     }
 
     /// <summary>
-    /// Osvježava Sarajevo podatke (live + forecast)
+    /// Osvježava Sarajevo podatke direktno (API + database save)
     /// </summary>
     private async Task RefreshSarajevoData(ISarajevoService sarajevoService, CancellationToken cancellationToken)
     {
@@ -129,21 +134,49 @@ public class AirQualityRefreshService : BackgroundService
         {
             _logger.LogInformation("🏙️ Refreshing Sarajevo data");
             
-            // Force fresh data from WAQI API
-            var liveTask = sarajevoService.GetLiveAsync(forceFresh: true, cancellationToken);
-            var forecastTask = sarajevoService.GetForecastAsync(forceFresh: true, cancellationToken);
+            using var scope = _scopeFactory.CreateScope();
+            var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
+            var aqiRepository = scope.ServiceProvider.GetRequiredService<IAqiRepository>();
             
-            await Task.WhenAll(liveTask, forecastTask);
+            // 🌐 DIRECT WAQI API CALL (background service only)
+            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy
+            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
+            var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
             
-            var live = await liveTask;
-            var forecast = await forecastTask;
+            _logger.LogInformation("🏛️ Background refresh calling WAQI API - Station: {StationId}", sarajevoStationId);
             
-            _logger.LogInformation("✅ Sarajevo refreshed - AQI: {Aqi}, Forecast Days: {ForecastDays}", 
-                live.OverallAqi, forecast.Forecast.Count);
+            var response = await httpClient.GetStringAsync(apiUrl, cancellationToken);
+            var waqiResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(response, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (waqiResponse?.Status != "ok" || waqiResponse.Data == null)
+            {
+                throw new InvalidOperationException("WAQI API returned invalid response for Sarajevo");
+            }
+
+            var data = waqiResponse.Data;
+            
+            // 💾 SAVE TO DATABASE (background service responsibility)
+            var sarajevoTimestamp = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime();
+            var aqiRecord = new SimpleAqiRecord
+            {
+                City = "Sarajevo",
+                AqiValue = data.Aqi,
+                Timestamp = sarajevoTimestamp
+            };
+
+            await aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
+            _logger.LogInformation("💾 Background service saved AQI record: Sarajevo AQI {Aqi} at {Timestamp}", 
+                data.Aqi, sarajevoTimestamp);
+            
+            _logger.LogInformation("✅ Sarajevo refreshed - AQI: {Aqi}", data.Aqi);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error refreshing Sarajevo data");
+            _logger.LogError(ex, "❌ Error refreshing Sarajevo data: {Error}", ex.Message);
         }
     }
 

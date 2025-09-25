@@ -1,5 +1,7 @@
 /*
-===================================    public async Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
+===================================    public async Task<LiveAqiResponse> GetLiveAsync(bool fo            // 🌐 NE ČUVAJ U BAZU - AirQualityRefreshService je JEDINI koji čuva podatke
+            // SarajevoService je samo za čitanje i fallback API pozive
+            var localTimestamp = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime(); // Koristi Sarajevo lokalno vrijemeFresh = false, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Fetching real WAQI live data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
 
@@ -59,6 +61,7 @@ public class SarajevoService : ISarajevoService
             {
                 _logger.LogInformation("📦 Using cached data from database - AQI: {Aqi}, Age: {Age}min", 
                     cachedRecord.AqiValue, (DateTime.UtcNow - cachedRecord.Timestamp).TotalMinutes);
+                Console.WriteLine($"🟢 [{DateTime.Now:HH:mm:ss}] FRONTEND READ: AQI {cachedRecord.AqiValue} from DATABASE CACHE (age: {(DateTime.UtcNow - cachedRecord.Timestamp).TotalMinutes:F1}min)");
                 return CreateResponseFromDatabaseRecord(cachedRecord);
             }
             
@@ -133,6 +136,7 @@ public class SarajevoService : ISarajevoService
     public async Task<ForecastResponse> GetForecastAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Fetching real WAQI forecast data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
+        Console.WriteLine($"🔵 [{DateTime.Now:HH:mm:ss}] FRONTEND REQUEST: Forecast API poziv (forceFresh: {forceFresh})");
 
         try
         {
@@ -206,6 +210,7 @@ public class SarajevoService : ISarajevoService
             }
 
             _logger.LogInformation("Successfully retrieved forecast data for Sarajevo, {Count} days", forecastData.Count);
+            Console.WriteLine($"🔵 [{DateTime.Now:HH:mm:ss}] FORECAST API SUCCESS: Returned {forecastData.Count} days from WAQI API");
 
             return new ForecastResponse(
                 City: "Sarajevo",

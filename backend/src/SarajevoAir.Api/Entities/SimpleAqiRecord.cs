@@ -55,23 +55,23 @@ public class SimpleAqiRecord
     /*
     === TIMESTAMP FIELD ===
     
-    UTC BEST PRACTICE:
-    Uvek koristiti UTC za database timestamps da se izbegnu timezone problemi
-    DateTime.UtcNow = trenutno UTC vreme bez timezone offset-a
+    SARAJEVO TIMEZONE PRACTICE:
+    Koristimo Central European Time (CET/CEST) za Sarajevo - UTC+1/UTC+2
+    TimeZoneInfo.ConvertTimeFromUtc konvertuje UTC u lokalno Sarajevo vrijeme
     
     DEFAULT VALUE:
-    = DateTime.UtcNow postavlja default vrednost ako se eksplicitno ne setuje
-    Korisno za audit purposes - svaki record automatski ima timestamp
+    = GetSarajevoTime() postavlja default vrednost na Sarajevo lokalno vrijeme
+    Korisno za audit purposes - svaki record automatski ima lokalni timestamp
     
     INDEXING:
     Ovo polje je deo composite index-a (City, Timestamp) definisanog u AppDbContext
     */
     
     /// <summary>
-    /// UTC timestamp kada je AQI vrednost zabeležena
-    /// Default vrednost je trenutno vreme kada se kreira objekat
+    /// Sarajevo lokalno vrijeme kada je AQI vrednost zabeležena  
+    /// Default vrednost je trenutno Sarajevo vrijeme kada se kreira objekat
     /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime();
 
     /*
     === AQI VALUE FIELD ===
