@@ -1,143 +1,110 @@
-using Microsoft.AspNetCore.Mvc;
-using SarajevoAir.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;using Microsoft.AspNetCore.Mvc;
 
-namespace SarajevoAir.Api.Controllers;
+using SarajevoAir.Api.Services;using SarajevoAir.Api.Services;
 
-[ApiController]
-[Route("api/v1/[controller]")]
-public class AdminController : ControllerBase
-{
-    private readonly IAppDbContext _dbContext;
-    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(IAppDbContext dbContext, ILogger<AdminController> logger)
-    {
-        _dbContext = dbContext;
+
+namespace SarajevoAir.Api.Controllers;namespace SarajevoAir.Api.Controllers;
+
+
+
+[ApiController][ApiController]
+
+[Route("api/v1/[controller]")][Route("api/v1/[controller]")]
+
+public class AdminController : ControllerBasepublic class AdminController : ControllerBase
+
+{{
+
+    private readonly IAqiAdminService _aqiAdminService;    private readonly IAqiAdminService _aqiAdminService;
+
+    private readonly ILogger<AdminController> _logger;    private readonly ILogger<AdminController> _logger;
+
+
+
+    public AdminController(IAqiAdminService aqiAdminService, ILogger<AdminController> logger)    public AdminController(
+
+    {        IAqiAdminService aqiAdminService,
+
+        _aqiAdminService = aqiAdminService;        ILogger<AdminController> logger)
+
+        _logger = logger;    {
+
+    }        _aqiAdminService = aqiAdminService;
+
         _logger = logger;
-    }
 
-    /// <summary>
-    /// Get recent AQI records for monitoring
-    /// </summary>
-    [HttpGet("aqi-records")]
-    public async Task<IActionResult> GetAqiRecords(
-        [FromQuery] int limit = 20,
-        [FromQuery] int hoursBack = 24)
-    {
-        try
-        {
-            var cutoffTime = DateTime.UtcNow.AddHours(-hoursBack);
-            
-            var records = await _dbContext.SimpleAqiRecords
-                .Where(r => r.Timestamp > cutoffTime)
-                .OrderByDescending(r => r.Timestamp)
-                .Take(limit)
-                .Select(r => new
-                {
-                    r.Id,
-                    r.Timestamp,
-                    r.AqiValue,
-                    r.City,
-                    TimestampLocal = r.Timestamp.ToLocalTime(),
-                    Category = GetAqiCategory(r.AqiValue),
-                    Color = GetAqiColor(r.AqiValue)
-                })
-                .ToListAsync();
+    /// <summary>    }
 
-            var stats = new
-            {
-                TotalRecords = await _dbContext.SimpleAqiRecords.CountAsync(),
-                RecentRecords = records.Count,
-                LastUpdate = records.FirstOrDefault()?.Timestamp,
-                AverageAqi = records.Any() ? Math.Round(records.Average(r => r.AqiValue), 1) : 0,
-                CurrentStatus = records.Any() ? "Active" : "No Recent Data"
-            };
+    /// Get all stored Sarajevo AQI snapshots.
 
-            return Ok(new
-            {
-                Stats = stats,
-                Records = records
-            });
+    /// </summary>    /// <summary>
+
+    [HttpGet("aqi-records")]    /// Get all stored Sarajevo AQI snapshots.
+
+    public async Task<IActionResult> GetAqiRecords(CancellationToken cancellationToken)    /// </summary>
+
+    {    [HttpGet("aqi-records")]
+
+        try    public async Task<IActionResult> GetAqiRecords(CancellationToken cancellationToken)
+
+        {    {
+
+            var result = await _aqiAdminService.GetAllRecordsAsync(cancellationToken);        try
+
+            return Ok(result);        {
+
+        }            var result = await _aqiAdminService.GetAllRecordsAsync(cancellationToken);
+
+        catch (Exception ex)            return Ok(result);
+
+        {        }
+
+            _logger.LogError(ex, "Failed to get AQI records");        catch (Exception ex)
+
+            return StatusCode(500, new { error = "Failed to fetch AQI records", details = ex.Message });        {
+
+        }            _logger.LogError(ex, "Failed to get AQI records");
+
+    }            return StatusCode(500, new { error = "Failed to fetch AQI records", details = ex.Message });
+
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving AQI records for admin");
-            return StatusCode(500, new { message = "Failed to retrieve AQI records" });
-        }
-    }
 
-    /// <summary>
-    /// Get system statistics
-    /// </summary>
-    [HttpGet("stats")]
-    public async Task<IActionResult> GetSystemStats()
-    {
-        try
-        {
-            var now = DateTime.UtcNow;
-            var last24h = now.AddHours(-24);
-            var lastHour = now.AddHours(-1);
+    /// <summary>    }
 
-            var stats = new
-            {
-                Database = new
-                {
-                    TotalRecords = await _dbContext.SimpleAqiRecords.CountAsync(),
-                    Last24Hours = await _dbContext.SimpleAqiRecords
-                        .CountAsync(r => r.Timestamp > last24h),
-                    LastHour = await _dbContext.SimpleAqiRecords
-                        .CountAsync(r => r.Timestamp > lastHour)
-                },
-                LastRecord = await _dbContext.SimpleAqiRecords
-                    .OrderByDescending(r => r.Timestamp)
-                    .Select(r => new
-                    {
-                        r.Timestamp,
-                        r.AqiValue,
-                        MinutesAgo = Math.Round((now - r.Timestamp).TotalMinutes, 1)
-                    })
-                    .FirstOrDefaultAsync(),
-                System = new
-                {
-                    ServerTime = now,
-                    Status = "Running",
-                    Version = "1.0.0"
-                }
-            };
+    /// Delete an AQI record by ID.
 
-            return Ok(stats);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving system stats");
-            return StatusCode(500, new { message = "Failed to retrieve system stats" });
-        }
-    }
+    /// </summary>    /// <summary>
 
-    private static string GetAqiCategory(int aqi)
-    {
-        return aqi switch
-        {
-            <= 50 => "Good",
-            <= 100 => "Moderate",
-            <= 150 => "Unhealthy for Sensitive Groups",
-            <= 200 => "Unhealthy",
-            <= 300 => "Very Unhealthy",
-            _ => "Hazardous"
-        };
-    }
+    [HttpDelete("aqi-records/{id:int}")]    /// Delete an AQI record by ID.
 
-    private static string GetAqiColor(int aqi)
-    {
-        return aqi switch
-        {
-            <= 50 => "#00ff00",
-            <= 100 => "#ffff00",
-            <= 150 => "#ff9900",
-            <= 200 => "#ff0000",
-            <= 300 => "#990099",
-            _ => "#7e0023"
-        };
+    public async Task<IActionResult> DeleteAqiRecord(int id, CancellationToken cancellationToken)    /// </summary>
+
+    {    [HttpDelete("aqi-records/{id:int}")]
+
+        try    public async Task<IActionResult> DeleteAqiRecord(int id, CancellationToken cancellationToken)
+
+        {    {
+
+            await _aqiAdminService.DeleteRecordAsync(id, cancellationToken);        try
+
+            return Ok(new { message = $"AQI record {id} deleted successfully", deletedId = id });        {
+
+        }            await _aqiAdminService.DeleteRecordAsync(id, cancellationToken);
+
+        catch (Exception ex)            return Ok(new { message = $"AQI record {id} deleted successfully", deletedId = id });
+
+        {        }
+
+            _logger.LogError(ex, "Failed to delete AQI record {Id}", id);        catch (Exception ex)
+
+            return StatusCode(500, new { error = "Failed to delete AQI record", details = ex.Message });        {
+
+        }            _logger.LogError(ex, "Failed to delete AQI record {Id}", id);
+
+    }            return StatusCode(500, new { error = "Failed to delete AQI record", details = ex.Message });
+
+}        }
+
     }
 }

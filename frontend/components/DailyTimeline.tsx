@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { apiClient, DailyData, AqiResponse, ForecastData } from '../lib/api-client'
+import { useMemo } from 'react'
+import { DailyData, AqiResponse, ForecastData } from '../lib/api-client'
+import { useLiveAqi, useForecast } from '../lib/hooks'
 
 interface TimelineData extends DailyData {
   isToday?: boolean
@@ -13,54 +14,104 @@ interface DailyTimelineProps {
   city: string
 }
 
+// Helper functions - moved outside component to prevent re-creation
+const getDayName = (dateStr: string): string => {
+  const date = new Date(dateStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  date.setHours(0, 0, 0, 0)
+  
+  const diffTime = date.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'Danas'
+  if (diffDays === 1) return 'Sutra'
+  if (diffDays === -1) return 'Jučer'
+  
+  const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+  return dayNames[date.getDay()]
+}
+
+const getShortDay = (dateStr: string): string => {
+  const date = new Date(dateStr)
+  const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
+  return dayNames[date.getDay()]
+}
+
+const getAqiCategory = (aqi: number): string => {
+  if (aqi <= 50) return 'Dobro'
+  if (aqi <= 100) return 'Umjereno'
+  if (aqi <= 150) return 'Osjetljivo'
+  if (aqi <= 200) return 'Nezdravo'
+  if (aqi <= 300) return 'Opasno'
+  return 'Fatalno'
+}
+
+const getAqiColorFromAqi = (aqi: number): string => {
+  if (aqi <= 50) return '#22C55E'    // aqi-good
+  if (aqi <= 100) return '#EAB308'   // aqi-moderate  
+  if (aqi <= 150) return '#F97316'   // aqi-usg
+  if (aqi <= 200) return '#EF4444'   // aqi-unhealthy
+  if (aqi <= 300) return '#A855F7'   // aqi-very
+  return '#7C2D12'                   // aqi-hazardous
+}
+
 export default function DailyTimeline({ city }: DailyTimelineProps) {
-  const [timelineData, setTimelineData] = useState<TimelineData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Use SWR hooks for synchronized 10-minute updates
+  const { data: liveData, error: liveError, isLoading: liveLoading } = useLiveAqi(city)
+  const { data: forecastData, error: forecastError, isLoading: forecastLoading } = useForecast(city)
 
-  useEffect(() => {
-    const fetchTimelineData = async () => {
-      setLoading(true)
-      try {
-        const [liveResponse, forecastResponse] = await Promise.all([
-          apiClient.getLiveAqi(city),
-          apiClient.getForecastData(city)
-        ])
-
-        // Combine today + forecast data (no mock historical data)
-        const timeline: TimelineData[] = []
-
-        // Add today (live data)
-        const todayData = generateTodayData(liveResponse)
-        timeline.push(todayData)
-
-        // Add forecast data (next 6 days from AQICN)
-        const forecastDays = generateForecastData(forecastResponse)
-        timeline.push(...forecastDays)
-
-        setTimelineData(timeline)
-      } catch (err) {
-        console.error('Error fetching timeline data:', err)
-        setError('Greška pri dohvaćanju vremenskih podataka')
+  // Combine data using useMemo for performance
+  const { timelineData, error, loading } = useMemo(() => {
+    const isLoading = liveLoading || forecastLoading
+    const hasError = liveError || forecastError
+    
+    if (isLoading) {
+      return { timelineData: [], error: null, loading: true }
+    }
+    
+    if (hasError) {
+      const errorMessage = liveError?.message || forecastError?.message || 'Greška pri dohvaćanju vremenskih podataka'
+      
+      // Generate static fallback data (no random values)
+      const fallbackData: TimelineData[] = []
+      for (let i = 0; i <= 5; i++) {
+        const date = new Date()
+        date.setDate(date.getDate() + i)
+        const dateStr = date.toISOString().split('T')[0]
         
-        // Generate fallback data
-        const fallbackTimeline = generateFallbackData()
-        setTimelineData(fallbackTimeline)
-      } finally {
-        setLoading(false)
+        fallbackData.push({
+          date: dateStr,
+          dayName: getDayName(dateStr),
+          shortDay: getShortDay(dateStr),
+          aqi: 50, // Static moderate AQI
+          category: 'Umjereno',
+          color: getAqiColorFromAqi(50),
+          isToday: i === 0,
+          isPast: false,
+          isForecast: i > 0
+        })
+      }
+      
+      return { 
+        timelineData: fallbackData, 
+        error: errorMessage, 
+        loading: false 
       }
     }
 
-    if (city) {
-      fetchTimelineData()
+    if (!liveData || !forecastData) {
+      return { timelineData: [], error: null, loading: false }
     }
-  }, [city])
 
-  const generateTodayData = (liveData: AqiResponse): TimelineData => {
+    // Combine today + forecast data (no mock historical data)
+    const timeline: TimelineData[] = []
+
+    // Add today (live data)
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0]
     
-    return {
+    const todayData: TimelineData = {
       date: dateStr,
       dayName: getDayName(dateStr),
       shortDay: getShortDay(dateStr),
@@ -71,20 +122,16 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
       isPast: false,
       isForecast: false
     }
-  }
+    timeline.push(todayData)
 
-  const generateForecastData = (forecastData: ForecastData[]): TimelineData[] => {
-    const forecast: TimelineData[] = []
-    
-    // Use only real forecast data from AQICN (skip today's data which is index 0)
+    // Add forecast data (skip today's data which is index 0)
     const realForecastData = forecastData.filter((f, index) => {
-      // Skip today (index 0) and only include days with actual AQI data
       return index > 0 && f.aqi && f.aqi > 0
     })
     
     realForecastData.forEach(dayForecast => {
-      const aqiValue = dayForecast.aqi! // We already filtered for valid AQI values
-      forecast.push({
+      const aqiValue = dayForecast.aqi!
+      timeline.push({
         date: dayForecast.date,
         dayName: getDayName(dayForecast.date),
         shortDay: getShortDay(dayForecast.date),
@@ -96,80 +143,9 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
         isToday: false
       })
     })
-    
-    return forecast
-  }
 
-  const generateFallbackData = (): TimelineData[] => {
-    const fallbackData: TimelineData[] = []
-    
-    // Generate 7 days of fallback data (today + 6 future)
-    for (let i = 0; i <= 6; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() + i)
-      const dateStr = date.toISOString().split('T')[0]
-      
-      // Generate random but realistic AQI values
-      const baseAqi = 70 + Math.random() * 60 // 70-130 range
-      const aqi = Math.round(baseAqi)
-      
-      fallbackData.push({
-        date: dateStr,
-        dayName: getDayName(dateStr),
-        shortDay: getShortDay(dateStr),
-        aqi,
-        category: getAqiCategory(aqi),
-        color: getAqiColorFromAqi(aqi),
-        isToday: i === 0,
-        isForecast: i > 0,
-        isPast: false
-      })
-    }
-    
-    return fallbackData
-  }
-
-  // Helper functions
-  const getDayName = (dateStr: string): string => {
-    const date = new Date(dateStr)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    date.setHours(0, 0, 0, 0)
-    
-    const diffTime = date.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    if (diffDays === 0) return 'Danas'
-    if (diffDays === 1) return 'Sutra'
-    if (diffDays === -1) return 'Jučer'
-    
-    const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
-    return dayNames[date.getDay()]
-  }
-
-  const getShortDay = (dateStr: string): string => {
-    const date = new Date(dateStr)
-    const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
-    return dayNames[date.getDay()]
-  }
-
-  const getAqiCategory = (aqi: number): string => {
-    if (aqi <= 50) return 'Dobro'
-    if (aqi <= 100) return 'Umjereno'
-    if (aqi <= 150) return 'Osjetljivo'
-    if (aqi <= 200) return 'Nezdravo'
-    if (aqi <= 300) return 'Opasno'
-    return 'Fatalno'
-  }
-
-  const getAqiColorFromAqi = (aqi: number): string => {
-    if (aqi <= 50) return '#22C55E'    // aqi-good
-    if (aqi <= 100) return '#EAB308'   // aqi-moderate  
-    if (aqi <= 150) return '#F97316'   // aqi-usg
-    if (aqi <= 200) return '#EF4444'   // aqi-unhealthy
-    if (aqi <= 300) return '#A855F7'   // aqi-very
-    return '#7C2D12'                   // aqi-hazardous
-  }
+    return { timelineData: timeline, error: null, loading: false }
+  }, [liveData, forecastData, liveError, forecastError, liveLoading, forecastLoading])
 
   const getAqiColorClass = (aqi: number): string => {
     if (aqi <= 50) return 'bg-aqi-good'

@@ -1,15 +1,11 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using SarajevoAir.Api.Middleware;
 using SarajevoAir.Api.Configuration;
+using SarajevoAir.Api.Data;
+using SarajevoAir.Api.Middleware;
+using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Services;
-using SarajevoAir.Application.Interfaces;
-using SarajevoAir.Application.Services;
-using SarajevoAir.Domain.Aqi;
-using SarajevoAir.Infrastructure.Data;
-using SarajevoAir.Infrastructure.OpenAq;
-using SarajevoAir.Worker;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,18 +51,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Database configuration
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-                       ?? builder.Configuration["CONNECTION_STRING"] 
-                       ?? "Host=localhost;Database=sarajevoair;Username=dev;Password=dev";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? builder.Configuration["CONNECTION_STRING"]
+                       ?? "Data Source=sarajevoair-aqi.db";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
-    
-// Register IAppDbContext
-builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
-
-// Caching
-builder.Services.AddMemoryCache();
 
 // Configuration
 builder.Services.Configure<AqicnConfiguration>(builder.Configuration.GetSection("Aqicn"));
@@ -75,17 +65,16 @@ builder.Services.Configure<AqicnConfiguration>(builder.Configuration.GetSection(
 builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
     .AddStandardResilienceHandler();
 
-// Add temporary stub for IOpenAqClient to maintain compatibility
-builder.Services.AddHttpClient<IOpenAqClient, OpenAqClient>()
-    .AddStandardResilienceHandler();
+builder.Services.AddSingleton<AirQualityCache>();
+builder.Services.AddScoped<IAqiRepository, AqiRepository>();
+builder.Services.AddScoped<IAirQualityService, AirQualityService>();
+builder.Services.AddScoped<IForecastService, ForecastService>();
+builder.Services.AddScoped<IHealthAdviceService, HealthAdviceService>();
+builder.Services.AddScoped<IDailyAqiService, DailyAqiService>();
+builder.Services.AddScoped<ICityComparisonService, CityComparisonService>();
+builder.Services.AddScoped<IAqiAdminService, AqiAdminService>();
 
-// Application services - all removed after simplification
-// IMeasurementService removed - no longer needed after simplification
-// IAqiCalculator removed - no longer used 
-// IShareService removed - using Web Share API instead
-
-// Background services disabled - frontend will trigger data saving
-// builder.Services.AddHostedService<AqiBackgroundService>();
+builder.Services.AddHostedService<AirQualityRefreshService>();
 
 // Health checks  
 builder.Services.AddHealthChecks();
@@ -144,18 +133,18 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-// Database migration on startup
+// Ensure database exists on startup
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        await context.Database.MigrateAsync();
-        Log.Information("Database migration completed successfully");
+        await context.Database.EnsureCreatedAsync();
+        Log.Information("Database ready");
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Database migration failed");
+        Log.Error(ex, "Failed to initialize database");
     }
 }
 

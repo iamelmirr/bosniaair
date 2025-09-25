@@ -7,13 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../SarajevoAir.Domain/SarajevoAir.Domain.csproj" />
-    <ProjectReference Include="../SarajevoAir.Application/SarajevoAir.Application.csproj" />
-    <ProjectReference Include="../SarajevoAir.Infrastructure/SarajevoAir.Infrastructure.csproj" />
-    <ProjectReference Include="../SarajevoAir.Worker/SarajevoAir.Worker.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />

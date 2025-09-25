@@ -61,6 +61,22 @@ export function useGroups(city: string, config?: SWRConfiguration) {
 
 // Compare hook removed - using multiple live calls instead
 
+// Forecast hook - added for DailyTimeline
+export function useForecast(city: string, config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR(
+    city ? `forecast-${city}` : null,
+    () => apiClient.getForecastData(city),
+    { ...defaultConfig, ...config }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh: mutate,
+  }
+}
+
 // Utility hooks
 export function useRefreshAll() {
   const refreshAll = () => {
@@ -72,7 +88,7 @@ export function useRefreshAll() {
 }
 
 // Hook for periodic data refreshing  
-export function usePeriodicRefresh(intervalMs: number = 5 * 60 * 1000) {
+export function usePeriodicRefresh(intervalMs: number = 10 * 60 * 1000) {
   const refreshAll = useRefreshAll()
 
   // Use effect would be added here in a real implementation
