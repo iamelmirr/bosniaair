@@ -5,6 +5,9 @@ docker-compose up --build
 [![Backend](https://img.shields.io/badge/Backend-.NET%208-purple)](https://dotnet.microsoft.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite-green)](https://www.sqlite.org/)
 
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://localhost:5000" dotnet run --project /Users/elmirbesirovic/Desktop/projects/sarajevoairvibe/backend/src/SarajevoAir.Api/SarajevoAir.Api.csproj
+
+
 Lightweight full-stack project that tracks Sarajevo’s air quality, built to demonstrate a clear repository → service → controller flow in ASP.NET Core with a matching Next.js UI.
 
 ## ✨ What’s Included

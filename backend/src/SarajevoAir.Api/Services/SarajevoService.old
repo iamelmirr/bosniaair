@@ -1,25 +1,3 @@
-/*
-===================================    public async Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Fetching real WAQI live data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
-
-        try
-        {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy - main monitoring station
-            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";================================================
-                               SARAJEVO SERVICE - SPECIALIZED FOR SARAJEVO
-===========================================================================================
-
-PURPOSE: Optimized service za Sarajevo sa real WAQI API pozivima
-Koristi WAQI API za live i forecast podatke
-
-DESIGN: 
-- Single responsibility - samo Sarajevo
-- Real API integration umesto test podataka
-- Error handling i logging
-- Optimized for frequent requests (future caching implementation)
-*/
-
 using System.Text.Json;
 using SarajevoAir.Api.Dtos;
 
@@ -27,10 +5,45 @@ namespace SarajevoAir.Api.Services;
 
 public interface ISarajevoService
 {
-    Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default);
+    Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken        };
+    }
+
+    private static (string Category, string Color, string HealthMessage) GetAqiInfo(int aqi)
+    {
+        return aqi switch
+        {
+            <= 50 => ("Good", "#00E400", "Air quality is considered satisfactory, and air pollution poses little or no risk."),
+            <= 100 => ("Moderate", "#FFFF00", "Air quality is acceptable for most people. However, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution."),
+            <= 150 => ("Unhealthy for Sensitive Groups", "#FF7E00", "Members of sensitive groups may experience health effects. The general public is not likely to be affected."),
+            <= 200 => ("Unhealthy", "#FF0000", "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects."),
+            <= 300 => ("Very Unhealthy", "#8F3F97", "Health warnings of emergency conditions. The entire population is more likely to be affected."),
+            _ => ("Hazardous", "#7E0023", "Health alert: everyone may experience more serious health effects.")
+        };
+    }
+
+    private static string MapDominantPollutant(string? pollutant)
+    {
+        return pollutant?.ToLowerInvariant() switch
+        {
+            "pm25" => "PM2.5",
+            "pm10" => "PM10",
+            "no2" => "NO2",
+            "o3" => "O3",
+            "so2" => "SO2",
+            "co" => "CO",
+            _ => "Unknown"
+        };
+    }
+}ncellationToken = default);
     Task<ForecastResponse> GetForecastAsync(bool forceFresh = false, CancellationToken cancellationToken = default);
-    Task<CompleteAqiResponse> GetCompleteAsync(bool forceFresh = false, CancellationToken cancellationToken = default);
+    Task<SarajevoCompleteDto> GetCompleteAsync(bool forceFresh = false, CancellationToken cancellationToken = default);
 }
+
+public record SarajevoCompleteDto(
+    LiveAqiResponse LiveData,
+    ForecastResponse ForecastData,
+    DateTime Timestamp
+);
 
 public class SarajevoService : ISarajevoService
 {
@@ -49,11 +62,10 @@ public class SarajevoService : ISarajevoService
 
         try
         {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy
+            const string sarajevoStationId = "@9267";
             const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
             var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
             
-            _logger.LogInformation("🏛️ USING US EMBASSY STATION: {StationId}", sarajevoStationId);
             _logger.LogDebug("Calling WAQI API for Sarajevo: {ApiUrl}", apiUrl);
             
             var response = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
@@ -70,8 +82,18 @@ public class SarajevoService : ISarajevoService
 
             var data = waqiResponse.Data;
             
-            // Skip detailed measurements for now - focus on main AQI value
-            // TODO: Implement proper MeasurementDto if detailed pollutant data is needed
+            // Map WAQI response to our DTO
+            var measurements = new List<MeasurementDto>();
+            
+            if (data.Iaqi != null)
+            {
+                if (data.Iaqi.Pm25 != null) measurements.Add(new MeasurementDto("PM2.5", data.Iaqi.Pm25.V, "μg/m³"));
+                if (data.Iaqi.Pm10 != null) measurements.Add(new MeasurementDto("PM10", data.Iaqi.Pm10.V, "μg/m³"));
+                if (data.Iaqi.No2 != null) measurements.Add(new MeasurementDto("NO2", data.Iaqi.No2.V, "μg/m³"));
+                if (data.Iaqi.O3 != null) measurements.Add(new MeasurementDto("O3", data.Iaqi.O3.V, "μg/m³"));
+                if (data.Iaqi.So2 != null) measurements.Add(new MeasurementDto("SO2", data.Iaqi.So2.V, "μg/m³"));
+                if (data.Iaqi.Co != null) measurements.Add(new MeasurementDto("CO", data.Iaqi.Co.V, "mg/m³"));
+            }
 
             // Calculate AQI category and color from numeric AQI
             var (category, color, healthMessage) = GetAqiInfo(data.Aqi);
@@ -87,7 +109,7 @@ public class SarajevoService : ISarajevoService
                 Color: color,
                 HealthMessage: healthMessage,
                 Timestamp: timestamp,
-                Measurements: Array.Empty<MeasurementDto>(),
+                Measurements: measurements.AsReadOnly(),
                 DominantPollutant: MapDominantPollutant(data.Dominentpol)
             );
         }
@@ -114,7 +136,7 @@ public class SarajevoService : ISarajevoService
 
         try
         {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy - main monitoring station
+            const string sarajevoStationId = "@9267";
             const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
             var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
             
@@ -143,18 +165,17 @@ public class SarajevoService : ISarajevoService
                 var pm25Forecast = daily.Pm25;
                 if (pm25Forecast != null && pm25Forecast.Length > 0)
                 {
-                    for (int i = 0; i < Math.Min(6, pm25Forecast.Length); i++)
+                    for (int i = 0; i < Math.Min(5, pm25Forecast.Length); i++)
                     {
                         var dayForecast = pm25Forecast[i];
                         var aqi = (int)Math.Round(dayForecast.Avg);
                         var (category, color, _) = GetAqiInfo(aqi);
                         
                         forecastData.Add(new ForecastDayDto(
-                            Date: dayForecast.Day,
+                            Date: DateOnly.ParseExact(dayForecast.Day, "yyyy-MM-dd"),
                             Aqi: aqi,
                             Category: category,
-                            Color: color,
-                            Pollutants: new ForecastDayPollutants(null, null, null) // Empty pollutants for now
+                            Color: color
                         ));
                     }
                 }
@@ -174,11 +195,10 @@ public class SarajevoService : ISarajevoService
                     var (category, color, _) = GetAqiInfo(forecastAqi);
                     
                     forecastData.Add(new ForecastDayDto(
-                        Date: DateTime.Today.AddDays(i).ToString("yyyy-MM-dd"),
+                        Date: DateOnly.FromDateTime(DateTime.Today.AddDays(i)),
                         Aqi: forecastAqi,
                         Category: category,
-                        Color: color,
-                        Pollutants: new ForecastDayPollutants(null, null, null) // Empty pollutants for now
+                        Color: color
                     ));
                 }
             }
@@ -187,8 +207,8 @@ public class SarajevoService : ISarajevoService
 
             return new ForecastResponse(
                 City: "Sarajevo",
-                Forecast: forecastData.AsReadOnly(),
-                Timestamp: DateTime.UtcNow
+                ForecastData: new ForecastData(forecastData.AsReadOnly()),
+                GeneratedAt: DateTime.UtcNow
             );
         }
         catch (HttpRequestException ex)
@@ -227,31 +247,83 @@ public class SarajevoService : ISarajevoService
             RetrievedAt: DateTime.UtcNow
         );
     }
-
-    private static (string Category, string Color, string HealthMessage) GetAqiInfo(int aqi)
-    {
-        return aqi switch
+}
         {
-            <= 50 => ("Good", "#00E400", "Air quality is considered satisfactory, and air pollution poses little or no risk."),
-            <= 100 => ("Moderate", "#FFFF00", "Air quality is acceptable for most people. However, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution."),
-            <= 150 => ("Unhealthy for Sensitive Groups", "#FF7E00", "Members of sensitive groups may experience health effects. The general public is not likely to be affected."),
-            <= 200 => ("Unhealthy", "#FF0000", "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects."),
-            <= 300 => ("Very Unhealthy", "#8F3F97", "Health warnings of emergency conditions. The entire population is more likely to be affected."),
-            _ => ("Hazardous", "#7E0023", "Health alert: everyone may experience more serious health effects.")
+            new ForecastDayDto(
+                Date: DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"),
+                Aqi: 75,
+                Category: "Moderate",
+                Color: "#FFFF00",
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto(35, 25, 45),
+                    Pm10: new PollutantRangeDto(65, 50, 80),
+                    O3: null
+                )
+            ),
+            new ForecastDayDto(
+                Date: DateTime.Today.AddDays(2).ToString("yyyy-MM-dd"),
+                Aqi: 82,
+                Category: "Moderate", 
+                Color: "#FFFF00",
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto(42, 30, 55),
+                    Pm10: new PollutantRangeDto(70, 55, 85),
+                    O3: null
+                )
+            ),
+            new ForecastDayDto(
+                Date: DateTime.Today.AddDays(3).ToString("yyyy-MM-dd"),
+                Aqi: 95,
+                Category: "Moderate",
+                Color: "#FFFF00",
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto(48, 35, 60),
+                    Pm10: new PollutantRangeDto(75, 60, 90),
+                    O3: new PollutantRangeDto(25, 15, 35)
+                )
+            ),
+            new ForecastDayDto(
+                Date: DateTime.Today.AddDays(4).ToString("yyyy-MM-dd"),
+                Aqi: 68,
+                Category: "Moderate",
+                Color: "#FFFF00",
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto(28, 20, 38),
+                    Pm10: new PollutantRangeDto(55, 45, 70),
+                    O3: new PollutantRangeDto(30, 20, 40)
+                )
+            ),
+            new ForecastDayDto(
+                Date: DateTime.Today.AddDays(5).ToString("yyyy-MM-dd"),
+                Aqi: 45,
+                Category: "Good",
+                Color: "#22C55E",
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto(18, 12, 25),
+                    Pm10: new PollutantRangeDto(40, 30, 50),
+                    O3: new PollutantRangeDto(35, 25, 45)
+                )
+            )
         };
+
+        return new ForecastResponse(
+            City: "Sarajevo",
+            Forecast: testForecast,
+            Timestamp: DateTime.UtcNow
+        );
     }
 
-    private static string MapDominantPollutant(string? pollutant)
+    public async Task<SarajevoCompleteDto> GetCompleteAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
-        return pollutant?.ToLowerInvariant() switch
-        {
-            "pm25" => "PM2.5",
-            "pm10" => "PM10",
-            "no2" => "NO2",
-            "o3" => "O3",
-            "so2" => "SO2",
-            "co" => "CO",
-            _ => "Unknown"
-        };
+        var liveTask = GetLiveAsync(forceFresh, cancellationToken);
+        var forecastTask = GetForecastAsync(forceFresh, cancellationToken);
+
+        await Task.WhenAll(liveTask, forecastTask);
+
+        return new SarajevoCompleteDto(
+            await liveTask,
+            await forecastTask,
+            DateTime.UtcNow
+        );
     }
 }

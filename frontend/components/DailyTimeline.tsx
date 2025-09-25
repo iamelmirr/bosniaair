@@ -128,7 +128,9 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     // forecastData is ForecastResponse object, need to access .forecast property
     const forecastArray = forecastData?.forecast || []
     const realForecastData = forecastArray.filter((f) => {
-      return f.aqi && f.aqi > 0
+      // Filter out today's date to avoid duplicates with live data
+      const isNotToday = f.date !== dateStr
+      return f.aqi && f.aqi > 0 && isNotToday
     })
     
     realForecastData.forEach(dayForecast => {
@@ -253,7 +255,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2" style={{ scrollBehavior: 'smooth' }}>
             {timelineData.map((day, index) => (
               <div 
-                key={day.date}
+                key={`${day.date}-${day.isToday ? 'today' : 'forecast'}-${index}`}
                 className={`${getCardStyles(day)} min-w-[160px] max-w-[160px] flex-shrink-0 snap-center`}
               >
                 <DayCard day={day} />
@@ -267,7 +269,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           <div className={`grid gap-3 ${timelineData.length === 6 ? 'grid-cols-6' : timelineData.length === 7 ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {timelineData.map((day, index) => (
               <div 
-                key={day.date}
+                key={`${day.date}-${day.isToday ? 'today' : 'forecast'}-${index}`}
                 className={getCardStyles(day)}
               >
                 <DayCard day={day} />
