@@ -240,7 +240,6 @@ Svaki layer ima svoju odgovornost i ne zna za implementaciju drugih layera
 */
 
 // SINGLETON SERVICES - žive kroz ceo lifecycle aplikacije
-// builder.Services.AddSingleton<AirQualityCache>();          // In-memory cache za brže response-e - temporarily disabled until implemented
 
 // AUTOMAPPER - Object mapping between Entities and DTOs
 // Shows clean separation between domain and presentation layer

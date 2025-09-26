@@ -76,22 +76,6 @@ public interface IAqiRepository
     /// </summary>
     Task<IReadOnlyList<SimpleAqiRecord>> GetRangeAsync(string city, DateTime fromUtc, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Vraća sve AQI record-e u bazi (admin functionality)
-    /// PAŽNJA: može biti spor za velike baze podataka
-    /// </summary>
-    Task<IReadOnlyList<SimpleAqiRecord>> GetAllAsync(CancellationToken cancellationToken = default);
-
-    /*
-    === DELETE OPERATION ===
-    */
-    
-    /// <summary>
-    /// Briše AQI record po ID-u (admin functionality)
-    /// Silently ignoriše ako record ne postoji
-    /// </summary>
-    Task DeleteAsync(int id, CancellationToken cancellationToken = default);
-
     /*
     === SARAJEVO-SPECIFIC OPERATIONS ===
     Nove metode za measurements i forecast podatke specifične za Sarajevo
@@ -283,43 +267,7 @@ public class AqiRepository : IAqiRepository
         return await _context.SimpleAqiRecords
             .AsNoTracking()                        // Performance optimization
             .OrderByDescending(r => r.Timestamp)   // Najnoviji prvi
-            .ToListAsync(cancellationToken);       // FULL TABLE SCAN - pažnja na performance!
-    }
-
-    /*
-    === DELETE OPERATION ===
-    
-    SAFE DELETE PATTERN:
-    1. Prvo Find() da proveri da li record postoji
-    2. Ako ne postoji, silently return (idempotent operation)
-    3. Ako postoji, Remove() + SaveChanges()
-    
-    FINDVS WHERE DIFFERENCE:
-    FindAsync() koristi primary key lookup (najbrža operacija)
-    Where() generiše punu query sa WHERE clause
-    */
-    
-    /// <summary>
-    /// Briše AQI record po ID-u (admin functionality)
-    /// Idempotent operation - ne baca grešku ako record ne postoji
-    /// </summary>
-    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
-    {
-        // Primary key lookup - najbrža operacija u bazi
-        var record = await _context.SimpleAqiRecords.FindAsync(new object[] { id }, cancellationToken);
-        
-        // Idempotent behavior - ne baca exception ako record ne postoji
-        if (record is null)
-        {
-            return;
-        }
-
-        // Označava entity kao "Deleted" u change tracker-u
-        _context.SimpleAqiRecords.Remove(record);
-        
-        // Generiše i izvršava SQL DELETE statement
-        // SQL: DELETE FROM SimpleAqiRecords WHERE Id = @id
-        await _context.SaveChangesAsync(cancellationToken);
+            .ToListAsync(cancellationToken);                     // Materijalizuj u List<T>
     }
 
     /*
@@ -390,34 +338,3 @@ public class AqiRepository : IAqiRepository
             .ToListAsync(cancellationToken);
     }
 }
-
-/*
-=== REPOSITORY PATTERN BENEFITS SUMMARY ===
-
-1. TESTABILITY:
-   Mock IAqiRepository u unit testovima umesto stvarne baze
-   
-2. SEPARATION OF CONCERNS:
-   Service layer ne zna ništa o SQL-u ili EF Core-u
-   
-3. CONSISTENCY:
-   Svi database operations idu preko uniform API-ja
-   
-4. PERFORMANCE OPTIMIZATION:
-   Centralizovane query optimizations (AsNoTracking, indexes)
-   
-5. MAINTAINABILITY:
-   Lako menjati database logic bez uticaja na business layer
-
-USAGE EXAMPLE iz Service-a:
-public class AirQualityService 
-{
-    private readonly IAqiRepository _repository;
-    
-    public async Task<int?> GetLatestAqi(string city)
-    {
-        var latest = await _repository.GetMostRecentAsync(city);
-        return latest?.AqiValue;
-    }
-}
-*/
