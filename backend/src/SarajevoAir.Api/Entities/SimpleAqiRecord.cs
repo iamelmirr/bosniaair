@@ -68,10 +68,10 @@ public class SimpleAqiRecord
     */
     
     /// <summary>
-    /// Sarajevo lokalno vrijeme kada je AQI vrednost zabeležena  
-    /// Default vrednost je trenutno Sarajevo vrijeme kada se kreira objekat
+    /// UTC vrijeme kada je AQI vrednost zabeležena  
+    /// Default vrednost je trenutno UTC vrijeme kada se kreira objekat
     /// </summary>
-    public DateTime Timestamp { get; set; } = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     /*
     === AQI VALUE FIELD ===

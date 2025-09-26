@@ -160,14 +160,14 @@ public class AirQualityRefreshService : BackgroundService
             var data = waqiResponse.Data;
             
             // 💾 SAVE TO DATABASE (background service responsibility)
-            var sarajevoTimestamp = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime();
+            var utcTimestamp = DateTime.UtcNow;
             
             // Save main AQI record (existing functionality)
             var aqiRecord = new SimpleAqiRecord
             {
                 City = "Sarajevo",
                 AqiValue = data.Aqi,
-                Timestamp = sarajevoTimestamp
+                Timestamp = utcTimestamp
             };
             await aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
             
@@ -189,7 +189,7 @@ public class AirQualityRefreshService : BackgroundService
             await RefreshSarajevoForecast(httpClient, aqiRepository, cancellationToken);
             
             _logger.LogInformation("💾 Background service saved AQI record: Sarajevo AQI {Aqi} at {Timestamp}", 
-                data.Aqi, sarajevoTimestamp);
+                data.Aqi, utcTimestamp);
             _logger.LogInformation("💾 Background service saved measurements: PM2.5={PM25}, PM10={PM10}, O3={O3}, NO2={NO2}, CO={CO}, SO2={SO2}", 
                 measurementsRecord.Pm25, measurementsRecord.Pm10, measurementsRecord.O3, 
                 measurementsRecord.No2, measurementsRecord.Co, measurementsRecord.So2);

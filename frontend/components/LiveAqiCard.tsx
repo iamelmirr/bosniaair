@@ -123,6 +123,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     return new Intl.DateTimeFormat('bs-BA', {
       dateStyle: 'short',
       timeStyle: 'short',
+      timeZone: 'Europe/Sarajevo', // UTC+1/UTC+2 (CET/CEST with automatic DST)
     }).format(timestamp)
   }
 
