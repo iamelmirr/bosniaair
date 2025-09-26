@@ -92,20 +92,4 @@ public class AqicnConfiguration
         { "Zenica", "@9267" },       // Zenica Centar station
         { "Bihac", "@13578" }        // Bihać nova četvrt station
     };
-    
-    /*
-    USAGE EXAMPLE u AqicnClient:
-    
-    public async Task<AqicnResponse?> GetCityDataAsync(string city)
-    {
-        if (!AqicnConfiguration.CityStations.TryGetValue(city, out var stationId))
-        {
-            _logger.LogWarning("No station configured for city: {City}", city);
-            return null;
-        }
-        
-        var url = $"{_config.ApiUrl}/feed/{stationId}/?token={_config.ApiToken}";
-        // ... HTTP poziv
-    }
-    */
 }

@@ -4,45 +4,12 @@ using System.Text.Json;
 namespace SarajevoAir.Api.Middleware;
 
 /*
-===========================================================================================
-                              GLOBAL EXCEPTION HANDLING MIDDLEWARE
-===========================================================================================
-
-PURPOSE & ASP.NET CORE PIPELINE INTEGRATION:
-Centralized exception handling za entire HTTP request pipeline.
-Catches unhandled exceptions i converts them to proper HTTP responses.
-
-MIDDLEWARE PIPELINE POSITION:
-Should be registered FIRST u pipeline to catch all downstream exceptions:
-
-┌─────────────────────┐    ┌──────────────────────────┐    ┌─────────────────────┐
-│   HTTP REQUEST      │────│  EXCEPTION MIDDLEWARE    │────│   DOWNSTREAM        │
-│  (Client Browser)   │    │   (This Component)       │    │   MIDDLEWARE        │
-└─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
-         │                              │                              │
-         │                              ▼                              │
-         │                   ┌─────────────────────┐                  │
-         │                   │   CONTROLLERS       │ ◄────────────────┘
-         │                   │   SERVICES          │
-         │                   │   (Business Logic)  │
-         │                   └─────────────────────┘
-         │                              │
-         │                              ▼ (Exception thrown)
-         │                   ┌─────────────────────┐
-         │  ◄────────────────│ STRUCTURED ERROR    │
-         │                   │ RESPONSE (JSON)     │
-         │                   └─────────────────────┘
-
-CROSS-CUTTING CONCERNS:
-- Consistent error response formatting
+GLOBAL EXCEPTION HANDLING MIDDLEWARE
+PURPOSE: Centralized exception handling za entire HTTP request pipeline
+- Catches unhandled exceptions and converts to proper HTTP responses
+- Consistent error response formatting 
 - Security: Prevents sensitive info leakage
-- Observability: Structured logging za monitoring
-- Client compatibility: RFC 7807 Problem Details format
-- Development support: Detailed errors u dev environment
-
-EXCEPTION MAPPING STRATEGY:
-Maps .NET exception types to appropriate HTTP status codes
-Provides consistent client experience regardless od internal error types
+- Structured logging za monitoring
 */
 
 /// <summary>
