@@ -174,53 +174,67 @@ public class SarajevoService : ISarajevoService
 
             var forecastData = new List<ForecastDayDto>();
 
-            // Process WAQI forecast data if available
+            // Process WAQI forecast data using real forecast.daily structure
             if (waqiResponse.Data.Forecast?.Daily != null)
             {
                 var daily = waqiResponse.Data.Forecast.Daily;
+                _logger.LogInformation("WAQI API returned forecast data with PM2.5 entries: {Count}", daily.Pm25?.Length ?? 0);
                 
-                // Get PM2.5 forecast (most relevant for AQI)
+                // Get PM2.5 forecast (most relevant for AQI calculation)
                 var pm25Forecast = daily.Pm25;
                 if (pm25Forecast != null && pm25Forecast.Length > 0)
                 {
+                    _logger.LogInformation("✅ Using REAL WAQI forecast data for {Count} days", Math.Min(6, pm25Forecast.Length));
+                    
                     for (int i = 0; i < Math.Min(6, pm25Forecast.Length); i++)
                     {
                         var dayForecast = pm25Forecast[i];
                         var aqi = (int)Math.Round(dayForecast.Avg);
                         var (category, color, _) = GetAqiInfo(aqi);
                         
+                        // Create pollutants object with available forecast data from WAQI
+                        var pollutants = new ForecastDayPollutants(
+                            Pm25: new PollutantRangeDto(
+                                Avg: (int)Math.Round(dayForecast.Avg),
+                                Min: (int)Math.Round(dayForecast.Min),
+                                Max: (int)Math.Round(dayForecast.Max)
+                            ),
+                            Pm10: daily.Pm10?[i] != null ? new PollutantRangeDto(
+                                Avg: (int)Math.Round(daily.Pm10[i].Avg),
+                                Min: (int)Math.Round(daily.Pm10[i].Min),
+                                Max: (int)Math.Round(daily.Pm10[i].Max)
+                            ) : null,
+                            O3: daily.O3?[i] != null ? new PollutantRangeDto(
+                                Avg: (int)Math.Round(daily.O3[i].Avg),
+                                Min: (int)Math.Round(daily.O3[i].Min),
+                                Max: (int)Math.Round(daily.O3[i].Max)
+                            ) : null
+                        );
+                        
                         forecastData.Add(new ForecastDayDto(
                             Date: dayForecast.Day,
                             Aqi: aqi,
                             Category: category,
                             Color: color,
-                            Pollutants: new ForecastDayPollutants(null, null, null) // Empty pollutants for now
+                            Pollutants: pollutants
                         ));
                     }
                 }
+                else
+                {
+                    _logger.LogWarning("WAQI API returned forecast structure but no PM2.5 data available");
+                }
+            }
+            else
+            {
+                _logger.LogWarning("WAQI API response has no forecast.daily structure");
             }
 
-            // If no forecast data available, create fallback based on current conditions
+            // Only use fallback if absolutely no forecast data is available
             if (forecastData.Count == 0)
             {
-                _logger.LogWarning("No forecast data available from WAQI API, creating fallback forecast");
-                var currentAqi = waqiResponse.Data.Aqi;
-                
-                for (int i = 0; i < 5; i++)
-                {
-                    // Create slight variations around current AQI
-                    var variation = Random.Shared.Next(-10, 11);
-                    var forecastAqi = Math.Max(0, currentAqi + variation);
-                    var (category, color, _) = GetAqiInfo(forecastAqi);
-                    
-                    forecastData.Add(new ForecastDayDto(
-                        Date: DateTime.Today.AddDays(i).ToString("yyyy-MM-dd"),
-                        Aqi: forecastAqi,
-                        Category: category,
-                        Color: color,
-                        Pollutants: new ForecastDayPollutants(null, null, null) // Empty pollutants for now
-                    ));
-                }
+                _logger.LogError("❌ NO REAL FORECAST DATA AVAILABLE - This should not happen for Sarajevo station @10557");
+                throw new InvalidOperationException("WAQI API did not return forecast data for Sarajevo. This indicates an API issue or station availability problem.");
             }
 
             _logger.LogInformation("Successfully retrieved forecast data for Sarajevo, {Count} days", forecastData.Count);

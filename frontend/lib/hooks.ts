@@ -117,7 +117,7 @@ export function useSarajevoForecast(config?: SWRConfiguration) {
     { 
       ...defaultConfig, 
       ...config,
-      refreshInterval: 60 * 1000,      // 🔄 FORECAST SE MANJ ČESTO MENJA (60s)
+      refreshInterval: 30 * 1000,      // 🔄 SYNCED SA LIVE AQI (30s) - ISTI KAO useLiveAqi!
       revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
       revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
     }
