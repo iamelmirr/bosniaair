@@ -34,35 +34,38 @@ public class SarajevoAirMappingProfile : Profile
         // ===== ENTITY → DTO MAPPINGS =====
         
         /// <summary>
-        /// Mapiranje SarajevoMeasurement Entity → LiveAqiResponse DTO
-        /// Pokazuje kako domain objekti postaju presentation objekti
+        /// SarajevoMeasurement Entity → LiveAqiResponse DTO
+        /// AutoMapper kopira matching properties, mi definiramo custom logic
         /// </summary>
         CreateMap<SarajevoMeasurement, LiveAqiResponse>()
             .ForMember(dest => dest.City, opt => opt.MapFrom(src => "Sarajevo"))
-            .ForMember(dest => dest.OverallAqi, opt => opt.MapFrom(src => src.AqiValue))
-            .ForMember(dest => dest.AqiCategory, opt => opt.Ignore()) // Service će podesiti
-            .ForMember(dest => dest.Color, opt => opt.Ignore()) // Service će podesiti
-            .ForMember(dest => dest.HealthMessage, opt => opt.Ignore()) // Service će podesiti
+            .ForMember(dest => dest.OverallAqi, opt => opt.MapFrom(src => src.AqiValue ?? 0))
             .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => src.Timestamp))
-            .ForMember(dest => dest.Measurements, opt => opt.Ignore()) // Service će podesiti
-            .ForMember(dest => dest.DominantPollutant, opt => opt.Ignore()); // Service će podesiti
-
-        // Note: Complex custom mappings will be handled in Service layer
-        // AutoMapper works best for simple property mappings
+            .ForMember(dest => dest.DominantPollutant, opt => opt.MapFrom(src => "PM2.5"))
+            // Ove properties Service mora manuelno da postavi:
+            .ForMember(dest => dest.AqiCategory, opt => opt.Ignore()) 
+            .ForMember(dest => dest.Color, opt => opt.Ignore()) 
+            .ForMember(dest => dest.HealthMessage, opt => opt.Ignore()) 
+            .ForMember(dest => dest.Measurements, opt => opt.Ignore()); 
 
         /// <summary>
-        /// SarajevoForecast Entity → ForecastResponse DTO
+        /// SarajevoForecast Entity → ForecastDayDto 
+        /// Mapira pojedinačni forecast dan
         /// </summary>
-        CreateMap<SarajevoForecast, ForecastResponse>()
-            .ForMember(dest => dest.City, opt => opt.MapFrom(src => "Sarajevo"))
-            .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => DateTime.UtcNow));
+        CreateMap<SarajevoForecast, ForecastDayDto>()
+            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date.ToString("yyyy-MM-dd")))
+            .ForMember(dest => dest.Aqi, opt => opt.MapFrom(src => (int)(src.Pm25Avg ?? 0)))
+            // Category i Color će Service podesiti na osnovu AQI
+            .ForMember(dest => dest.Category, opt => opt.Ignore())
+            .ForMember(dest => dest.Color, opt => opt.Ignore())
+            .ForMember(dest => dest.Pollutants, opt => opt.MapFrom(src => 
+                new ForecastDayPollutants(
+                    new PollutantRangeDto((int)(src.Pm25Avg ?? 0), (int)(src.Pm25Min ?? 0), (int)(src.Pm25Max ?? 0)),
+                    null,
+                    null
+                )
+            ));
 
-        // ===== REQUEST → SERVICE PARAMETER MAPPINGS =====
-        // Ove će trebati kada refaktoriramo Service metode
-        
-        /// <summary>
-        /// Request DTOs se mogu koristiti direktno u Service layer-u
-        /// ili mapirati u internal service parametere
-        /// </summary>
+
     }
 }

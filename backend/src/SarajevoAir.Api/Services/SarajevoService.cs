@@ -2,6 +2,7 @@ using SarajevoAir.Api.Dtos;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Entities;
 using Microsoft.Extensions.Logging;
+using AutoMapper;
 
 namespace SarajevoAir.Api.Services;
 
@@ -16,11 +17,13 @@ public class SarajevoService : ISarajevoService
 {
     private readonly IAqiRepository _repository;
     private readonly ILogger<SarajevoService> _logger;
+    private readonly IMapper _mapper; // 🆕 AutoMapper za object mapping
 
-    public SarajevoService(IAqiRepository repository, ILogger<SarajevoService> logger)
+    public SarajevoService(IAqiRepository repository, ILogger<SarajevoService> logger, IMapper mapper)
     {
         _repository = repository;
         _logger = logger;
+        _mapper = mapper; // 🆕 Dependency Injection omogućava AutoMapper
     }
 
     public async Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
@@ -40,21 +43,23 @@ public class SarajevoService : ISarajevoService
             );
         }
 
-        // 🚨 KRITIČNO: Koristi AQI direktno iz baze (već izračunat od WAQI API-ja)
+        // � AUTOMAPPER: Osnovni mapping SarajevoMeasurement → LiveAqiResponse
+        var response = _mapper.Map<LiveAqiResponse>(measurement);
+        
+        // ✨ Custom logic: AQI kategorija, boja i zdravstvena poruka
         var aqiFromDb = measurement.AqiValue ?? 0;
-        var (_, category, color, message) = GetAqiInfo(aqiFromDb); // Samo za kategoriju i boje
-        var measurementDtos = ConvertAllMeasurementsToDto(measurement);
+        var (_, category, color, message) = GetAqiInfo(aqiFromDb);
+        
+        // 🎨 Postavi custom properties koje AutoMapper ne može automatski
+        response = response with 
+        {
+            AqiCategory = category,
+            Color = color,
+            HealthMessage = message,
+            Measurements = ConvertAllMeasurementsToDto(measurement) // Ovo ćemo refaktorisati sledeće!
+        };
 
-        return new LiveAqiResponse(
-            City: "Sarajevo",
-            OverallAqi: aqiFromDb, // 🚨 Koristi AQI iz baze, NE računaj!
-            AqiCategory: category,
-            Color: color,
-            HealthMessage: message,
-            Timestamp: measurement.Timestamp,
-            Measurements: measurementDtos,
-            DominantPollutant: "PM2.5"
-        );
+        return response;
     }
 
     public async Task<ForecastResponse> GetForecastAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
@@ -69,21 +74,16 @@ public class SarajevoService : ISarajevoService
             );
         }
 
+        // 🚀 AUTOMAPPER: Mapiranje SarajevoForecast → ForecastDayDto
         var forecastDtos = forecasts.Select(f => {
-            // Koristi PM2.5 average kao AQI vrednost (jednostavno mapiranje)
+            // Osnovni mapping pomoću AutoMapper-a
+            var dto = _mapper.Map<ForecastDayDto>(f);
+            
+            // Custom logic za AQI kategoriju i boju (AutoMapper ne može ovo automatski)
             var aqiValue = (int)(f.Pm25Avg ?? 0);
-            var (_, category, color, _) = GetAqiInfo(aqiValue); // Koristi PM2.5 avg kao AQI
-            return new ForecastDayDto(
-                Date: f.Date.ToString("yyyy-MM-dd"),
-                Aqi: aqiValue,
-                Category: category,
-                Color: color,
-                Pollutants: new ForecastDayPollutants(
-                    Pm25: new PollutantRangeDto((int)(f.Pm25Avg ?? 0), (int)(f.Pm25Min ?? 0), (int)(f.Pm25Max ?? 0)),
-                    Pm10: null,
-                    O3: null
-                )
-            );
+            var (_, category, color, _) = GetAqiInfo(aqiValue);
+            
+            return dto with { Category = category, Color = color };
         }).ToList();
 
         _logger.LogInformation("Retrieved {Count} forecast days for Sarajevo", forecastDtos.Count);
@@ -107,111 +107,43 @@ public class SarajevoService : ISarajevoService
         );
     }
 
-    // Pomoćna metoda za kreiranje SVIH MeasurementDto objekata iz SarajevoMeasurement
+    /// <summary>
+    /// 🚀 REFAKTORISANO: Data-driven approach umjesto 100+ linija repetitivnog koda
+    /// Koristi dictionary za definisanje svih pollutants u 1 mjestu
+    /// </summary>
     private List<MeasurementDto> ConvertAllMeasurementsToDto(SarajevoMeasurement measurement)
     {
         var measurements = new List<MeasurementDto>();
-
-        // PM2.5
-        if (measurement.Pm25.HasValue)
+        
+        // 📊 Data-driven definicija svih pollutants (umjesto copy-paste kod)
+        var pollutantDefinitions = new Dictionary<string, (double? value, string unit)>
         {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_pm25",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center",
-                Parameter: "PM2.5",
-                Value: measurement.Pm25.Value,
-                Unit: "μg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
-        }
+            { "PM2.5", (measurement.Pm25, "μg/m³") },
+            { "PM10", (measurement.Pm10, "μg/m³") },
+            { "O3", (measurement.O3, "μg/m³") },
+            { "NO2", (measurement.No2, "μg/m³") },
+            { "CO", (measurement.Co, "mg/m³") },
+            { "SO2", (measurement.So2, "μg/m³") }
+        };
 
-        // PM10
-        if (measurement.Pm10.HasValue)
+        // 🔄 Loop kroz sve pollutante umjesto copy-paste
+        foreach (var (parameter, (value, unit)) in pollutantDefinitions)
         {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_pm10",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center", 
-                Parameter: "PM10",
-                Value: measurement.Pm10.Value,
-                Unit: "μg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
-        }
-
-        // O3 (Ozone)
-        if (measurement.O3.HasValue)
-        {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_o3",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center",
-                Parameter: "O3",
-                Value: measurement.O3.Value,
-                Unit: "μg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
-        }
-
-        // NO2 (Nitrogen Dioxide)
-        if (measurement.No2.HasValue)
-        {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_no2",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center",
-                Parameter: "NO2",
-                Value: measurement.No2.Value,
-                Unit: "μg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
-        }
-
-        // CO (Carbon Monoxide) - zadržati originalnu mg/m³ jedinicu
-        if (measurement.Co.HasValue)
-        {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_co",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center",
-                Parameter: "CO",
-                Value: measurement.Co.Value, // Zadržati mg/m³ vrednost
-                Unit: "mg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
-        }
-
-        // SO2 (Sulfur Dioxide)
-        if (measurement.So2.HasValue)
-        {
-            measurements.Add(new MeasurementDto(
-                Id: $"{measurement.Id}_so2",
-                City: "Sarajevo",
-                LocationName: "Sarajevo Center",
-                Parameter: "SO2",
-                Value: measurement.So2.Value,
-                Unit: "μg/m³",
-                Timestamp: measurement.Timestamp,
-                SourceName: "WAQI",
-                Coordinates: null,
-                AveragingPeriod: null
-            ));
+            if (value.HasValue)
+            {
+                measurements.Add(new MeasurementDto(
+                    Id: $"{measurement.Id}_{parameter.ToLower().Replace(".", "")}",
+                    City: "Sarajevo",
+                    LocationName: "Sarajevo Center",
+                    Parameter: parameter,
+                    Value: value.Value,
+                    Unit: unit,
+                    Timestamp: measurement.Timestamp,
+                    SourceName: "WAQI",
+                    Coordinates: null,
+                    AveragingPeriod: null
+                ));
+            }
         }
 
         return measurements;
