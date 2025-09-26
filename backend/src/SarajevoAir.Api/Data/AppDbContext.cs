@@ -74,6 +74,18 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<SimpleAqiRecord> SimpleAqiRecords => Set<SimpleAqiRecord>();
 
+    /// <summary>
+    /// Tabela za čuvanje detaljnih pollutant measurements specifično za Sarajevo
+    /// Refreshuje se svakih 10 minuta iz WAQI API-ja
+    /// </summary>
+    public DbSet<SarajevoMeasurement> SarajevoMeasurements => Set<SarajevoMeasurement>();
+
+    /// <summary>
+    /// Tabela za čuvanje daily forecast podataka specifično za Sarajevo  
+    /// Refreshuje se svakih 10 minuta iz WAQI API-ja (forecast.daily)
+    /// </summary>
+    public DbSet<SarajevoForecast> SarajevoForecasts => Set<SarajevoForecast>();
+
     /*
     === MODEL CONFIGURATION (FLUENT API) ===
     OnModelCreating se poziva jednom kada se kreira model baze
@@ -121,6 +133,23 @@ public class AppDbContext : DbContext
             // Pokriva patterns: WHERE City = 'X' ORDER BY Timestamp DESC
             entity.HasIndex(e => new { e.City, e.Timestamp })
                   .HasDatabaseName("IX_AqiRecords_CityTimestamp");
+        });
+
+        // Konfiguracija SarajevoMeasurement entiteta
+        modelBuilder.Entity<SarajevoMeasurement>(entity =>
+        {
+            // Index po Timestamp za brže queries (ORDER BY Timestamp DESC)
+            entity.HasIndex(e => e.Timestamp)
+                  .HasDatabaseName("IX_SarajevoMeasurements_Timestamp");
+        });
+
+        // Konfiguracija SarajevoForecast entiteta
+        modelBuilder.Entity<SarajevoForecast>(entity =>
+        {
+            // Unique index po datumu (jedan forecast po danu)
+            entity.HasIndex(e => e.Date)
+                  .IsUnique()
+                  .HasDatabaseName("IX_SarajevoForecast_Date");
         });
         
         /*

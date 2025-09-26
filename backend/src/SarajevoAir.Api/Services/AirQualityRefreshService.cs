@@ -161,16 +161,38 @@ public class AirQualityRefreshService : BackgroundService
             
             // 💾 SAVE TO DATABASE (background service responsibility)
             var sarajevoTimestamp = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime();
+            
+            // Save main AQI record (existing functionality)
             var aqiRecord = new SimpleAqiRecord
             {
                 City = "Sarajevo",
                 AqiValue = data.Aqi,
                 Timestamp = sarajevoTimestamp
             };
-
             await aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
+            
+            // 🆕 Save detailed measurements
+            var measurementsRecord = new SarajevoMeasurement
+            {
+                Timestamp = DateTime.UtcNow,
+                Pm25 = data.Iaqi?.Pm25?.V,
+                Pm10 = data.Iaqi?.Pm10?.V,
+                O3 = data.Iaqi?.O3?.V,
+                No2 = data.Iaqi?.No2?.V,
+                Co = data.Iaqi?.Co?.V,
+                So2 = data.Iaqi?.So2?.V,
+                AqiValue = data.Aqi  // 🚨 VAŽNO: Koristi AQI direktno iz WAQI API-ja!
+            };
+            await aqiRepository.AddSarajevoMeasurementAsync(measurementsRecord, cancellationToken);
+            
+            // 🆕 Fetch and save forecast data
+            await RefreshSarajevoForecast(httpClient, aqiRepository, cancellationToken);
+            
             _logger.LogInformation("💾 Background service saved AQI record: Sarajevo AQI {Aqi} at {Timestamp}", 
                 data.Aqi, sarajevoTimestamp);
+            _logger.LogInformation("💾 Background service saved measurements: PM2.5={PM25}, PM10={PM10}, O3={O3}, NO2={NO2}, CO={CO}, SO2={SO2}", 
+                measurementsRecord.Pm25, measurementsRecord.Pm10, measurementsRecord.O3, 
+                measurementsRecord.No2, measurementsRecord.Co, measurementsRecord.So2);
             
             _logger.LogInformation("✅ Sarajevo refreshed - AQI: {Aqi}", data.Aqi);
         }
@@ -197,6 +219,78 @@ public class AirQualityRefreshService : BackgroundService
         {
             _logger.LogError(ex, "❌ Error refreshing {City} data", city);
         }
+    }
+
+    /// <summary>
+    /// Osvježava forecast podatke za Sarajevo iz WAQI API-ja
+    /// </summary>
+    private async Task RefreshSarajevoForecast(HttpClient httpClient, IAqiRepository aqiRepository, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("📊 Refreshing Sarajevo forecast data");
+            
+            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy
+            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
+            var forecastApiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
+            
+            var forecastResponse = await httpClient.GetStringAsync(forecastApiUrl, cancellationToken);
+            var waqiForecastResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(forecastResponse, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (waqiForecastResponse?.Status == "ok" && waqiForecastResponse.Data?.Forecast?.Daily?.Pm25 != null)
+            {
+                foreach (var forecastEntry in waqiForecastResponse.Data.Forecast.Daily.Pm25)
+                {
+                    var forecastRecord = new SarajevoForecast
+                    {
+                        Date = DateTime.Parse(forecastEntry.Day).Date,
+                        Pm25Min = forecastEntry.Min,
+                        Pm25Max = forecastEntry.Max, 
+                        Pm25Avg = forecastEntry.Avg,
+                        Aqi = CalculateAqiFromPm25(forecastEntry.Avg), // Use avg PM2.5 for AQI
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await aqiRepository.UpsertSarajevoForecastAsync(forecastRecord, cancellationToken);
+                    
+                    _logger.LogInformation("📊 Saved forecast for {Date}: PM2.5 avg={Avg}, min={Min}, max={Max}", 
+                        forecastRecord.Date.ToShortDateString(), forecastRecord.Pm25Avg, 
+                        forecastRecord.Pm25Min, forecastRecord.Pm25Max);
+                }
+                
+                _logger.LogInformation("✅ Successfully refreshed Sarajevo forecast data");
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ No forecast data available in WAQI API response");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error refreshing Sarajevo forecast data: {Error}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Jednostavno konvertovanje PM2.5 vrednosti u AQI (gruba aproksimacija)
+    /// </summary>
+    private static int? CalculateAqiFromPm25(double? pm25)
+    {
+        if (!pm25.HasValue) return null;
+        
+        var pm = pm25.Value;
+        
+        // EPA AQI breakpoints for PM2.5 (gruba aproksimacija)
+        if (pm <= 12.0) return (int)(pm / 12.0 * 50);
+        if (pm <= 35.4) return (int)(51 + (pm - 12.1) / (35.4 - 12.1) * 49);
+        if (pm <= 55.4) return (int)(101 + (pm - 35.5) / (55.4 - 35.5) * 49);
+        if (pm <= 150.4) return (int)(151 + (pm - 55.5) / (150.4 - 55.5) * 49);
+        if (pm <= 250.4) return (int)(201 + (pm - 150.5) / (250.4 - 150.5) * 99);
+        return (int)(301 + Math.Min((pm - 250.5) / (350.4 - 250.5) * 99, 99));
     }
 
     public override async Task StopAsync(CancellationToken stoppingToken)

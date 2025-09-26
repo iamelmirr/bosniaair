@@ -1,31 +1,7 @@
-/*
-===================================    public async Task<LiveAqiResponse> GetLiveAsync(bool fo            // 🌐 NE ČUVAJ U BAZU - AirQualityRefreshService je JEDINI koji čuva podatke
-            // SarajevoService je samo za čitanje i fallback API pozive
-            var localTimestamp = SarajevoAir.Api.Utilities.TimeZoneHelper.GetSarajevoTime(); // Koristi Sarajevo lokalno vrijemeFresh = false, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Fetching real WAQI live data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
-
-        try
-        {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy - main monitoring station
-            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";================================================
-                               SARAJEVO SERVICE - SPECIALIZED FOR SARAJEVO
-===========================================================================================
-
-PURPOSE: Optimized service za Sarajevo sa real WAQI API pozivima
-Koristi WAQI API za live i forecast podatke
-
-DESIGN: 
-- Single responsibility - samo Sarajevo
-- Real API integration umesto test podataka
-- Error handling i logging
-- Optimized for frequent requests (future caching implementation)
-*/
-
-using System.Text.Json;
 using SarajevoAir.Api.Dtos;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace SarajevoAir.Api.Services;
 
@@ -38,446 +14,220 @@ public interface ISarajevoService
 
 public class SarajevoService : ISarajevoService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IAqiRepository _repository;
     private readonly ILogger<SarajevoService> _logger;
-    private readonly IAqiRepository _aqiRepository;
 
-    public SarajevoService(HttpClient httpClient, ILogger<SarajevoService> logger, IAqiRepository aqiRepository)
+    public SarajevoService(IAqiRepository repository, ILogger<SarajevoService> logger)
     {
-        _httpClient = httpClient;
+        _repository = repository;
         _logger = logger;
-        _aqiRepository = aqiRepository;
     }
 
     public async Task<LiveAqiResponse> GetLiveAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("🔍 Sarajevo AQI request (forceFresh: {ForceFresh})", forceFresh);
-
-        // 🎯 DATABASE-FIRST APPROACH - proverava cache pre API poziva ALI UVEK FRESH MEASUREMENTS
-        if (!forceFresh)
+        var measurement = await _repository.GetLatestSarajevoMeasurementAsync();
+        if (measurement == null)
         {
-            var cachedRecord = await _aqiRepository.GetMostRecentAsync("Sarajevo", cancellationToken);
-            if (cachedRecord != null && IsRecordFresh(cachedRecord))
-            {
-                _logger.LogInformation("📦 Using cached AQI but fetching fresh measurements - AQI: {Aqi}, Age: {Age}min", 
-                    cachedRecord.AqiValue, (DateTime.UtcNow - cachedRecord.Timestamp).TotalMinutes);
-                Console.WriteLine($"� [{DateTime.Now:HH:mm:ss}] FRONTEND READ: AQI {cachedRecord.AqiValue} from DATABASE + FRESH MEASUREMENTS from WAQI");
-                
-                // 🎯 DOHVATI FRESH MEASUREMENTS iz WAQI-a
-                var freshMeasurements = await GetFreshMeasurementsAsync(cancellationToken);
-                
-                // Kombinuj cached AQI sa fresh measurements
-                return new LiveAqiResponse(
-                    City: cachedRecord.City,
-                    OverallAqi: cachedRecord.AqiValue,
-                    AqiCategory: GetAqiInfo(cachedRecord.AqiValue).Category,
-                    Color: GetAqiInfo(cachedRecord.AqiValue).Color,
-                    HealthMessage: GetAqiInfo(cachedRecord.AqiValue).HealthMessage,
-                    Timestamp: cachedRecord.Timestamp, // 🔥 KORISTI TIMESTAMP IZ BAZE za AQI
-                    Measurements: freshMeasurements, // 🎯 FRESH MEASUREMENTS za PollutantCard
-                    DominantPollutant: "PM2.5"
-                );
-            }
-            
-            _logger.LogInformation("🔄 Cache miss or stale data, fetching from WAQI API");
-        }
-
-        // 🌐 FETCH FROM WAQI API
-        try
-        {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy
-            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
-            var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
-            
-            _logger.LogInformation("🏛️ Calling WAQI API - Station: {StationId}", sarajevoStationId);
-            
-            var response = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
-            var waqiResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (waqiResponse?.Status != "ok" || waqiResponse.Data == null)
-            {
-                throw new InvalidOperationException("WAQI API returned invalid response for Sarajevo");
-            }
-
-            var data = waqiResponse.Data;
-            
-            // 🎯 NOVA IMPLEMENTACIJA: Parse detailed measurements za PollutantCard komponente
-            var measurements = ParseMeasurementsFromWaqi(data.Iaqi);
-
-            // Calculate AQI category and color from numeric AQI
-            var (category, color, healthMessage) = GetAqiInfo(data.Aqi);
-
-            // � NE ČUVAJ U BAZU - AirQualityRefreshService je JEDINI koji čuva podatke
-            // SarajevoService je samo za čitanje i fallback API pozive
-            var localTimestamp = DateTime.UtcNow; // Koristi trenutno vreme za response
-            
-            _logger.LogInformation("⚠️ SarajevoService API fallback - Background service should handle data collection!");
-            _logger.LogInformation("Successfully retrieved WAQI data for Sarajevo, AQI: {Aqi}, Measurements: {Count}", 
-                data.Aqi, measurements.Count);
-
             return new LiveAqiResponse(
                 City: "Sarajevo",
-                OverallAqi: data.Aqi,
-                AqiCategory: category,
-                Color: color,
-                HealthMessage: healthMessage,
-                Timestamp: localTimestamp,
-                Measurements: measurements,
-                DominantPollutant: MapDominantPollutant(data.Dominentpol)
+                OverallAqi: 0,
+                AqiCategory: "No Data",
+                Color: "#999999",
+                HealthMessage: "Data not available",
+                Timestamp: DateTime.UtcNow,
+                Measurements: new List<MeasurementDto>(),
+                DominantPollutant: "Unknown"
             );
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "HTTP error while fetching WAQI data for Sarajevo");
-            throw new InvalidOperationException("Failed to fetch air quality data for Sarajevo: Network error", ex);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "JSON parsing error while processing WAQI data for Sarajevo");
-            throw new InvalidOperationException("Failed to parse air quality data for Sarajevo: Invalid data format", ex);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while fetching WAQI data for Sarajevo");
-            throw;
-        }
+
+        // 🚨 KRITIČNO: Koristi AQI direktno iz baze (već izračunat od WAQI API-ja)
+        var aqiFromDb = measurement.AqiValue ?? 0;
+        var (_, category, color, message) = GetAqiInfo(aqiFromDb); // Samo za kategoriju i boje
+        var measurementDtos = ConvertAllMeasurementsToDto(measurement);
+
+        return new LiveAqiResponse(
+            City: "Sarajevo",
+            OverallAqi: aqiFromDb, // 🚨 Koristi AQI iz baze, NE računaj!
+            AqiCategory: category,
+            Color: color,
+            HealthMessage: message,
+            Timestamp: measurement.Timestamp,
+            Measurements: measurementDtos,
+            DominantPollutant: "PM2.5"
+        );
     }
 
     public async Task<ForecastResponse> GetForecastAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Fetching real WAQI forecast data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
-        Console.WriteLine($"🔵 [{DateTime.Now:HH:mm:ss}] FRONTEND REQUEST: Forecast API poziv (forceFresh: {forceFresh})");
-
-        try
+        var forecasts = await _repository.GetSarajevoForecastAsync(5);
+        if (!forecasts.Any())
         {
-            const string sarajevoStationId = "@10557"; // Sarajevo US Embassy - main monitoring station
-            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
-            var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
-            
-            _logger.LogDebug("Calling WAQI API for Sarajevo forecast: {ApiUrl}", apiUrl);
-            
-            var response = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
-            var waqiResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (waqiResponse?.Status != "ok" || waqiResponse.Data == null)
-            {
-                throw new InvalidOperationException("WAQI API returned invalid response for Sarajevo forecast");
-            }
-
-            var forecastData = new List<ForecastDayDto>();
-
-            // Process WAQI forecast data using real forecast.daily structure
-            if (waqiResponse.Data.Forecast?.Daily != null)
-            {
-                var daily = waqiResponse.Data.Forecast.Daily;
-                _logger.LogInformation("WAQI API returned forecast data with PM2.5 entries: {Count}", daily.Pm25?.Length ?? 0);
-                
-                // Get PM2.5 forecast (most relevant for AQI calculation)
-                var pm25Forecast = daily.Pm25;
-                if (pm25Forecast != null && pm25Forecast.Length > 0)
-                {
-                    _logger.LogInformation("✅ Using REAL WAQI forecast data for {Count} days", Math.Min(6, pm25Forecast.Length));
-                    
-                    for (int i = 0; i < Math.Min(6, pm25Forecast.Length); i++)
-                    {
-                        var dayForecast = pm25Forecast[i];
-                        var aqi = (int)Math.Round(dayForecast.Avg);
-                        var (category, color, _) = GetAqiInfo(aqi);
-                        
-                        // Create pollutants object with available forecast data from WAQI
-                        var pollutants = new ForecastDayPollutants(
-                            Pm25: new PollutantRangeDto(
-                                Avg: (int)Math.Round(dayForecast.Avg),
-                                Min: (int)Math.Round(dayForecast.Min),
-                                Max: (int)Math.Round(dayForecast.Max)
-                            ),
-                            Pm10: daily.Pm10?[i] != null ? new PollutantRangeDto(
-                                Avg: (int)Math.Round(daily.Pm10[i].Avg),
-                                Min: (int)Math.Round(daily.Pm10[i].Min),
-                                Max: (int)Math.Round(daily.Pm10[i].Max)
-                            ) : null,
-                            O3: daily.O3?[i] != null ? new PollutantRangeDto(
-                                Avg: (int)Math.Round(daily.O3[i].Avg),
-                                Min: (int)Math.Round(daily.O3[i].Min),
-                                Max: (int)Math.Round(daily.O3[i].Max)
-                            ) : null
-                        );
-                        
-                        forecastData.Add(new ForecastDayDto(
-                            Date: dayForecast.Day,
-                            Aqi: aqi,
-                            Category: category,
-                            Color: color,
-                            Pollutants: pollutants
-                        ));
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("WAQI API returned forecast structure but no PM2.5 data available");
-                }
-            }
-            else
-            {
-                _logger.LogWarning("WAQI API response has no forecast.daily structure");
-            }
-
-            // Only use fallback if absolutely no forecast data is available
-            if (forecastData.Count == 0)
-            {
-                _logger.LogError("❌ NO REAL FORECAST DATA AVAILABLE - This should not happen for Sarajevo station @10557");
-                throw new InvalidOperationException("WAQI API did not return forecast data for Sarajevo. This indicates an API issue or station availability problem.");
-            }
-
-            _logger.LogInformation("Successfully retrieved forecast data for Sarajevo, {Count} days", forecastData.Count);
-            Console.WriteLine($"🔵 [{DateTime.Now:HH:mm:ss}] FORECAST API SUCCESS: Returned {forecastData.Count} days from WAQI API");
-
             return new ForecastResponse(
                 City: "Sarajevo",
-                Forecast: forecastData.AsReadOnly(),
+                Forecast: new List<ForecastDayDto>(),
                 Timestamp: DateTime.UtcNow
             );
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "HTTP error while fetching WAQI forecast data for Sarajevo");
-            throw new InvalidOperationException("Failed to fetch forecast data for Sarajevo: Network error", ex);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "JSON parsing error while processing WAQI forecast data for Sarajevo");
-            throw new InvalidOperationException("Failed to parse forecast data for Sarajevo: Invalid data format", ex);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while fetching WAQI forecast data for Sarajevo");
-            throw;
-        }
+
+        var forecastDtos = forecasts.Select(f => {
+            // Koristi PM2.5 average kao AQI vrednost (jednostavno mapiranje)
+            var aqiValue = (int)(f.Pm25Avg ?? 0);
+            var (_, category, color, _) = GetAqiInfo(aqiValue); // Koristi PM2.5 avg kao AQI
+            return new ForecastDayDto(
+                Date: f.Date.ToString("yyyy-MM-dd"),
+                Aqi: aqiValue,
+                Category: category,
+                Color: color,
+                Pollutants: new ForecastDayPollutants(
+                    Pm25: new PollutantRangeDto((int)(f.Pm25Avg ?? 0), (int)(f.Pm25Min ?? 0), (int)(f.Pm25Max ?? 0)),
+                    Pm10: null,
+                    O3: null
+                )
+            );
+        }).ToList();
+
+        _logger.LogInformation("Retrieved {Count} forecast days for Sarajevo", forecastDtos.Count);
+
+        return new ForecastResponse(
+            City: "Sarajevo", 
+            Forecast: forecastDtos,
+            Timestamp: DateTime.UtcNow
+        );
     }
 
     public async Task<CompleteAqiResponse> GetCompleteAsync(bool forceFresh = false, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Fetching complete WAQI data for Sarajevo (forceFresh: {ForceFresh})", forceFresh);
-        
-        // Call both live and forecast APIs
-        var liveTask = GetLiveAsync(forceFresh, cancellationToken);
-        var forecastTask = GetForecastAsync(forceFresh, cancellationToken);
-        
-        await Task.WhenAll(liveTask, forecastTask);
-        
-        var liveData = await liveTask;
-        var forecastData = await forecastTask;
-        
+        var live = await GetLiveAsync(forceFresh, cancellationToken);
+        var forecast = await GetForecastAsync(forceFresh, cancellationToken);
+
         return new CompleteAqiResponse(
-            LiveData: liveData,
-            ForecastData: forecastData,
+            LiveData: live,
+            ForecastData: forecast,
             RetrievedAt: DateTime.UtcNow
         );
     }
 
-    /// <summary>
-    /// Proverava da li je cached record svež (mlađi od 15 minuta)
-    /// </summary>
-    private static bool IsRecordFresh(SimpleAqiRecord record)
-    {
-        var age = DateTime.UtcNow - record.Timestamp;
-        var maxAge = TimeSpan.FromMinutes(15); // 🕐 15 minuta cache window
-        return age <= maxAge;
-    }
-
-    /// <summary>
-    /// Kreira LiveAqiResponse iz database record-a
-    /// </summary>
-    private static LiveAqiResponse CreateResponseFromDatabaseRecord(SimpleAqiRecord record)
-    {
-        var (category, color, healthMessage) = GetAqiInfo(record.AqiValue);
-        
-        return new LiveAqiResponse(
-            City: record.City,
-            OverallAqi: record.AqiValue,
-            AqiCategory: category,
-            Color: color,
-            HealthMessage: healthMessage,
-            Timestamp: record.Timestamp, // 🔥 KORISTI TIMESTAMP IZ BAZE
-            Measurements: Array.Empty<MeasurementDto>(),
-            DominantPollutant: "PM2.5" // Default value za cached podatke
-        );
-    }
-
-    private static (string Category, string Color, string HealthMessage) GetAqiInfo(int aqi)
-    {
-        return aqi switch
-        {
-            <= 50 => ("Good", "#00E400", "Air quality is considered satisfactory, and air pollution poses little or no risk."),
-            <= 100 => ("Moderate", "#FFFF00", "Air quality is acceptable for most people. However, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution."),
-            <= 150 => ("Unhealthy for Sensitive Groups", "#FF7E00", "Members of sensitive groups may experience health effects. The general public is not likely to be affected."),
-            <= 200 => ("Unhealthy", "#FF0000", "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects."),
-            <= 300 => ("Very Unhealthy", "#8F3F97", "Health warnings of emergency conditions. The entire population is more likely to be affected."),
-            _ => ("Hazardous", "#7E0023", "Health alert: everyone may experience more serious health effects.")
-        };
-    }
-
-    private static string MapDominantPollutant(string? pollutant)
-    {
-        return pollutant?.ToLowerInvariant() switch
-        {
-            "pm25" => "PM2.5",
-            "pm10" => "PM10",
-            "no2" => "NO2",
-            "o3" => "O3",
-            "so2" => "SO2",
-            "co" => "CO",
-            _ => "Unknown"
-        };
-    }
-
-    /// <summary>
-    /// Parsira detaljne measurements iz WAQI API iaqi objekta za PollutantCard komponente
-    /// </summary>
-    private static List<MeasurementDto> ParseMeasurementsFromWaqi(WaqiIaqi? iaqi)
+    // Pomoćna metoda za kreiranje SVIH MeasurementDto objekata iz SarajevoMeasurement
+    private List<MeasurementDto> ConvertAllMeasurementsToDto(SarajevoMeasurement measurement)
     {
         var measurements = new List<MeasurementDto>();
-        var timestamp = DateTime.UtcNow;
 
-        if (iaqi == null)
-        {
-            return measurements;
-        }
-
-        // PM2.5 - Najvažniji zagađivač
-        if (iaqi.Pm25?.V != null)
+        // PM2.5
+        if (measurement.Pm25.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-pm25-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_pm25",
                 City: "Sarajevo",
-                LocationName: "US Embassy", 
+                LocationName: "Sarajevo Center",
                 Parameter: "PM2.5",
-                Value: iaqi.Pm25.V,
+                Value: measurement.Pm25.Value,
                 Unit: "μg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
         // PM10
-        if (iaqi.Pm10?.V != null)
+        if (measurement.Pm10.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-pm10-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_pm10",
                 City: "Sarajevo",
-                LocationName: "US Embassy",
+                LocationName: "Sarajevo Center", 
                 Parameter: "PM10",
-                Value: iaqi.Pm10.V,
+                Value: measurement.Pm10.Value,
                 Unit: "μg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
-        // Ozon (O3)
-        if (iaqi.O3?.V != null)
+        // O3 (Ozone)
+        if (measurement.O3.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-o3-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_o3",
                 City: "Sarajevo",
-                LocationName: "US Embassy",
+                LocationName: "Sarajevo Center",
                 Parameter: "O3",
-                Value: iaqi.O3.V,
+                Value: measurement.O3.Value,
                 Unit: "μg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
-        // Azot dioksid (NO2)
-        if (iaqi.No2?.V != null)
+        // NO2 (Nitrogen Dioxide)
+        if (measurement.No2.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-no2-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_no2",
                 City: "Sarajevo",
-                LocationName: "US Embassy",
+                LocationName: "Sarajevo Center",
                 Parameter: "NO2",
-                Value: iaqi.No2.V,
+                Value: measurement.No2.Value,
                 Unit: "μg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
-        // Ugljen monoksid (CO)
-        if (iaqi.Co?.V != null)
+        // CO (Carbon Monoxide) - zadržati originalnu mg/m³ jedinicu
+        if (measurement.Co.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-co-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_co",
                 City: "Sarajevo",
-                LocationName: "US Embassy",
+                LocationName: "Sarajevo Center",
                 Parameter: "CO",
-                Value: iaqi.Co.V,
+                Value: measurement.Co.Value, // Zadržati mg/m³ vrednost
                 Unit: "mg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
-        // Sumpor dioksid (SO2)
-        if (iaqi.So2?.V != null)
+        // SO2 (Sulfur Dioxide)
+        if (measurement.So2.HasValue)
         {
             measurements.Add(new MeasurementDto(
-                Id: $"sarajevo-so2-{timestamp:yyyyMMdd-HHmmss}",
+                Id: $"{measurement.Id}_so2",
                 City: "Sarajevo",
-                LocationName: "US Embassy",
+                LocationName: "Sarajevo Center",
                 Parameter: "SO2",
-                Value: iaqi.So2.V,
+                Value: measurement.So2.Value,
                 Unit: "μg/m³",
-                Timestamp: timestamp,
-                SourceName: "WAQI"
+                Timestamp: measurement.Timestamp,
+                SourceName: "WAQI",
+                Coordinates: null,
+                AveragingPeriod: null
             ));
         }
 
         return measurements;
     }
 
-    /// <summary>
-    /// Helper metoda za dohvaćanje fresh measurements iz WAQI API-a
-    /// </summary>
-    private async Task<List<MeasurementDto>> GetFreshMeasurementsAsync(CancellationToken cancellationToken = default)
+    // Pomoćna metoda za AQI kategoriju i boje (prima gotov AQI iz baze)
+    private (int aqi, string category, string color, string message) GetAqiInfo(int aqiValue)
     {
-        try
+        return aqiValue switch
         {
-            const string sarajevoStationId = "@10557"; 
-            const string apiToken = "4017a1c616179160829bd7e3abb9cc9c8449958e";
-            var apiUrl = $"https://api.waqi.info/feed/{sarajevoStationId}/?token={apiToken}";
-            
-            var response = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
-            var waqiResponse = System.Text.Json.JsonSerializer.Deserialize<WaqiApiResponse>(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (waqiResponse?.Status == "ok" && waqiResponse.Data?.Iaqi != null)
-            {
-                _logger.LogInformation("✅ Fresh measurements fetched from WAQI for PollutantCards");
-                return ParseMeasurementsFromWaqi(waqiResponse.Data.Iaqi);
-            }
-            else
-            {
-                _logger.LogWarning("⚠️ WAQI API returned no measurements data");
-                return new List<MeasurementDto>();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error fetching fresh measurements from WAQI");
-            return new List<MeasurementDto>(); // Return empty list on error
-        }
+            <= 50 => (aqiValue, "Good", "#00E400", "Air quality is good"),
+            <= 100 => (aqiValue, "Moderate", "#FFFF00", "Air quality is moderate"),
+            <= 150 => (aqiValue, "Unhealthy for Sensitive Groups", "#FF7E00", "Unhealthy for sensitive groups"),
+            <= 200 => (aqiValue, "Unhealthy", "#FF0000", "Air quality is unhealthy"),
+            <= 300 => (aqiValue, "Very Unhealthy", "#8F3F97", "Air quality is very unhealthy"),
+            _ => (aqiValue, "Hazardous", "#7E0023", "Air quality is hazardous")
+        };
     }
 }

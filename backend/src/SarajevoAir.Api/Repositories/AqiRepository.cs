@@ -90,6 +90,31 @@ public interface IAqiRepository
     /// Silently ignoriše ako record ne postoji
     /// </summary>
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /*
+    === SARAJEVO-SPECIFIC OPERATIONS ===
+    Nove metode za measurements i forecast podatke specifične za Sarajevo
+    */
+
+    /// <summary>
+    /// Dodaje novi measurements record za Sarajevo
+    /// </summary>
+    Task AddSarajevoMeasurementAsync(SarajevoMeasurement measurement, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Vraća najnoviji measurements record za Sarajevo
+    /// </summary>
+    Task<SarajevoMeasurement?> GetLatestSarajevoMeasurementAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dodaje ili ažurira forecast record za Sarajevo na određeni datum
+    /// </summary>
+    Task UpsertSarajevoForecastAsync(SarajevoForecast forecast, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Vraća forecast podatke za Sarajevo za sledeće dane (počevši od danas)
+    /// </summary>
+    Task<IReadOnlyList<SarajevoForecast>> GetSarajevoForecastAsync(int daysCount = 5, CancellationToken cancellationToken = default);
 }
 
 /*
@@ -294,6 +319,74 @@ public class AqiRepository : IAqiRepository
         // Generiše i izvršava SQL DELETE statement
         // SQL: DELETE FROM SimpleAqiRecords WHERE Id = @id
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /*
+    === SARAJEVO-SPECIFIC IMPLEMENTATIONS ===
+    Implementacije novih metoda za Sarajevo measurements i forecast podatke
+    */
+
+    /// <summary>
+    /// Dodaje novi measurements record za Sarajevo
+    /// </summary>
+    public async Task AddSarajevoMeasurementAsync(SarajevoMeasurement measurement, CancellationToken cancellationToken = default)
+    {
+        _context.SarajevoMeasurements.Add(measurement);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Vraća najnoviji measurements record za Sarajevo
+    /// </summary>
+    public async Task<SarajevoMeasurement?> GetLatestSarajevoMeasurementAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.SarajevoMeasurements
+            .AsNoTracking()
+            .OrderByDescending(m => m.Timestamp)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Dodaje ili ažurira forecast record za Sarajevo na određeni datum
+    /// Koristi upsert pattern - update ako postoji, insert ako ne postoji
+    /// </summary>
+    public async Task UpsertSarajevoForecastAsync(SarajevoForecast forecast, CancellationToken cancellationToken = default)
+    {
+        // Pokušaj da nađeš postojeći record za taj datum
+        var existing = await _context.SarajevoForecasts
+            .FirstOrDefaultAsync(f => f.Date.Date == forecast.Date.Date, cancellationToken);
+
+        if (existing != null)
+        {
+            // Ažuriraj postojeći record
+            existing.Aqi = forecast.Aqi;
+            existing.Pm25Min = forecast.Pm25Min;
+            existing.Pm25Max = forecast.Pm25Max;
+            existing.Pm25Avg = forecast.Pm25Avg;
+            existing.CreatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            // Dodaj novi record
+            _context.SarajevoForecasts.Add(forecast);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Vraća forecast podatke za Sarajevo za sledeće dane (počevši od danas)
+    /// </summary>
+    public async Task<IReadOnlyList<SarajevoForecast>> GetSarajevoForecastAsync(int daysCount = 5, CancellationToken cancellationToken = default)
+    {
+        var today = DateTime.Today;
+        
+        return await _context.SarajevoForecasts
+            .AsNoTracking()
+            .Where(f => f.Date >= today)
+            .OrderBy(f => f.Date)
+            .Take(daysCount)
+            .ToListAsync(cancellationToken);
     }
 }
 

@@ -92,7 +92,7 @@ export function useSarajevoLive(config?: SWRConfiguration) {
     { 
       ...defaultConfig, 
       ...config,
-      refreshInterval: 30 * 1000,      // 🔄 ČESTI REFRESH IZ BAZE (30s)
+      refreshInterval: 60 * 1000,      // 🔄 OPTIMIZED REFRESH IZ BAZE (60s)
       revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
       revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
     }
@@ -117,7 +117,7 @@ export function useSarajevoForecast(config?: SWRConfiguration) {
     { 
       ...defaultConfig, 
       ...config,
-      refreshInterval: 30 * 1000,      // 🔄 SYNCED SA LIVE AQI (30s) - ISTI KAO useLiveAqi!
+      refreshInterval: 60 * 1000,      // 🔄 SYNCED SA LIVE AQI (60s) - ISTI KAO useLiveAqi!
       revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
       revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
     }
@@ -159,7 +159,7 @@ export function useLiveAqi(city: string, config?: SWRConfiguration) {
       ...defaultConfig, 
       ...config,
       // � OPTIMIZOVANE OPCIJE ZA SERVER-SIDE PROCESSING
-      refreshInterval: 30 * 1000, // 🔄 BRŽI REFRESH IZ BAZE (30s)
+      refreshInterval: 60 * 1000, // 🔄 OPTIMIZED REFRESH IZ BAZE (60s)
       revalidateOnFocus: true,     // 🎯 REFRESH KAD SE VRATI NA TAB
       revalidateOnMount: true,     // 🚀 REFRESH NA MOUNT
     }
