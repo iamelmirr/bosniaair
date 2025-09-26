@@ -74,9 +74,11 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
 
   const formatValue = (value: number) => {
     if (value < 1) {
-      return value.toFixed(2)
+      // Remove trailing zeros for values < 1 (0.50 → 0.5)
+      return parseFloat(value.toFixed(2)).toString()
     } else if (value < 10) {
-      return value.toFixed(1)
+      // Remove trailing zeros for values 1-9.9 (5.50 → 5.5, 5.00 → 5)
+      return parseFloat(value.toFixed(1)).toString()
     } else {
       return Math.round(value).toString()
     }

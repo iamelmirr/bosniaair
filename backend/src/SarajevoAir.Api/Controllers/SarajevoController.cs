@@ -15,6 +15,7 @@ PERFORMANCE: Kombinovani /complete endpoint smanjuje HTTP pozive za frontend
 using Microsoft.AspNetCore.Mvc;
 using SarajevoAir.Api.Services;
 using SarajevoAir.Api.Dtos;
+using SarajevoAir.Api.Dtos.Requests;
 
 namespace SarajevoAir.Api.Controllers;
 
@@ -45,14 +46,14 @@ public class SarajevoController : ControllerBase
     [ProducesResponseType(typeof(LiveAqiResponse), 200)]
     [ProducesResponseType(500)]
     public async Task<ActionResult<LiveAqiResponse>> GetLive(
-        [FromQuery] bool forceFresh = false,
+        [FromQuery] LiveDataRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Getting live data for Sarajevo, forceFresh: {ForceFresh}", forceFresh);
+            _logger.LogInformation("Getting live data for Sarajevo, forceFresh: {ForceFresh}", request.ForceFresh);
             
-            var result = await _sarajevoService.GetLiveAsync(forceFresh, cancellationToken);
+            var result = await _sarajevoService.GetLiveAsync(request.ForceFresh, cancellationToken);
             
             _logger.LogDebug("Successfully retrieved live data for Sarajevo, AQI: {Aqi}", result.OverallAqi);
             return Ok(result);
@@ -73,14 +74,15 @@ public class SarajevoController : ControllerBase
     [ProducesResponseType(typeof(ForecastResponse), 200)]
     [ProducesResponseType(500)]
     public async Task<ActionResult<ForecastResponse>> GetForecast(
-        [FromQuery] bool forceFresh = false,
+        [FromQuery] ForecastRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Getting forecast data for Sarajevo, forceFresh: {ForceFresh}", forceFresh);
+            _logger.LogInformation("Getting forecast data for Sarajevo, forceFresh: {ForceFresh}, days: {Days}", 
+                request.ForceFresh, request.Days);
             
-            var result = await _sarajevoService.GetForecastAsync(forceFresh, cancellationToken);
+            var result = await _sarajevoService.GetForecastAsync(request.ForceFresh, cancellationToken);
             
             _logger.LogDebug("Successfully retrieved forecast data for Sarajevo, days: {DayCount}", result.Forecast?.Count ?? 0);
             return Ok(result);
@@ -102,14 +104,15 @@ public class SarajevoController : ControllerBase
     [ProducesResponseType(typeof(SarajevoCompleteDto), 200)]
     [ProducesResponseType(500)]
     public async Task<ActionResult<SarajevoCompleteDto>> GetComplete(
-        [FromQuery] bool forceFresh = false,
+        [FromQuery] CompleteDataRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Getting complete data for Sarajevo, forceFresh: {ForceFresh}", forceFresh);
+            _logger.LogInformation("Getting complete data for Sarajevo, forceFresh: {ForceFresh}, includeCityComparison: {IncludeCityComparison}", 
+                request.LiveData.ForceFresh, request.IncludeCityComparison);
             
-            var result = await _sarajevoService.GetCompleteAsync(forceFresh, cancellationToken);
+            var result = await _sarajevoService.GetCompleteAsync(request.LiveData.ForceFresh, cancellationToken);
             
             _logger.LogDebug("Successfully retrieved complete data for Sarajevo, AQI: {Aqi}, Forecast days: {DayCount}", 
                 result.LiveData.OverallAqi, 

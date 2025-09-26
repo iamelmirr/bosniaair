@@ -20,11 +20,14 @@ Controller → poziva Service → Service poziva Repository → Repository prist
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using FluentValidation;
 using SarajevoAir.Api.Configuration;
 using SarajevoAir.Api.Data;
 using SarajevoAir.Api.Middleware;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Services;
+using SarajevoAir.Api.Mappings;
+using SarajevoAir.Api.Validators;
 using Serilog;
 
 // WebApplication.CreateBuilder() - kreira builder objekat za konfiguraciju aplikacije
@@ -112,7 +115,14 @@ ASP.NET automatski pronalazi sve klase koje:
 */
 
 // Registruje MVC Controller servise - automatski pronalazi sve Controller klase
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Fix timezone issue - ensure UTC timestamps are properly serialized with 'Z' suffix
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 
 // Omogućava Swagger-u da automatski analizira Controller-e i generiše dokumentaciju
 builder.Services.AddEndpointsApiExplorer();
@@ -231,6 +241,14 @@ Svaki layer ima svoju odgovornost i ne zna za implementaciju drugih layera
 
 // SINGLETON SERVICES - žive kroz ceo lifecycle aplikacije
 // builder.Services.AddSingleton<AirQualityCache>();          // In-memory cache za brže response-e - temporarily disabled until implemented
+
+// AUTOMAPPER - Object mapping between Entities and DTOs
+// Shows clean separation between domain and presentation layer
+builder.Services.AddAutoMapper(typeof(SarajevoAirMappingProfile));
+
+// FLUENTVALIDATION - Professional input validation
+// Shows enterprise-grade validation patterns
+builder.Services.AddValidatorsFromAssemblyContaining<LiveDataRequestValidator>();
 
 // SCOPED SERVICES - jedan objekat po HTTP request-u, automatski se dispose-uju
 builder.Services.AddScoped<IAqiRepository, AqiRepository>(); // Data access layer
