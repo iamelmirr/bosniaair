@@ -13,6 +13,7 @@ DESIGN DECISIONS:
 */
 
 using System.ComponentModel.DataAnnotations;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Entities;
 
@@ -31,7 +32,7 @@ public class SarajevoMeasurement
     /// <summary>
     /// Vreme kada su measurements zabeleženi (UTC)
     /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = TimeZoneHelper.GetSarajevoTime();
 
     /// <summary>
     /// PM2.5 koncentracija (mikrogrami po kubnom metru)

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Middleware;
 
@@ -173,7 +174,7 @@ public class ExceptionHandlingMiddleware
                 ? exception.Message 
                 : "An error occurred while processing your request.",
             traceId = context.TraceIdentifier,
-            timestamp = DateTime.UtcNow
+            timestamp = TimeZoneHelper.GetSarajevoTime()
         };
 
         /*

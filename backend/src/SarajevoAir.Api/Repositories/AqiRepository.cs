@@ -22,6 +22,7 @@ Sve metode su async sa CancellationToken support za scalability
 using Microsoft.EntityFrameworkCore;
 using SarajevoAir.Api.Data;
 using SarajevoAir.Api.Entities;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Repositories;
 
@@ -363,7 +364,7 @@ public class AqiRepository : IAqiRepository
             existing.Pm25Min = forecast.Pm25Min;
             existing.Pm25Max = forecast.Pm25Max;
             existing.Pm25Avg = forecast.Pm25Avg;
-            existing.CreatedAt = DateTime.UtcNow;
+            existing.CreatedAt = TimeZoneHelper.GetSarajevoTime();
         }
         else
         {
@@ -375,7 +376,7 @@ public class AqiRepository : IAqiRepository
     }
 
     /// <summary>
-    /// Vraća forecast podatke za Sarajevo za sledeće dane (počevši od danas)
+    /// Vraća forecast podatke za Sarajevo za sledeće dane (počevši od sutrašnjeg dana)
     /// </summary>
     public async Task<IReadOnlyList<SarajevoForecast>> GetSarajevoForecastAsync(int daysCount = 5, CancellationToken cancellationToken = default)
     {
@@ -383,7 +384,7 @@ public class AqiRepository : IAqiRepository
         
         return await _context.SarajevoForecasts
             .AsNoTracking()
-            .Where(f => f.Date >= today)
+            .Where(f => f.Date > today)
             .OrderBy(f => f.Date)
             .Take(daysCount)
             .ToListAsync(cancellationToken);

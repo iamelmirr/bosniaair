@@ -25,9 +25,4 @@ public class CompleteDataRequest
     /// Parametri za forecast podatke
     /// </summary>
     public ForecastRequest Forecast { get; set; } = new();
-
-    /// <summary>
-    /// Uključi city comparison podatke
-    /// </summary>
-    public bool IncludeCityComparison { get; set; } = false;
 }

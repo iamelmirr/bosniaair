@@ -25,11 +25,4 @@ public class LiveDataRequest
     /// </summary>
     [Display(Name = "Force Fresh Data")]
     public bool ForceFresh { get; set; } = false;
-
-    /// <summary>
-    /// Timeout za API poziv u sekundama
-    /// Default: 30 sekundi
-    /// </summary>
-    [Range(5, 300, ErrorMessage = "Timeout must be between 5 and 300 seconds")]
-    public int TimeoutSeconds { get; set; } = 30;
 }

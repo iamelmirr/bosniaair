@@ -24,6 +24,8 @@ DTO = API response model (različite klase u Models folderu)
 
 using System.ComponentModel.DataAnnotations;
 
+using SarajevoAir.Api.Utilities;
+
 namespace SarajevoAir.Api.Entities;
 
 /*
@@ -71,7 +73,7 @@ public class SimpleAqiRecord
     /// UTC vrijeme kada je AQI vrednost zabeležena  
     /// Default vrednost je trenutno UTC vrijeme kada se kreira objekat
     /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = TimeZoneHelper.GetSarajevoTime();
 
     /*
     === AQI VALUE FIELD ===
@@ -126,7 +128,7 @@ var record = new SimpleAqiRecord
 {
     City = "Tuzla",
     AqiValue = 67,
-    // Timestamp se automatski setuje na DateTime.UtcNow
+    // Timestamp se automatski setuje na lokalno Sarajevo vrijeme (UTC+2)
 };
 
 // Repository usage
@@ -140,7 +142,7 @@ var latest = await _context.SimpleAqiRecords
     .FirstOrDefaultAsync();
 
 var weeklyData = await _context.SimpleAqiRecords
-    .Where(x => x.City == "Sarajevo" && x.Timestamp > DateTime.UtcNow.AddDays(-7))
+    .Where(x => x.City == "Sarajevo" && x.Timestamp > TimeZoneHelper.GetSarajevoTime().AddDays(-7))
     .OrderBy(x => x.Timestamp)
     .ToListAsync();
 */

@@ -1,11 +1,11 @@
 using System.Text.Json;
 using SarajevoAir.Api.Dtos;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Services;
 
 public interface IAqicnService
 {
-    Task<CityComparisonResponse> GetCitiesComparisonAsync();
     Task<LiveAqiResponse> GetCityLiveAsync(string cityName, CancellationToken cancellationToken = default);
 }
 
@@ -18,17 +18,6 @@ public class AqicnService : IAqicnService
     {
         _httpClient = httpClient;
         _logger = logger;
-    }
-
-    public async Task<CityComparisonResponse> GetCitiesComparisonAsync()
-    {
-        // Za sada vraćamo basic test response
-        // TODO: Implementiraj WAQI API poziv za comparison
-        return new CityComparisonResponse(
-            Cities: Array.Empty<CityComparisonEntry>(),
-            ComparedAt: DateTime.UtcNow,
-            TotalCities: 0
-        );
     }
 
     public async Task<LiveAqiResponse> GetCityLiveAsync(string cityName, CancellationToken cancellationToken = default)
@@ -74,7 +63,7 @@ public class AqicnService : IAqicnService
             // Calculate AQI category and color from numeric AQI
             var (category, color, healthMessage) = GetAqiInfo(data.Aqi);
 
-            var timestamp = DateTime.TryParse(data.Time.Iso, out var parsedTime) ? parsedTime : DateTime.UtcNow;
+            var timestamp = DateTime.TryParse(data.Time.Iso, out var parsedTime) ? parsedTime : TimeZoneHelper.GetSarajevoTime();
 
             _logger.LogInformation("Successfully retrieved WAQI data for {CityName}, AQI: {Aqi}", cityName, data.Aqi);
 

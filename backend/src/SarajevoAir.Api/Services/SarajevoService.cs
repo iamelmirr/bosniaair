@@ -1,6 +1,7 @@
 using SarajevoAir.Api.Dtos;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Entities;
+using SarajevoAir.Api.Utilities;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
 
@@ -37,7 +38,7 @@ public class SarajevoService : ISarajevoService
                 AqiCategory: "No Data",
                 Color: "#999999",
                 HealthMessage: "Data not available",
-                Timestamp: DateTime.UtcNow,
+                Timestamp: TimeZoneHelper.GetSarajevoTime(),
                 Measurements: new List<MeasurementDto>(),
                 DominantPollutant: "Unknown"
             );
@@ -70,7 +71,7 @@ public class SarajevoService : ISarajevoService
             return new ForecastResponse(
                 City: "Sarajevo",
                 Forecast: new List<ForecastDayDto>(),
-                Timestamp: DateTime.UtcNow
+                Timestamp: TimeZoneHelper.GetSarajevoTime()
             );
         }
 
@@ -91,7 +92,7 @@ public class SarajevoService : ISarajevoService
         return new ForecastResponse(
             City: "Sarajevo", 
             Forecast: forecastDtos,
-            Timestamp: DateTime.UtcNow
+            Timestamp: TimeZoneHelper.GetSarajevoTime()
         );
     }
 
@@ -103,7 +104,7 @@ public class SarajevoService : ISarajevoService
         return new CompleteAqiResponse(
             LiveData: live,
             ForecastData: forecast,
-            RetrievedAt: DateTime.UtcNow
+            RetrievedAt: TimeZoneHelper.GetSarajevoTime()
         );
     }
 

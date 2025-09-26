@@ -21,6 +21,7 @@ Sve database tabele moraju biti registrovane kao DbSet<T> properties
 
 using Microsoft.EntityFrameworkCore;
 using SarajevoAir.Api.Entities;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Data;
 
@@ -184,7 +185,7 @@ public class AppDbContext : DbContext
     
     // Bulk operations
     var records = await _context.SimpleAqiRecords
-        .Where(x => x.Timestamp > DateTime.UtcNow.AddDays(-7))
+        .Where(x => x.Timestamp > TimeZoneHelper.GetSarajevoTime().AddDays(-7))
         .ToListAsync();
     */
 }

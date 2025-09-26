@@ -16,6 +16,7 @@ using SarajevoAir.Api.Services;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Entities;
 using SarajevoAir.Api.Dtos;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Services;
 
@@ -161,20 +162,21 @@ public class AirQualityRefreshService : BackgroundService
             
             // 💾 SAVE TO DATABASE (background service responsibility)
             var utcTimestamp = DateTime.UtcNow;
+            var localTimestamp = TimeZoneHelper.ConvertToSarajevoTime(utcTimestamp);
             
             // Save main AQI record (existing functionality)
             var aqiRecord = new SimpleAqiRecord
             {
                 City = "Sarajevo",
                 AqiValue = data.Aqi,
-                Timestamp = utcTimestamp
+                Timestamp = localTimestamp
             };
             await aqiRepository.AddRecordAsync(aqiRecord, cancellationToken);
             
             // 🆕 Save detailed measurements
             var measurementsRecord = new SarajevoMeasurement
             {
-                Timestamp = DateTime.UtcNow,
+                Timestamp = localTimestamp,
                 Pm25 = data.Iaqi?.Pm25?.V,
                 Pm10 = data.Iaqi?.Pm10?.V,
                 O3 = data.Iaqi?.O3?.V,
@@ -186,10 +188,10 @@ public class AirQualityRefreshService : BackgroundService
             await aqiRepository.AddSarajevoMeasurementAsync(measurementsRecord, cancellationToken);
             
             // 🆕 Fetch and save forecast data
-            await RefreshSarajevoForecast(httpClient, aqiRepository, cancellationToken);
+            await RefreshSarajevoForecast(httpClient, aqiRepository, localTimestamp, cancellationToken);
             
             _logger.LogInformation("💾 Background service saved AQI record: Sarajevo AQI {Aqi} at {Timestamp}", 
-                data.Aqi, utcTimestamp);
+                data.Aqi, localTimestamp);
             _logger.LogInformation("💾 Background service saved measurements: PM2.5={PM25}, PM10={PM10}, O3={O3}, NO2={NO2}, CO={CO}, SO2={SO2}", 
                 measurementsRecord.Pm25, measurementsRecord.Pm10, measurementsRecord.O3, 
                 measurementsRecord.No2, measurementsRecord.Co, measurementsRecord.So2);
@@ -224,7 +226,7 @@ public class AirQualityRefreshService : BackgroundService
     /// <summary>
     /// Osvježava forecast podatke za Sarajevo iz WAQI API-ja
     /// </summary>
-    private async Task RefreshSarajevoForecast(HttpClient httpClient, IAqiRepository aqiRepository, CancellationToken cancellationToken)
+    private async Task RefreshSarajevoForecast(HttpClient httpClient, IAqiRepository aqiRepository, DateTime localTimestamp, CancellationToken cancellationToken)
     {
         try
         {
@@ -243,16 +245,23 @@ public class AirQualityRefreshService : BackgroundService
 
             if (waqiForecastResponse?.Status == "ok" && waqiForecastResponse.Data?.Forecast?.Daily?.Pm25 != null)
             {
+                var today = DateTime.Today;
                 foreach (var forecastEntry in waqiForecastResponse.Data.Forecast.Daily.Pm25)
                 {
+                    var forecastDate = DateTime.Parse(forecastEntry.Day).Date;
+                    
+                    // Skip today's forecast, start from tomorrow
+                    if (forecastDate <= today)
+                        continue;
+                    
                     var forecastRecord = new SarajevoForecast
                     {
-                        Date = DateTime.Parse(forecastEntry.Day).Date,
+                        Date = forecastDate,
                         Pm25Min = forecastEntry.Min,
                         Pm25Max = forecastEntry.Max, 
                         Pm25Avg = forecastEntry.Avg,
-                        Aqi = CalculateAqiFromPm25(forecastEntry.Avg), // Use avg PM2.5 for AQI
-                        CreatedAt = DateTime.UtcNow
+                        Aqi = (int?)forecastEntry.Avg, // Use PM2.5 avg directly as AQI for forecast
+                        CreatedAt = localTimestamp
                     };
 
                     await aqiRepository.UpsertSarajevoForecastAsync(forecastRecord, cancellationToken);

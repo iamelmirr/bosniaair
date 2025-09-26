@@ -109,8 +109,8 @@ public class SarajevoController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Getting complete data for Sarajevo, forceFresh: {ForceFresh}, includeCityComparison: {IncludeCityComparison}", 
-                request.LiveData.ForceFresh, request.IncludeCityComparison);
+            _logger.LogInformation("Getting complete data for Sarajevo, forceFresh: {ForceFresh}", 
+                request.LiveData.ForceFresh);
             
             var result = await _sarajevoService.GetCompleteAsync(request.LiveData.ForceFresh, cancellationToken);
             

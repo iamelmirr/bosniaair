@@ -173,25 +173,6 @@ export function useLiveAqi(city: string, config?: SWRConfiguration) {
   }
 }
 
-/// <summary>
-/// Hook za detailed pollutant measurements sa SWR caching
-/// Focuses on individual measurement data rather than aggregated AQI
-/// </summary>
-export function useLiveMeasurements(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<Measurement[]>(
-    city ? `live-measurements-${city}` : null,
-    () => apiClient.getLiveMeasurements(city),
-    { ...defaultConfig, ...config }
-  )
-
-  return {
-    data,                 // Measurement[] ili undefined
-    error,               // Error object if request fails  
-    isLoading,           // Boolean loading state
-    refresh: mutate,     // Manual refresh function
-  }
-}
-
 // History hooks removed - using today + forecast timeline instead
 
 // Groups hook - REMOVED: functionality moved to static health-advice.ts

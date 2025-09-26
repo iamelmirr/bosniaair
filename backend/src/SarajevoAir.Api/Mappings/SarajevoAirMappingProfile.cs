@@ -1,6 +1,6 @@
 /*
 === AUTOMAPPER PROFILE ===
-Definira mapping između Entity objekata i DTOs
+Definira mapiranje između Entity objekata i DTOs
 Demonstrira clean separation of concerns
 
 PREDNOSTI AutoMapper-a:
@@ -38,10 +38,16 @@ public class SarajevoAirMappingProfile : Profile
         /// AutoMapper kopira matching properties, mi definiramo custom logic
         /// </summary>
         CreateMap<SarajevoMeasurement, LiveAqiResponse>()
-            .ForMember(dest => dest.City, opt => opt.MapFrom(src => "Sarajevo"))
-            .ForMember(dest => dest.OverallAqi, opt => opt.MapFrom(src => src.AqiValue ?? 0))
-            .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => src.Timestamp))
-            .ForMember(dest => dest.DominantPollutant, opt => opt.MapFrom(src => "PM2.5"))
+            .ConstructUsing(src => new LiveAqiResponse(
+                "Sarajevo",
+                src.AqiValue ?? 0,
+                "",
+                "",
+                "",
+                src.Timestamp,
+                new List<MeasurementDto>(),
+                "PM2.5"
+            ))
             // Ove properties Service mora manuelno da postavi:
             .ForMember(dest => dest.AqiCategory, opt => opt.Ignore()) 
             .ForMember(dest => dest.Color, opt => opt.Ignore()) 

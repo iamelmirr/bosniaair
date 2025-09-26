@@ -503,28 +503,6 @@ class ApiClient {
   Will be removed after frontend migration is complete
   */
   
-  /// <summary>
-  /// DEPRECATED: Use getSarajevoLive() or getCityLive() instead
-  /// Legacy method for backward compatibility
-  /// </summary>
-  async getLiveAqi(city: string): Promise<AqiResponse> {
-    console.warn('getLiveAqi() is deprecated. Use getSarajevoLive() or getCityLive() instead.')
-    
-    if (city.toLowerCase() === 'sarajevo') {
-      return this.getSarajevoLive()
-    } else {
-      return this.getCityLive(city)
-    }
-  }
-
-  /// <summary>
-  /// Fetches detailed pollutant measurements za specified city
-  /// Alternative method focusing on measurement details
-  /// </summary>
-  async getLiveMeasurements(city: string): Promise<Measurement[]> {
-    return this.request<Measurement[]>(`/live?city=${encodeURIComponent(city)}`)
-  }
-
   /*
   === DAILY HISTORICAL ENDPOINTS ===
   
@@ -550,35 +528,6 @@ class ApiClient {
   - getDailyData() - not used in current frontend
   - comparison endpoints - simplified in components
   */
-
-  /// <summary>
-  /// DEPRECATED: Legacy forecast method
-  /// Use getSarajevoForecast() for Sarajevo forecast data
-  /// </summary>
-  async getForecastData(city: string): Promise<ForecastData[]> {
-    console.warn('getForecastData() is deprecated. Use getSarajevoForecast() for Sarajevo.')
-    
-    if (city.toLowerCase() === 'sarajevo') {
-      const response = await this.getSarajevoForecast()
-      return response.forecast
-    }
-    
-    // Ostali gradovi currently don't have forecast support
-    return []
-  }
-
-  /// <summary>
-  /// Helper method za AQI category determination
-  /// Used internally for backward compatibility
-  /// </summary>
-  private getAqiCategory(aqi: number): string {
-    if (aqi <= 50) return 'Good'
-    if (aqi <= 100) return 'Moderate'
-    if (aqi <= 150) return 'Unhealthy for Sensitive Groups'
-    if (aqi <= 200) return 'Unhealthy'
-    if (aqi <= 300) return 'Very Unhealthy'
-    return 'Hazardous'
-  }
 
   // Share endpoints removed - using Web Share API in utils instead
 }

@@ -13,6 +13,7 @@ DESIGN DECISIONS:
 */
 
 using System.ComponentModel.DataAnnotations;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Entities;
 
@@ -56,5 +57,5 @@ public class SarajevoForecast
     /// <summary>
     /// Vreme kada je forecast kreiran/refreshovan (UTC)
     /// </summary>
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = TimeZoneHelper.GetSarajevoTime();
 }

@@ -129,12 +129,12 @@ CLIENT USAGE PATTERNS:
 /// <param name="Measurements">Detailed pollutant measurements array</param>
 /// <param name="DominantPollutant">Primary pollutant driving AQI value</param>
 public record LiveAqiResponse(
-    string City,
-    int OverallAqi,
-    string AqiCategory,
-    string Color,
-    string HealthMessage,
-    DateTime Timestamp,
-    IReadOnlyList<MeasurementDto> Measurements,
-    string DominantPollutant
+    string City = "",
+    int OverallAqi = 0,
+    string AqiCategory = "",
+    string Color = "",
+    string HealthMessage = "",
+    DateTime Timestamp = default,
+    IReadOnlyList<MeasurementDto> Measurements = null!,
+    string DominantPollutant = ""
 );

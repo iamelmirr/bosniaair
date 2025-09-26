@@ -30,17 +30,8 @@ public class LiveDataRequestValidator : AbstractValidator<LiveDataRequest>
 {
     public LiveDataRequestValidator()
     {
-        // Timeout validation - mora biti između 5 i 300 sekundi
-        RuleFor(x => x.TimeoutSeconds)
-            .InclusiveBetween(5, 300)
-            .WithMessage("Timeout must be between 5 and 300 seconds for reliable API calls");
-
         // ForceFresh je bool - automatski valjan, ali možemo dodati business logic
-        When(x => x.ForceFresh, () => {
-            RuleFor(x => x.TimeoutSeconds)
-                .GreaterThanOrEqualTo(10)
-                .WithMessage("Fresh API calls require minimum 10 seconds timeout");
-        });
+        // Nema posebnih validacija za sada
     }
 }
 
@@ -81,12 +72,5 @@ public class CompleteDataRequestValidator : AbstractValidator<CompleteDataReques
         // Nested validator - automatski poziva ForecastRequestValidator  
         RuleFor(x => x.Forecast)
             .SetValidator(new ForecastRequestValidator());
-
-        // Business rule - ne možemo imati i city comparison i fresh data odjednom
-        When(x => x.IncludeCityComparison && x.LiveData.ForceFresh, () => {
-            RuleFor(x => x.IncludeCityComparison)
-                .Equal(false)
-                .WithMessage("City comparison cannot be included with fresh data requests due to performance constraints");
-        });
     }
 }

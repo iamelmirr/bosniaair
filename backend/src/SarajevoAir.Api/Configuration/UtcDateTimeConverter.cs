@@ -3,7 +3,7 @@
 Fixes timezone issue where DateTime objects are serialized without timezone info
 
 PROBLEM:
-- Backend koristi DateTime.UtcNow (correct)
+- Backend koristi lokalno Sarajevo vrijeme (UTC+2)
 - JSON serializer serijalizuje kao "2025-09-26T13:24:35.074576" (no timezone info)
 - Frontend parsira kao lokalnu timezone umjesto UTC
 
@@ -15,6 +15,7 @@ SOLUTION:
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Configuration;
 
@@ -31,7 +32,7 @@ public class UtcDateTimeConverter : JsonConverter<DateTime>
         {
             return date.ToUniversalTime();
         }
-        return DateTime.UtcNow;
+        return TimeZoneHelper.GetSarajevoTime();
     }
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)

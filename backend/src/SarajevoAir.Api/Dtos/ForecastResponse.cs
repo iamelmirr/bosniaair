@@ -56,11 +56,11 @@ Includes overall AQI i individual pollutant breakdowns
 /// <param name="Color">Hex color code za visual representation</param>
 /// <param name="Pollutants">Individual pollutant prediction ranges</param>
 public record ForecastDayDto(
-    string Date,
-    int Aqi,
-    string Category,
-    string Color,
-    ForecastDayPollutants Pollutants
+    string Date = "",
+    int Aqi = 0,
+    string Category = "",
+    string Color = "",
+    ForecastDayPollutants? Pollutants = null
 );
 
 /*
