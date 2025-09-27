@@ -273,16 +273,50 @@ export function classNames(...classes: (string | undefined | null | false)[]): s
 }
 
 // Constants for the app
-export const CITIES = [
-  'Sarajevo',
-  'Tuzla',
-  'Mostar', 
-  'Banja Luka',
-  'Zenica',
-  'Bihać',
-  'Prijedor',
-  'Trebinje'
+export const CITY_OPTIONS = [
+  { id: 'Sarajevo', name: 'Sarajevo' },
+  { id: 'Tuzla', name: 'Tuzla' },
+  { id: 'Mostar', name: 'Mostar' },
+  { id: 'BanjaLuka', name: 'Banja Luka' },
+  { id: 'Zenica', name: 'Zenica' },
+  { id: 'Bihac', name: 'Bihać' }
 ] as const
+
+export type CityId = (typeof CITY_OPTIONS)[number]['id']
+
+export const DEFAULT_PRIMARY_CITY: CityId = 'Sarajevo'
+export const DEFAULT_COMPARISON_CITIES: CityId[] = ['Tuzla', 'Mostar']
+
+export function cityIdToLabel(cityId: CityId): string {
+  const match = CITY_OPTIONS.find(city => city.id === cityId)
+  return match ? match.name : cityId
+}
+
+export function isValidCityId(value: string | null | undefined): value is CityId {
+  if (!value) {
+    return false
+  }
+  return CITY_OPTIONS.some(city => city.id === value)
+}
+
+export function sanitizeComparisonCities(values: unknown): CityId[] {
+  if (!Array.isArray(values)) {
+    return [...DEFAULT_COMPARISON_CITIES]
+  }
+
+  const unique = new Set<CityId>()
+  for (const value of values) {
+    if (typeof value === 'string' && isValidCityId(value)) {
+      unique.add(value)
+    }
+  }
+
+  if (unique.size === 0) {
+    DEFAULT_COMPARISON_CITIES.forEach(city => unique.add(city))
+  }
+
+  return Array.from(unique)
+}
 
 export const POLLUTANT_NAMES = {
   'pm25': 'PM2.5',
@@ -302,5 +336,4 @@ export const POLLUTANT_DESCRIPTIONS = {
   'co': 'Carbon monoxide',
 } as const
 
-export type City = typeof CITIES[number]
 export type PollutantKey = keyof typeof POLLUTANT_NAMES

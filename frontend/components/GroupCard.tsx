@@ -1,11 +1,11 @@
 'use client'
 
-import { useSarajevoComplete } from '../lib/hooks'
-import { getHealthAdvice, getAqiCategoryClass, classNames } from '../lib/utils'
+import { useComplete } from '../lib/hooks'
+import { getAqiCategoryClass, classNames, cityIdToLabel, CityId } from '../lib/utils'
 import { getAllHealthAdvice, RISK_COLORS, RISK_TRANSLATIONS } from '../lib/health-advice'
 
 interface GroupCardProps {
-  city: string
+  city: CityId
 }
 
 // All group constants moved to health-advice.ts
@@ -21,11 +21,10 @@ const getAqiCategoryBosnian = (aqi: number): string => {
 }
 
 export default function GroupCard({ city }: GroupCardProps) {
-  // Only Sarajevo supported in new architecture
-  const { data: sarajevoData, error, isLoading } = useSarajevoComplete()
-  
-  // Generate health advice locally using current AQI  
-  const healthAdvice = sarajevoData ? getAllHealthAdvice(sarajevoData.liveData.overallAqi) : null
+  const cityLabel = cityIdToLabel(city)
+  const { data: completeData, error, isLoading } = useComplete(city)
+  const liveData = completeData?.liveData
+  const healthAdvice = liveData ? getAllHealthAdvice(liveData.overallAqi) : null
 
   if (isLoading) {
     return (
@@ -62,7 +61,7 @@ export default function GroupCard({ city }: GroupCardProps) {
     )
   }
 
-  if (!sarajevoData || !healthAdvice) {
+  if (!liveData || !healthAdvice) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card">
         <div className="text-center py-8">
@@ -71,7 +70,7 @@ export default function GroupCard({ city }: GroupCardProps) {
             Nema zdravstvenih podataka
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Zdravstveni podaci nisu dostupni za {city}
+            Zdravstveni podaci nisu dostupni za {cityLabel}
           </p>
         </div>
       </section>
@@ -87,17 +86,17 @@ export default function GroupCard({ city }: GroupCardProps) {
             Zdravstveni savjeti
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Preporuke za osjetljive grupe stanovništva
+            Preporuke za osjetljive grupe stanovništva u gradu {cityLabel}
           </p>
         </div>
         
         {/* Overall AQI Badge */}
         <div className="text-center">
-          <div className={`text-2xl font-bold ${getAqiCategoryClass(sarajevoData.liveData.overallAqi)}`}>
-            {sarajevoData.liveData.overallAqi}
+          <div className={`text-2xl font-bold ${getAqiCategoryClass(liveData.overallAqi)}`}>
+            {liveData.overallAqi}
           </div>
           <div className="text-xs text-gray-500 uppercase tracking-wide">
-            {getAqiCategoryBosnian(sarajevoData.liveData.overallAqi)}
+            {getAqiCategoryBosnian(liveData.overallAqi)}
           </div>
         </div>
       </div>

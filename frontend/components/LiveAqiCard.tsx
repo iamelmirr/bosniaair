@@ -1,13 +1,15 @@
 'use client'
 
 import { useLiveAqi } from '../lib/hooks'
+import { cityIdToLabel, CityId } from '../lib/utils'
 
 interface LiveAqiCardProps {
-  city: string
+  city: CityId
 }
 
 export default function LiveAqiCard({ city }: LiveAqiCardProps) {
   const { data: aqiData, error, isLoading } = useLiveAqi(city)
+  const cityLabel = cityIdToLabel(city)
 
   if (isLoading) {
     return (
@@ -56,7 +58,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card">
         <div className="text-center text-gray-600 dark:text-gray-400">
-          Nema dostupnih podataka za {city}
+          Nema dostupnih podataka za {cityLabel}
         </div>
       </section>
     )
@@ -132,7 +134,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       {/* Header */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-          Trenutni AQI — {city}
+          Trenutni AQI — {cityLabel}
         </h2>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -171,7 +173,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           onClick={() => {
             if (navigator.share) {
               navigator.share({
-                title: 'Kvaliteta zraka u ' + city,
+                title: 'Kvaliteta zraka u ' + cityLabel,
                 text: 'Trenutni AQI: ' + aqiData.overallAqi + ' (' + translateAqiCategory(aqiData.aqiCategory) + ')',
                 url: window.location.href
               })

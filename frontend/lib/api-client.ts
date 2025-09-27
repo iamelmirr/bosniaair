@@ -12,10 +12,10 @@ FRONTEND ARCHITECTURE ROLE:
 │   REACT COMPONENTS  │────│     API CLIENT           │────│   BACKEND API       │
 │   (UI Layer)        │    │   (This Library)         │    │  (ASP.NET Core)     │
 │                     │    │                          │    │                     │
-│ • LiveAqiCard       │────│ • getSarajevoLive()      │────│ • /api/v1/sarajevo/live │
-│ • DailyTimeline     │────│ • getSarajevoForecast()  │────│ • /api/v1/sarajevo/forecast │
-│ • CityComparison    │────│ • getCityLive()          │────│ • /api/v1/cities/{city}/live │
-│ • GroupCard         │────│ • getSarajevoComplete()  │────│ • /api/v1/sarajevo/complete │
+│ • LiveAqiCard       │────│ • getLive()              │────│ • /api/v1/air-quality/{city}/live │
+│ • DailyTimeline     │────│ • getComplete()          │────│ • /api/v1/air-quality/{city}/complete │
+│ • CityComparison    │────│ • getSnapshots()         │────│ • /api/v1/air-quality/snapshots │
+│ • GroupCard         │────│ • refreshCity()          │────│ • /api/v1/air-quality/refresh/{city} │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
 TYPE SAFETY STRATEGY:
@@ -75,20 +75,20 @@ export interface Measurement {
 }
 
 /*
-=== NEW: SARAJEVO-SPECIFIC INTERFACES ===
+=== COMPLETE RESPONSE INTERFACE ===
 
-Optimized interfaces za nove Sarajevo endpoints
-Eliminišu potrebu za multiple API pozive
+Kombinovani payload koristi unified backend /complete endpoint
+Eliminiše potrebu za multiple API pozive
 */
 
 /// <summary>
 /// Kombinovani response za Sarajevo - live + forecast data u jednom pozivu
 /// Maps to backend SarajevoCompleteDto za performance optimization
 /// </summary>
-export interface SarajevoCompleteResponse {
+export interface CompleteAqiResponse {
   liveData: AqiResponse;
   forecastData: ForecastResponse;
-  timestamp: string;
+  retrievedAt: Date;
 }
 
 /*
@@ -339,54 +339,73 @@ class ApiClient {
   */
 
   /*
-  === NEW: SARAJEVO-SPECIFIC ENDPOINTS ===
-  
-  OPTIMIZED SARAJEVO OPERATIONS:
-  Specialized endpoints za glavnu funkcionalnost aplikacije
-  Kombinovani pozivi za performance optimization
+  === UNIFIED AIR QUALITY ENDPOINTS ===
+
+  SINGLE CONTROLLER ARCHITECTURE:
+  Sve operacije dostupne preko /api/v1/air-quality/{city}
+  Omogućava isti kod put za sve gradove i eliminiše Sarajevo-specifične funkcije
   */
-  
-  /// <summary>
-  /// NEW: Kombinovani poziv za sve Sarajevo podatke (live + forecast)
-  /// Optimizovano za glavnu stranicu - jedan HTTP poziv umjesto dva
-  /// Calls backend /api/v1/sarajevo/complete endpoint
-  /// </summary>
-  async getSarajevoComplete(): Promise<SarajevoCompleteResponse> {
-    return this.request<SarajevoCompleteResponse>('/sarajevo/complete')
-  }
 
   /// <summary>
-  /// NEW: Samo live AQI za Sarajevo
-  /// Calls backend /api/v1/sarajevo/live endpoint
+  /// Retrieves latest cached or freshly refreshed live AQI podatke
   /// </summary>
-  async getSarajevoLive(forceFresh: boolean = false): Promise<AqiResponse> {
-    return this.request<AqiResponse>(`/sarajevo/live?forceFresh=${forceFresh}`)
-  }
-
-  /// <summary>
-  /// NEW: Samo forecast za Sarajevo
-  /// Calls backend /api/v1/sarajevo/forecast endpoint
-  /// </summary>
-  async getSarajevoForecast(forceFresh: boolean = false): Promise<ForecastResponse> {
-    return this.request<ForecastResponse>(`/sarajevo/forecast?forceFresh=${forceFresh}`)
-  }
-
-  /*
-  === CITIES ENDPOINTS (OTHER CITIES) ===
-  
-  ON-DEMAND DATA ZA OSTALE GRADOVE:
-  Jednostavan pristup bez cache optimizacija
-  */
-  
-  /// <summary>
-  /// NEW: Live AQI za ostale gradove (ne-Sarajevo)
-  /// Calls backend /api/v1/cities/{city}/live endpoint
-  /// </summary>
-  async getCityLive(city: string): Promise<AqiResponse> {
-    if (city.toLowerCase() === 'sarajevo') {
-      throw new Error('Use getSarajevoLive() for Sarajevo data')
+  async getLive(cityId: string, options?: { forceRefresh?: boolean }): Promise<AqiResponse> {
+    const params = new URLSearchParams()
+    if (options?.forceRefresh) {
+      params.set('forceRefresh', 'true')
     }
-    return this.request<AqiResponse>(`/cities/${encodeURIComponent(city)}/live`)
+    const query = params.toString()
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/live${query ? `?${query}` : ''}`
+    return this.request<AqiResponse>(endpoint)
+  }
+
+  /// <summary>
+  /// Retrieves forecast podatke za odabrani grad, cached unless forceRefresh specified
+  /// </summary>
+  async getForecast(cityId: string, options?: { forceRefresh?: boolean }): Promise<ForecastResponse> {
+    const params = new URLSearchParams()
+    if (options?.forceRefresh) {
+      params.set('forceRefresh', 'true')
+    }
+    const query = params.toString()
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/forecast${query ? `?${query}` : ''}`
+    return this.request<ForecastResponse>(endpoint)
+  }
+
+  /// <summary>
+  /// Retrieves combined live + forecast payload u jednom pozivu
+  /// </summary>
+  async getComplete(cityId: string, options?: { forceLiveRefresh?: boolean; forceForecastRefresh?: boolean }): Promise<CompleteAqiResponse> {
+    const params = new URLSearchParams()
+    if (options?.forceLiveRefresh) {
+      params.set('forceLiveRefresh', 'true')
+    }
+    if (options?.forceForecastRefresh) {
+      params.set('forceForecastRefresh', 'true')
+    }
+    const query = params.toString()
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/complete${query ? `?${query}` : ''}`
+    return this.request<CompleteAqiResponse>(endpoint)
+  }
+
+  /// <summary>
+  /// Returns latest live snapshot za više gradova odjednom
+  /// </summary>
+  async getSnapshots(cities?: string[]): Promise<Record<string, AqiResponse>> {
+    const params = new URLSearchParams()
+    cities?.forEach(city => params.append('cities', city))
+    const query = params.toString()
+    const endpoint = `/air-quality/snapshots${query ? `?${query}` : ''}`
+    return this.request<Record<string, AqiResponse>>(endpoint)
+  }
+
+  /// <summary>
+  /// Kreira manualni refresh za određeni grad
+  /// </summary>
+  async refreshCity(cityId: string): Promise<void> {
+    await this.request<{ message: string }>(`/air-quality/refresh/${encodeURIComponent(cityId)}`, {
+      method: 'POST'
+    })
   }
 
   /*

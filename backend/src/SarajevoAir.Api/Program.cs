@@ -20,14 +20,11 @@ Controller → poziva Service → Service poziva Repository → Repository prist
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using FluentValidation;
 using SarajevoAir.Api.Configuration;
 using SarajevoAir.Api.Data;
 using SarajevoAir.Api.Middleware;
 using SarajevoAir.Api.Repositories;
 using SarajevoAir.Api.Services;
-using SarajevoAir.Api.Mappings;
-using SarajevoAir.Api.Validators;
 using Serilog;
 
 // WebApplication.CreateBuilder() - kreira builder objekat za konfiguraciju aplikacije
@@ -208,18 +205,17 @@ Ako WAQI API vrati 500 error, automatski će se pokušati ponovo 3 puta
 sa delays: 2s, 4s, 8s (exponential backoff)
 */
 
-// NEW: Registruje HTTP client za AqicnService (ostali gradovi)
-builder.Services.AddHttpClient<AqicnService>()
-    .ConfigureHttpClient(client =>
+// Unified HTTP client for AirQualityService - handles all WAQI calls via City enum
+builder.Services.AddHttpClient<AirQualityService>()
+    .ConfigureHttpClient((sp, client) =>
     {
-        client.BaseAddress = new Uri("https://api.waqi.info/");
+        var configuration = sp.GetRequiredService<IConfiguration>();
+        var baseUrl = configuration.GetValue<string>("Aqicn:ApiUrl") ?? "https://api.waqi.info/";
+        client.BaseAddress = new Uri(baseUrl.EndsWith('/') ? baseUrl : baseUrl + '/');
         client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.Add("User-Agent", "SarajevoAir/1.0");
     })
     .AddStandardResilienceHandler();
-
-// Keep AqicnClient za SarajevoService dependency - temporarily disabled until implemented
-// builder.Services.AddHttpClient<IAqicnClient, AqicnClient>()
 
 /*
 === DEPENDENCY INJECTION REGISTRACIJA ===
@@ -242,31 +238,11 @@ Svaki layer ima svoju odgovornost i ne zna za implementaciju drugih layera
 
 // SINGLETON SERVICES - žive kroz ceo lifecycle aplikacije
 
-// AUTOMAPPER - Object mapping between Entities and DTOs
-// Shows clean separation between domain and presentation layer
-builder.Services.AddAutoMapper(typeof(SarajevoAirMappingProfile));
-
-// FLUENTVALIDATION - Professional input validation
-// Shows enterprise-grade validation patterns
-builder.Services.AddValidatorsFromAssemblyContaining<LiveDataRequestValidator>();
-
 // SCOPED SERVICES - jedan objekat po HTTP request-u, automatski se dispose-uju
-builder.Services.AddScoped<IAqiRepository, AqiRepository>(); // Data access layer
+builder.Services.AddScoped<IAirQualityRepository, AirQualityRepository>(); // Data access layer
 
-// NEW: Simplified Business Logic Services - 2 core services only
-builder.Services.AddScoped<ISarajevoService, SarajevoService>();               // All Sarajevo operations (live + forecast + database)
-builder.Services.AddScoped<IAqicnService, AqicnService>();                     // Other cities on-demand data
-
-// REMOVED services (functionality consolidated):
-// - IAirQualityService, AirQualityService (merged into SarajevoService)
-// - IForecastService, ForecastService (merged into SarajevoService)  
-// - IHealthAdviceService, HealthAdviceService (moved to frontend)
-// - IDailyAqiService, DailyAqiService (not used in frontend)
-// - ICityComparisonService, CityComparisonService (simplified in frontend)
-// - IAqiAdminService, AqiAdminService (not implemented yet)
-
-// HTTP CLIENT za pozivanje vanjskih API-ja
-builder.Services.AddHttpClient();
+// Unified business logic service for all cities
+builder.Services.AddScoped<IAirQualityService>(sp => sp.GetRequiredService<AirQualityService>());
 
 /*
 === BACKGROUND SERVICES ===
@@ -281,7 +257,7 @@ AirQualityRefreshService:
 */
 
 // BACKGROUND SERVICE za periodično osvježavanje podataka
-builder.Services.AddHostedService<AirQualityRefreshService>(); // Prikuplja podatke svakih 10min
+builder.Services.AddHostedService<AirQualityScheduler>(); // Prikuplja podatke svakih X minuta
 
 /*
 === HEALTH CHECKS ===

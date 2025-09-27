@@ -18,10 +18,10 @@ HOOK ARCHITECTURE:
 ┌─────────────────────┐    ┌──────────────────────────┐    ┌─────────────────────┐
 │  REACT COMPONENTS   │────│      CUSTOM HOOKS        │────│    API CLIENT       │
 │                     │    │    (This Library)        │    │                     │
-│ • LiveAqiCard       │────│ • useLiveAqi()           │────│ • getLiveAqi()      │
-│ • ForecastTimeline  │────│ • useForecastData()      │────│ • getForecastData() │
-│ • DailyAqiCard      │────│ • useDailyData()         │────│ • getDailyData()    │
-│ • GroupCard         │────│ • useHealthGroups()      │────│ • getGroups()       │
+│ • LiveAqiCard       │────│ • useLiveAqi()           │────│ • getLive()         │
+│ • DailyTimeline     │────│ • useComplete()          │────│ • getComplete()     │
+│ • CityComparison    │────│ • useSnapshots()         │────│ • getSnapshots()    │
+│ • GroupCard         │────│ • useComplete()          │────│ • getComplete()     │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
 CACHING STRATEGY:
@@ -29,8 +29,10 @@ CACHING STRATEGY:
 Balances data freshness sa API rate limiting i performance
 */
 
-import useSWR, { SWRConfiguration, mutate } from 'swr'
-import { apiClient, AqiResponse, Measurement, SarajevoCompleteResponse, ForecastResponse } from './api-client'
+import { useCallback, useEffect } from 'react'
+import useSWR, { SWRConfiguration } from 'swr'
+import { apiClient, AqiResponse, ForecastResponse, CompleteAqiResponse } from './api-client'
+import { airQualityObservable } from './observable'
 
 /*
 === SWR GLOBAL CONFIGURATION ===
@@ -52,218 +54,211 @@ const defaultConfig: SWRConfiguration = {
   errorRetryInterval: 5000,         // 5 second delay between retries
 }
 
-/*
-===========================================================================================
-                                   NEW: SARAJEVO-SPECIFIC HOOKS
-===========================================================================================
+const DEFAULT_OBSERVABLE_INTERVAL = 60 * 1000
 
-OPTIMIZED SARAJEVO OPERATIONS:
-Specialized hooks za glavnu funkcionalnost aplikacije
-Kombinovani pozivi za performance optimization
-*/
-
-/// <summary>
-/// NEW: Kombinovani hook za sve Sarajevo podatke (live + forecast)
-/// Optimizovano za glavnu stranicu - jedan HTTP poziv umjesto dva
-/// </summary>
-export function useSarajevoComplete(config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<SarajevoCompleteResponse>(
-    'sarajevo-complete',
-    () => apiClient.getSarajevoComplete(),
-    {
-      ...defaultConfig,
-      ...config,
-      refreshInterval: 60 * 1000,      // 🔄 Sync sa live refresh intervalom (60s)
-      revalidateOnFocus: true,         // 🎯 Ponovno učitaj pri povratku na tab
-      revalidateOnMount: true,         // 🚀 Obavezno refresh pri mount-u
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
-
-/// <summary>
-/// NEW: Hook za samo live AQI za Sarajevo
-/// FORCE FRESH na prvom load-u da se podaci odmah ažuriraju
-/// </summary>
-export function useSarajevoLive(config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
-    'sarajevo-live',
-    () => apiClient.getSarajevoLive(false), // � KORISTI CACHED PODATKE IZ BACKGROUND SERVICE
-    { 
-      ...defaultConfig, 
-      ...config,
-      refreshInterval: 60 * 1000,      // 🔄 OPTIMIZED REFRESH IZ BAZE (60s)
-      revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
-      revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
-
-/// <summary>
-/// NEW: Hook za samo forecast za Sarajevo
-/// FORCE FRESH na prvom load-u da se podaci odmah ažuriraju
-/// </summary>
-export function useSarajevoForecast(config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
-    'sarajevo-forecast',
-    () => apiClient.getSarajevoForecast(false), // � KORISTI CACHED PODATKE IZ BACKGROUND SERVICE
-    { 
-      ...defaultConfig, 
-      ...config,
-      refreshInterval: 60 * 1000,      // 🔄 SYNCED SA LIVE AQI (60s) - ISTI KAO useLiveAqi!
-      revalidateOnFocus: true,          // 🎯 REFRESH KAD KORISNIK SE VRATI NA TAB
-      revalidateOnMount: true,          // 🚀 REFRESH NA MOUNT KOMPONENTE  
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
+function resolveInterval(config?: SWRConfiguration, fallback: number = DEFAULT_OBSERVABLE_INTERVAL) {
+  const value = config?.refreshInterval
+  return typeof value === 'number' && value > 0 ? value : fallback
 }
 
 /*
 ===========================================================================================
-                                   CITIES DATA HOOKS
+                               UNIFIED CITY-AWARE HOOKS
 ===========================================================================================
 
-ON-DEMAND DATA ZA OSTALE GRADOVE:
-Smart routing na osnovu grada - Sarajevo vs ostali
+SINGLE ENTRY POINTS:
+Sve funkcije koriste nove /api/v1/air-quality endpoint-e bez posebnih Sarajevo pravila
 */
 
 /// <summary>
-/// UPDATED: Smart routing hook za live AQI data
-/// Sarajevo → SarajevoService, ostali → CitiesService  
+/// Hook za live AQI podatke sa automatskim 60s refresh intervalom
 /// </summary>
-export function useLiveAqi(city: string, config?: SWRConfiguration) {
+export function useLiveAqi(cityId: string | null, config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
-    city ? `live-aqi-${city}` : null,
-    () => {
-      if (city.toLowerCase() === 'sarajevo') {
-        // 🔄 NE FORCE FRESH - koristi cached podatke iz background service
-        return apiClient.getSarajevoLive(false) 
-      } else {
-        return apiClient.getCityLive(city)
-      }
-    },
-    { 
-      ...defaultConfig, 
-      ...config,
-      // � OPTIMIZOVANE OPCIJE ZA SERVER-SIDE PROCESSING
-      refreshInterval: 60 * 1000, // 🔄 OPTIMIZED REFRESH IZ BAZE (60s)
-      revalidateOnFocus: true,     // 🎯 REFRESH KAD SE VRATI NA TAB
-      revalidateOnMount: true,     // 🚀 REFRESH NA MOUNT
-    }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
-}
-
-// History hooks removed - using today + forecast timeline instead
-
-// Groups hook - REMOVED: functionality moved to static health-advice.ts
-// Za health recommendations, koristi local getHealthAdvice() function
-
-// Compare hook removed - using multiple live calls instead
-
-// Forecast hook - UPDATED for new architecture
-export function useForecast(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
-    city ? `forecast-${city}` : null,
-    () => {
-      if (city.toLowerCase() === 'sarajevo') {
-        return apiClient.getSarajevoForecast()
-      } else {
-        // For other cities, forecast not implemented yet in simplified architecture
-        throw new Error(`Forecast not available for ${city}. Only Sarajevo supported.`)
-      }
-    },
+    cityId ? `aqi-live-${cityId}` : null,
+    () => apiClient.getLive(cityId!),
     {
       ...defaultConfig,
       ...config,
-      refreshInterval: 60 * 1000,      // 🔄 Sync forecast sa live podacima (60s)
+      refreshInterval: 0,
       revalidateOnFocus: true,
       revalidateOnMount: true,
     }
   )
 
+  const intervalMs = resolveInterval(config)
+
+  useEffect(() => {
+    if (!cityId) {
+      return
+    }
+
+    const unsubscribe = airQualityObservable.subscribe(() => {
+      void mutate()
+    }, { intervalMs })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [cityId, mutate, intervalMs])
+
+  const refresh = useCallback(() => mutate(), [mutate])
+
   return {
     data,
     error,
     isLoading,
-    refresh: mutate,
+    refresh,
   }
 }
 
-// Utility hooks
-export function useRefreshAll() {
-  const refreshAll = () => {
-    // Refresh all SWR caches by invalidating all keys
-    mutate(() => true)
+/// <summary>
+/// Hook za forecast podatke prebačen na unified backend endpoint
+/// </summary>
+export function useForecast(cityId: string | null, config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
+    cityId ? `aqi-forecast-${cityId}` : null,
+    () => apiClient.getForecast(cityId!),
+    {
+      ...defaultConfig,
+      ...config,
+      refreshInterval: 0,
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+    }
+  )
+
+  const intervalMs = resolveInterval(config)
+
+  useEffect(() => {
+    if (!cityId) {
+      return
+    }
+
+    const unsubscribe = airQualityObservable.subscribe(() => {
+      void mutate()
+    }, { intervalMs })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [cityId, mutate, intervalMs])
+
+  const refresh = useCallback(() => mutate(), [mutate])
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh,
   }
+}
+
+/// <summary>
+/// Hook za kompletan payload (live + forecast) u jednom pozivu
+/// </summary>
+export function useComplete(cityId: string | null, config?: SWRConfiguration) {
+  const { data, error, isLoading, mutate } = useSWR<CompleteAqiResponse>(
+    cityId ? `aqi-complete-${cityId}` : null,
+    () => apiClient.getComplete(cityId!),
+    {
+      ...defaultConfig,
+      ...config,
+      refreshInterval: 0,
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+    }
+  )
+
+  const intervalMs = resolveInterval(config)
+
+  useEffect(() => {
+    if (!cityId) {
+      return
+    }
+
+    const unsubscribe = airQualityObservable.subscribe(() => {
+      void mutate()
+    }, { intervalMs })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [cityId, mutate, intervalMs])
+
+  const refresh = useCallback(() => mutate(), [mutate])
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh,
+  }
+}
+
+/// <summary>
+/// Helper hook za batch dohvat snapshot podataka (korisno za comparison grid)
+/// </summary>
+export function useSnapshots(cityIds: string[] | null, config?: SWRConfiguration) {
+  const normalized = cityIds && cityIds.length > 0 ? cityIds : null
+  const subscriptionKey = normalized ? normalized.join(',') : null
+  const { data, error, isLoading, mutate } = useSWR<Record<string, AqiResponse>>(
+    normalized ? ['aqi-snapshots', ...normalized] : null,
+    () => apiClient.getSnapshots(normalized || undefined),
+    {
+      ...defaultConfig,
+      ...config,
+      refreshInterval: 0,
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+    }
+  )
+
+  const intervalMs = resolveInterval(config)
+
+  useEffect(() => {
+    if (!subscriptionKey) {
+      return
+    }
+
+    const unsubscribe = airQualityObservable.subscribe(() => {
+      void mutate()
+    }, { intervalMs })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [subscriptionKey, mutate, intervalMs])
+
+  const refresh = useCallback(() => mutate(), [mutate])
+
+  return {
+    data,
+    error,
+    isLoading,
+    refresh,
+  }
+}
+
+export function useRefreshAll() {
+  const refreshAll = useCallback(() => {
+    airQualityObservable.notify()
+  }, [])
 
   return refreshAll
 }
 
-// Hook for periodic data refreshing  
 export function usePeriodicRefresh(intervalMs: number = 10 * 60 * 1000) {
   const refreshAll = useRefreshAll()
 
-  // Use effect would be added here in a real implementation
-  // For now, this is a placeholder that can be enhanced
+  useEffect(() => {
+    const previousInterval = airQualityObservable.getIntervalMs()
+    airQualityObservable.setIntervalMs(intervalMs)
+
+    return () => {
+      airQualityObservable.setIntervalMs(previousInterval)
+    }
+  }, [intervalMs])
+
   return refreshAll
-}
-
-/*
-===========================================================================================
-                                   DAILY DATA HOOKS
-===========================================================================================
-
-HISTORICAL DAILY PATTERNS:
-Optimized za Sarajevo - koristi complete response for daily cards
-*/
-
-/// <summary>
-/// NEW: Hook za daily AQI data (optimized za Sarajevo)
-/// Za druge gradove, vraća error jer nisu supported u new architecture
-/// </summary>
-export function useDaily(city: string, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<SarajevoCompleteResponse>(
-    city ? `daily-${city}` : null,
-    () => {
-      if (city.toLowerCase() === 'sarajevo') {
-        return apiClient.getSarajevoComplete()
-      } else {
-        throw new Error(`Daily data not available for ${city}. Only Sarajevo supported.`)
-      }
-    },
-    { ...defaultConfig, ...config }
-  )
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh: mutate,
-  }
 }

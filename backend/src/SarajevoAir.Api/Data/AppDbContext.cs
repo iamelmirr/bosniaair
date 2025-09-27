@@ -20,8 +20,9 @@ Sve database tabele moraju biti registrovane kao DbSet<T> properties
 */
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SarajevoAir.Api.Entities;
-using SarajevoAir.Api.Utilities;
+using SarajevoAir.Api.Enums;
 
 namespace SarajevoAir.Api.Data;
 
@@ -73,19 +74,7 @@ public class AppDbContext : DbContext
     /// Tabela za čuvanje AQI snapshots-ova po gradovima i vremenu
     /// Koristi se za historical data i analytics
     /// </summary>
-    public DbSet<SimpleAqiRecord> SimpleAqiRecords => Set<SimpleAqiRecord>();
-
-    /// <summary>
-    /// Tabela za čuvanje detaljnih pollutant measurements specifično za Sarajevo
-    /// Refreshuje se svakih 10 minuta iz WAQI API-ja
-    /// </summary>
-    public DbSet<SarajevoMeasurement> SarajevoMeasurements => Set<SarajevoMeasurement>();
-
-    /// <summary>
-    /// Tabela za čuvanje daily forecast podataka specifično za Sarajevo  
-    /// Refreshuje se svakih 10 minuta iz WAQI API-ja (forecast.daily)
-    /// </summary>
-    public DbSet<SarajevoForecast> SarajevoForecasts => Set<SarajevoForecast>();
+    public DbSet<AirQualityRecord> AirQualityRecords => Set<AirQualityRecord>();
 
     /*
     === MODEL CONFIGURATION (FLUENT API) ===
@@ -127,31 +116,26 @@ public class AppDbContext : DbContext
         HasDatabaseName() eksplicitno definiše ime u bazi umesto auto-generated
         */
         
-        // Konfiguracija SimpleAqiRecord entiteta
-        modelBuilder.Entity<SimpleAqiRecord>(entity =>
-        {
-            // Composite index za optimizaciju queries po gradu i vremenu
-            // Pokriva patterns: WHERE City = 'X' ORDER BY Timestamp DESC
-            entity.HasIndex(e => new { e.City, e.Timestamp })
-                  .HasDatabaseName("IX_AqiRecords_CityTimestamp");
-        });
+      // Configure enum storage as strings for readability
+      var cityConverter = new EnumToStringConverter<City>();
+      var recordTypeConverter = new EnumToStringConverter<AirQualityRecordType>();
 
-        // Konfiguracija SarajevoMeasurement entiteta
-        modelBuilder.Entity<SarajevoMeasurement>(entity =>
-        {
-            // Index po Timestamp za brže queries (ORDER BY Timestamp DESC)
-            entity.HasIndex(e => e.Timestamp)
-                  .HasDatabaseName("IX_SarajevoMeasurements_Timestamp");
-        });
+      modelBuilder.Entity<AirQualityRecord>(entity =>
+      {
+        entity.Property(e => e.City).HasConversion(cityConverter).HasMaxLength(32);
+        entity.Property(e => e.RecordType).HasConversion(recordTypeConverter).HasMaxLength(16);
+        entity.Property(e => e.DominantPollutant).HasMaxLength(32);
 
-        // Konfiguracija SarajevoForecast entiteta
-        modelBuilder.Entity<SarajevoForecast>(entity =>
-        {
-            // Unique index po datumu (jedan forecast po danu)
-            entity.HasIndex(e => e.Date)
-                  .IsUnique()
-                  .HasDatabaseName("IX_SarajevoForecast_Date");
-        });
+        // Quick lookups for latest snapshot per city
+        entity.HasIndex(e => new { e.City, e.RecordType, e.Timestamp })
+            .HasDatabaseName("IX_AirQuality_CityTypeTimestamp");
+
+        // Ensure only one forecast row per city
+        entity.HasIndex(e => new { e.City, e.RecordType })
+            .HasFilter($"[{nameof(AirQualityRecord.RecordType)}] = 'Forecast'")
+            .IsUnique()
+            .HasDatabaseName("UX_AirQuality_ForecastPerCity");
+      });
         
         /*
         ADDITIONAL CONFIGURATIONS koje bi mogle biti dodane:

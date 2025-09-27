@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import { AqiResponse, ForecastData } from '../lib/api-client'
-import { useLiveAqi, useForecast } from '../lib/hooks'
+import { ForecastData } from '../lib/api-client'
+import { useComplete } from '../lib/hooks'
+import { CityId } from '../lib/utils'
 
 interface DailyData {
   date: string
@@ -20,7 +21,7 @@ interface TimelineData extends DailyData {
 }
 
 interface DailyTimelineProps {
-  city: string
+  city: CityId
 }
 
 // Helper functions - moved outside component to prevent re-creation
@@ -66,99 +67,51 @@ const getAqiColorFromAqi = (aqi: number): string => {
 }
 
 export default function DailyTimeline({ city }: DailyTimelineProps) {
-  // Use SWR hooks for synchronized 10-minute updates
-  const { data: liveData, error: liveError, isLoading: liveLoading } = useLiveAqi(city)
-  const { data: forecastData, error: forecastError, isLoading: forecastLoading } = useForecast(city)
+  const { data: completeData, error, isLoading } = useComplete(city)
 
-  // Combine data using useMemo for performance
-  const { timelineData, error, loading } = useMemo(() => {
-    const isLoading = liveLoading || forecastLoading
-    const hasError = liveError || forecastError
-    
-    if (isLoading) {
-      return { timelineData: [], error: null, loading: true }
-    }
-    
-    if (hasError) {
-      const errorMessage = liveError?.message || forecastError?.message || 'Greška pri dohvaćanju vremenskih podataka'
-      
-      // Generate static fallback data (no random values)
-      const fallbackData: TimelineData[] = []
-      for (let i = 0; i <= 5; i++) {
-        const date = new Date()
-        date.setDate(date.getDate() + i)
-        const dateStr = date.toISOString().split('T')[0]
-        
-        fallbackData.push({
-          date: dateStr,
-          dayName: getDayName(dateStr),
-          shortDay: getShortDay(dateStr),
-          aqi: 50, // Static moderate AQI
-          category: 'Umjereno',
-          color: getAqiColorFromAqi(50),
-          isToday: i === 0,
-          isPast: false,
-          isForecast: i > 0
-        })
-      }
-      
-      return { 
-        timelineData: fallbackData, 
-        error: errorMessage, 
-        loading: false 
-      }
+  const timelineData = useMemo(() => {
+    if (!completeData) {
+      return [] as TimelineData[]
     }
 
-    if (!liveData || !forecastData) {
-      return { timelineData: [], error: null, loading: false }
-    }
-
-    // Combine today + forecast data (no mock historical data)
     const timeline: TimelineData[] = []
+    const liveAqi = completeData.liveData
+    const forecastPayload = completeData.forecastData?.forecast ?? []
 
-    // Add today (live data)
     const today = new Date()
-    const dateStr = today.toISOString().split('T')[0]
-    
-    const todayData: TimelineData = {
-      date: dateStr,
-      dayName: getDayName(dateStr),
-      shortDay: getShortDay(dateStr),
-      aqi: liveData?.overallAqi || 50,
-      category: getAqiCategory(liveData?.overallAqi || 50),
-      color: getAqiColorFromAqi(liveData?.overallAqi || 50),
+    const todayKey = today.toISOString().split('T')[0]
+
+    timeline.push({
+      date: todayKey,
+      dayName: getDayName(todayKey),
+      shortDay: getShortDay(todayKey),
+      aqi: liveAqi.overallAqi,
+      category: getAqiCategory(liveAqi.overallAqi),
+      color: getAqiColorFromAqi(liveAqi.overallAqi),
       isToday: true,
       isPast: false,
       isForecast: false
-    }
-    timeline.push(todayData)
-
-    // Add forecast data - backend sends forecast data for future days only
-    // forecastData is ForecastResponse object, need to access .forecast property
-    const forecastArray = forecastData?.forecast || []
-    const realForecastData = forecastArray.filter((f) => {
-      // Filter out today's date to avoid duplicates with live data
-      const isNotToday = f.date !== dateStr
-      return f.aqi && f.aqi > 0 && isNotToday
     })
-    
-    realForecastData.forEach(dayForecast => {
-      const aqiValue = dayForecast.aqi!
-      timeline.push({
-        date: dayForecast.date,
-        dayName: getDayName(dayForecast.date),
-        shortDay: getShortDay(dayForecast.date),
-        aqi: aqiValue,
-        category: getAqiCategory(aqiValue),
-        color: getAqiColorFromAqi(aqiValue),
-        isForecast: true,
-        isPast: false,
-        isToday: false
+
+    forecastPayload
+      .filter((day: ForecastData) => day.date !== todayKey)
+      .forEach(day => {
+        const aqiValue = day.aqi || 0
+        timeline.push({
+          date: day.date,
+          dayName: getDayName(day.date),
+          shortDay: getShortDay(day.date),
+          aqi: aqiValue,
+          category: getAqiCategory(aqiValue),
+          color: getAqiColorFromAqi(aqiValue),
+          isForecast: true,
+          isPast: false,
+          isToday: false
+        })
       })
-    })
 
-    return { timelineData: timeline, error: null, loading: false }
-  }, [liveData, forecastData, liveError, forecastError, liveLoading, forecastLoading])
+    return timeline
+  }, [completeData])
 
   const getAqiColorClass = (aqi: number): string => {
     if (aqi <= 50) return 'bg-aqi-good'
@@ -167,25 +120,6 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     if (aqi <= 200) return 'bg-aqi-unhealthy'
     if (aqi <= 300) return 'bg-aqi-very'
     return 'bg-aqi-hazardous'
-  }
-
-  const convertPm25ToAqi = (pm25: number): number => {
-    const breakpoints = [
-      { pm25Low: 0, pm25High: 12, aqiLow: 0, aqiHigh: 50 },
-      { pm25Low: 12.1, pm25High: 35.4, aqiLow: 51, aqiHigh: 100 },
-      { pm25Low: 35.5, pm25High: 55.4, aqiLow: 101, aqiHigh: 150 },
-      { pm25Low: 55.5, pm25High: 150.4, aqiLow: 151, aqiHigh: 200 },
-      { pm25Low: 150.5, pm25High: 250.4, aqiLow: 201, aqiHigh: 300 },
-      { pm25Low: 250.5, pm25High: 500.4, aqiLow: 301, aqiHigh: 500 }
-    ]
-
-    for (const bp of breakpoints) {
-      if (pm25 >= bp.pm25Low && pm25 <= bp.pm25High) {
-        return Math.round(((bp.aqiHigh - bp.aqiLow) / (bp.pm25High - bp.pm25Low)) * (pm25 - bp.pm25Low) + bp.aqiLow)
-      }
-    }
-    
-    return pm25 > 500 ? 500 : Math.round(pm25 * 2)
   }
 
   const getCardStyles = (day: TimelineData): string => {
@@ -228,7 +162,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     )
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-full p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
         <div className="text-center">
@@ -242,10 +176,20 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   if (error) {
     return (
       <div className="w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-        <p className="text-red-700 dark:text-red-400 text-center">{error}</p>
+        <p className="text-red-700 dark:text-red-400 text-center">{error.message || 'Greška pri dohvaćanju vremenske linije'}</p>
       </div>
     )
   }
+
+  if (timelineData.length === 0) {
+    return (
+      <div className="w-full p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Trenutno nema dovoljno podataka za vremensku liniju.</p>
+      </div>
+    )
+  }
+
+  const forecastDaysCount = Math.max(timelineData.length - 1, 0)
 
   return (
     <div className="w-full bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm">
@@ -254,7 +198,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           Vremenska linija kvalitete zraka
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Danas • Forecast narednih {timelineData.length - 1} dana
+          Danas • Forecast narednih {forecastDaysCount} dana
         </p>
       </div>
 
