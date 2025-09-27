@@ -12,11 +12,10 @@ FRONTEND ARCHITECTURE ROLE:
 │   REACT COMPONENTS  │────│     API CLIENT           │────│   BACKEND API       │
 │   (UI Layer)        │    │   (This Library)         │    │  (ASP.NET Core)     │
 │                     │    │                          │    │                     │
-│ • LiveAqiCard       │────│ • fetchLiveAqi()         │────│ • /api/v1/live      │
-│ • ForecastTimeline  │────│ • fetchForecast()        │────│ • /api/v1/forecast  │
-│ • DailyAqiCard      │────│ • fetchDailyAqi()        │────│ • /api/v1/daily     │ 
-│ • CityComparison    │────│ • fetchComparison()      │────│ • /api/v1/compare   │
-│ • GroupCard         │────│ • fetchHealthGroups()    │────│ • /api/v1/groups    │
+│ • LiveAqiCard       │────│ • getSarajevoLive()      │────│ • /api/v1/sarajevo/live │
+│ • DailyTimeline     │────│ • getSarajevoForecast()  │────│ • /api/v1/sarajevo/forecast │
+│ • CityComparison    │────│ • getCityLive()          │────│ • /api/v1/cities/{city}/live │
+│ • GroupCard         │────│ • getSarajevoComplete()  │────│ • /api/v1/sarajevo/complete │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
 TYPE SAFETY STRATEGY:
@@ -122,112 +121,6 @@ export interface AqiResponse {
   measurements: Measurement[]
   /// Primary pollutant driving AQI value
   dominantPollutant?: string
-}
-
-/*
-=== HEALTH-SENSITIVE GROUPS ===
-
-PERSONALIZED HEALTH ADVISORY:
-Interfaces za health group classification i recommendations
-Enables targeted messaging za different population vulnerabilities
-*/
-
-/// <summary>
-/// Health-sensitive population group definition
-/// Maps to backend HealthGroupDto za consistent advisory logic
-/// </summary>
-export interface HealthGroup {
-  /// Specific health group identifier sa Bosnian localization
-  groupName: 'Sportisti' | 'Djeca' | 'Stariji' | 'Astmatičari'
-  /// AQI threshold where special precautions begin za this group
-  aqiThreshold: number
-  /// Complete recommendation set za all AQI levels
-  recommendations: {
-    good: string
-    moderate: string
-    unhealthyForSensitive: string
-    unhealthy: string
-    veryUnhealthy: string
-    hazardous: string
-  }
-  /// Visual emoji representation za UI display
-  iconEmoji: string
-  /// Detailed explanation od who belongs to this group
-  description: string
-}
-
-/*
-=== HEALTH GROUPS API RESPONSE ===
-
-COMPREHENSIVE HEALTH ADVISORY:
-Response structure za health groups endpoint
-Contains personalized recommendations za all health-sensitive populations
-*/
-
-/// <summary>
-/// Complete health groups analysis response
-/// Maps to backend GroupsResponse za type-safe health advisory
-/// </summary>
-export interface GroupsResponse {
-  /// Target city za health advisory
-  city: string
-  /// Current AQI value driving recommendations
-  currentAqi: number
-  /// Current EPA AQI category
-  aqiCategory: string
-  /// Array od health group statuses sa personalized recommendations
-  groups: Array<{
-    /// Health group definition i characteristics
-    group: HealthGroup
-    /// Active recommendation based on current AQI
-    currentRecommendation: string
-    /// Current risk assessment za this group
-    riskLevel: 'low' | 'moderate' | 'high' | 'very-high'
-  }>
-  /// UTC timestamp od analysis
-  timestamp: Date
-}
-
-/*
-=== DAILY HISTORICAL DATA ===
-
-TREND ANALYSIS INTERFACES:
-Structures za daily AQI historical data i trend visualization
-Enables weekly pattern analysis i dashboard components
-*/
-
-/// <summary>
-/// Single day historical AQI data entry
-/// Maps to backend DailyAqiEntry za consistent trend analysis
-/// </summary>
-export interface DailyData {
-  /// Date u ISO format (YYYY-MM-DD)
-  date: string
-  /// Full day name (Monday, Tuesday, etc.) za user display
-  dayName: string
-  /// Abbreviated day name (Mon, Tue, etc.) za compact UI
-  shortDay: string
-  /// Daily average AQI value
-  aqi: number
-  /// EPA AQI category za daily average
-  category: string
-  /// Hex color code za visual indicators i charts
-  color: string
-}
-
-/// <summary>
-/// Complete daily AQI trends response
-/// Maps to backend DailyAqiResponse za historical analysis
-/// </summary>
-export interface DailyResponse {
-  /// Target city za historical analysis
-  city: string
-  /// Human-readable description od analysis timeframe
-  period: string
-  /// Chronologically ordered daily AQI entries
-  data: DailyData[]
-  /// UTC timestamp kada je analysis performed
-  timestamp: Date
 }
 
 /*
@@ -502,22 +395,6 @@ class ApiClient {
   Kept for backward compatibility during transition
   Will be removed after frontend migration is complete
   */
-  
-  /*
-  === DAILY HISTORICAL ENDPOINTS ===
-  
-  TREND ANALYSIS DATA:
-  Communicates sa backend /api/v1/daily endpoint
-  Provides 7-day historical AQI trends za visualization
-  */
-  
-  /// <summary>
-  /// Fetches daily AQI historical data za trend analysis
-  /// Calls backend /api/v1/daily endpoint za 7-day trends
-  /// </summary>
-  async getDailyData(city: string): Promise<DailyResponse> {
-    return this.request<DailyResponse>(`/daily?city=${encodeURIComponent(city)}`)
-  }
 
   /*
   === REMOVED ENDPOINTS ===

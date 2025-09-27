@@ -1,8 +1,17 @@
 'use client'
 
 import { useMemo } from 'react'
-import { DailyData, AqiResponse, ForecastData } from '../lib/api-client'
+import { AqiResponse, ForecastData } from '../lib/api-client'
 import { useLiveAqi, useForecast } from '../lib/hooks'
+
+interface DailyData {
+  date: string
+  dayName: string
+  shortDay: string
+  aqi: number
+  category: string
+  color: string
+}
 
 interface TimelineData extends DailyData {
   isToday?: boolean
