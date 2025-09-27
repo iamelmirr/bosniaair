@@ -54,19 +54,19 @@ public class AirQualityScheduler : BackgroundService
     {
         _logger.LogInformation("Starting scheduled refresh for {CityCount} cities", _cities.Count);
 
-        using var scope = _scopeFactory.CreateScope();
-        var airQualityService = scope.ServiceProvider.GetRequiredService<IAirQualityService>();
-
-        var tasks = _cities.Select(city => RefreshCityAsync(city, airQualityService, cancellationToken)).ToList();
+        var tasks = _cities.Select(city => RefreshCityAsync(city, cancellationToken)).ToList();
         await Task.WhenAll(tasks);
 
         _logger.LogInformation("Completed scheduled refresh");
     }
 
-    private async Task RefreshCityAsync(City city, IAirQualityService airQualityService, CancellationToken cancellationToken)
+    private async Task RefreshCityAsync(City city, CancellationToken cancellationToken)
     {
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var airQualityService = scope.ServiceProvider.GetRequiredService<IAirQualityService>();
+            
             await airQualityService.RefreshCityAsync(city, cancellationToken);
             _logger.LogInformation("Refreshed data for {City}", city);
         }

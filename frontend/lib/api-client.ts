@@ -243,6 +243,7 @@ class ApiClient {
     Extensible headers via options.headers za custom requirements
     */
     const response = await fetch(url, {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
