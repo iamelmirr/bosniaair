@@ -8,11 +8,9 @@ interface HeaderProps {
   onShare?: () => void
   onOpenCitySettings?: () => void
   selectedCityLabel?: string
-  onRefresh?: () => void
-  isRefreshing?: boolean
 }
 
-export default function Header({ onShare, onOpenCitySettings, selectedCityLabel, onRefresh, isRefreshing }: HeaderProps) {
+export default function Header({ onShare, onOpenCitySettings, selectedCityLabel }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { theme, resolvedTheme, toggleTheme } = useTheme()
   const cityLabel = selectedCityLabel ?? 'Sarajevo'
@@ -80,29 +78,6 @@ export default function Header({ onShare, onOpenCitySettings, selectedCityLabel,
                 <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
               </svg>
             </div>
-          </button>
-
-          {/* Refresh Button */}
-          <button
-            onClick={() => onRefresh?.()}
-            className="px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-60"
-            title="Osveži podatke"
-            disabled={!onRefresh}
-          >
-            <svg
-              className={`w-4 h-4 transition-transform ${isRefreshing ? 'animate-spin text-blue-500' : 'text-[rgb(var(--text))]'}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16.023 9.348h4.992V4.356m-4.992 0l1.664 1.664A8.25 8.25 0 105.477 18.165"
-              />
-            </svg>
-            <span>{isRefreshing ? 'Osvježavam...' : 'Osvježi'}</span>
           </button>
 
           {/* City preferences */}
@@ -177,20 +152,9 @@ export default function Header({ onShare, onOpenCitySettings, selectedCityLabel,
                 handleShare()
                 setIsMenuOpen(false)
               }}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Share
-            </button>
-
-            <button
-              onClick={() => {
-                onRefresh?.()
-                setIsMenuOpen(false)
-              }}
-              disabled={!onRefresh}
-              className="flex-1 px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center disabled:opacity-60"
-            >
-              {isRefreshing ? 'Osvježavam...' : 'Osvježi'}
             </button>
           </div>
         </div>

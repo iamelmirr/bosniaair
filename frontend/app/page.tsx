@@ -28,11 +28,10 @@ export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isPreferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [preferencesLoaded, setPreferencesLoaded] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const cityLabel = cityIdToLabel(primaryCity)
   const { data: aqiData, error, isLoading } = useLiveAqi(primaryCity)
-  const triggerGlobalRefresh = usePeriodicRefresh(60 * 1000)
+  usePeriodicRefresh(60 * 1000) // Enable automatic refresh every 60 seconds
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -108,17 +107,6 @@ export default function HomePage() {
     }
   }
 
-  const handleManualRefresh = () => {
-    if (isRefreshing) {
-      return
-    }
-    setIsRefreshing(true)
-    triggerGlobalRefresh()
-    window.setTimeout(() => {
-      setIsRefreshing(false)
-    }, 1200)
-  }
-
   const handleAddComparisonCity = (city: CityId) => {
     setComparisonCities(prev => {
       if (prev.includes(city) || city === primaryCity) {
@@ -145,8 +133,6 @@ export default function HomePage() {
           onShare={handleShare}
           onOpenCitySettings={() => setPreferencesModalOpen(true)}
           selectedCityLabel={cityLabel}
-          onRefresh={handleManualRefresh}
-          isRefreshing={isRefreshing}
         />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center py-12">
@@ -172,8 +158,6 @@ export default function HomePage() {
           onShare={handleShare}
           onOpenCitySettings={() => setPreferencesModalOpen(true)}
           selectedCityLabel={cityLabel}
-          onRefresh={handleManualRefresh}
-          isRefreshing={isRefreshing}
         />
 
         <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-8">
