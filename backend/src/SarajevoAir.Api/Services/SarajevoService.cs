@@ -137,7 +137,7 @@ public class SarajevoService : ISarajevoService
                     City: "Sarajevo",
                     LocationName: "Sarajevo Center",
                     Parameter: parameter,
-                    Value: value.Value,
+                       Value: value.Value,
                     Unit: unit,
                     Timestamp: measurement.Timestamp,
                     SourceName: "WAQI",

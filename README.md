@@ -7,7 +7,11 @@ docker-compose up --build
 
 ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://localhost:5000" dotnet run --project /Users/elmirbesirovic/Desktop/projects/sarajevoairvibe/backend/src/SarajevoAir.Api/SarajevoAir.Api.csproj
 
-sqlite3 sarajevoair-aqi.db "SELECT Id, Timestamp, AqiValue FROM SimpleAqiRecords ORDER BY Timestamp DESC LIMIT 10;"
+sqlite3 sarajevoair-aqi.db "SELECT * FROM SimpleAqiRecords ORDER BY Timestamp DESC LIMIT 10;"
+
+sqlite3 sarajevoair-aqi.db "SELECT * FROM SarajevoMeasurements ORDER BY Timestamp DESC LIMIT 5;"
+
+sqlite3 sarajevoair-aqi.db "SELECT * FROM SarajevoForecasts ORDER BY Date DESC LIMIT 10;"
 
 
 Lightweight full-stack project that tracks Sarajevo’s air quality, built to demonstrate a clear repository → service → controller flow in ASP.NET Core with a matching Next.js UI.
