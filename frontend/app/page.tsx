@@ -13,18 +13,14 @@ import {
   shareData,
   cityIdToLabel,
   DEFAULT_PRIMARY_CITY,
-  DEFAULT_COMPARISON_CITIES,
-  sanitizeComparisonCities,
   isValidCityId,
   CityId
 } from '../lib/utils'
 
 const PRIMARY_CITY_STORAGE_KEY = 'sarajevoair.primaryCity'
-const COMPARISON_CITIES_STORAGE_KEY = 'sarajevoair.comparisonCities'
 
 export default function HomePage() {
   const [primaryCity, setPrimaryCity] = useState<CityId>(DEFAULT_PRIMARY_CITY)
-  const [comparisonCities, setComparisonCities] = useState<CityId[]>(DEFAULT_COMPARISON_CITIES)
   const [isMobile, setIsMobile] = useState(false)
   const [isPreferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [preferencesLoaded, setPreferencesLoaded] = useState(false)
@@ -47,7 +43,6 @@ export default function HomePage() {
   useEffect(() => {
     try {
       const storedPrimary = localStorage.getItem(PRIMARY_CITY_STORAGE_KEY)
-      const storedComparisons = localStorage.getItem(COMPARISON_CITIES_STORAGE_KEY)
 
       let nextPrimary: CityId = DEFAULT_PRIMARY_CITY
       let shouldOpenModal = false
@@ -58,19 +53,10 @@ export default function HomePage() {
         shouldOpenModal = true
       }
 
-      let parsedComparisons: unknown = DEFAULT_COMPARISON_CITIES
-      if (storedComparisons) {
-        parsedComparisons = JSON.parse(storedComparisons)
-      }
-
-      const nextComparisons = sanitizeComparisonCities(parsedComparisons).filter(city => city !== nextPrimary)
-
       setPrimaryCity(nextPrimary)
-      setComparisonCities(nextComparisons)
       setPreferencesModalOpen(shouldOpenModal)
     } catch {
       setPrimaryCity(DEFAULT_PRIMARY_CITY)
-      setComparisonCities(DEFAULT_COMPARISON_CITIES.filter(city => city !== DEFAULT_PRIMARY_CITY))
       setPreferencesModalOpen(true)
     } finally {
       setPreferencesLoaded(true)
@@ -84,17 +70,6 @@ export default function HomePage() {
     localStorage.setItem(PRIMARY_CITY_STORAGE_KEY, primaryCity)
   }, [preferencesLoaded, primaryCity])
 
-  useEffect(() => {
-    if (!preferencesLoaded) {
-      return
-    }
-    localStorage.setItem(COMPARISON_CITIES_STORAGE_KEY, JSON.stringify(comparisonCities))
-  }, [preferencesLoaded, comparisonCities])
-
-  useEffect(() => {
-    setComparisonCities(prev => (prev.includes(primaryCity) ? prev.filter(city => city !== primaryCity) : prev))
-  }, [primaryCity])
-
   const handleShare = async () => {
     try {
       await shareData(
@@ -107,22 +82,8 @@ export default function HomePage() {
     }
   }
 
-  const handleAddComparisonCity = (city: CityId) => {
-    setComparisonCities(prev => {
-      if (prev.includes(city) || city === primaryCity) {
-        return prev
-      }
-      return [...prev, city]
-    })
-  }
-
-  const handleRemoveComparisonCity = (city: CityId) => {
-    setComparisonCities(prev => prev.filter(item => item !== city))
-  }
-
-  const handleModalSave = (city: CityId, cities: CityId[]) => {
+  const handleModalSave = (city: CityId) => {
     setPrimaryCity(city)
-    setComparisonCities(sanitizeComparisonCities(cities).filter(item => item !== city))
     setPreferencesModalOpen(false)
   }
 
@@ -217,12 +178,7 @@ export default function HomePage() {
           </div>
 
           <div className="mb-12">
-            <CityComparison
-              primaryCity={primaryCity}
-              comparisonCities={comparisonCities}
-              onAddCity={handleAddComparisonCity}
-              onRemoveCity={handleRemoveComparisonCity}
-            />
+            <CityComparison primaryCity={primaryCity} />
           </div>
 
           <div className="mb-8">
@@ -272,7 +228,6 @@ export default function HomePage() {
         onClose={() => setPreferencesModalOpen(false)}
         onSave={handleModalSave}
         initialPrimaryCity={primaryCity}
-        initialComparisonCities={comparisonCities}
       />
     </>
   )
