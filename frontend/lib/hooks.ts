@@ -70,7 +70,13 @@ export function useSarajevoComplete(config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<SarajevoCompleteResponse>(
     'sarajevo-complete',
     () => apiClient.getSarajevoComplete(),
-    { ...defaultConfig, ...config }
+    {
+      ...defaultConfig,
+      ...config,
+      refreshInterval: 60 * 1000,      // 🔄 Sync sa live refresh intervalom (60s)
+      revalidateOnFocus: true,         // 🎯 Ponovno učitaj pri povratku na tab
+      revalidateOnMount: true,         // 🚀 Obavezno refresh pri mount-u
+    }
   )
 
   return {
@@ -192,7 +198,13 @@ export function useForecast(city: string, config?: SWRConfiguration) {
         throw new Error(`Forecast not available for ${city}. Only Sarajevo supported.`)
       }
     },
-    { ...defaultConfig, ...config }
+    {
+      ...defaultConfig,
+      ...config,
+      refreshInterval: 60 * 1000,      // 🔄 Sync forecast sa live podacima (60s)
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+    }
   )
 
   return {

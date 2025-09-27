@@ -67,9 +67,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     defaultCityUrl,
     fetcher,
     {
-      refreshInterval: 15 * 60 * 1000,
+      refreshInterval: 60 * 1000,
       revalidateOnFocus: true,
-      revalidateOnReconnect: true
+      revalidateOnReconnect: true,
+      revalidateOnMount: true,
     }
   )
 
@@ -92,9 +93,10 @@ export default function CityComparison({ defaultCity = 'Sarajevo' }: CityCompari
     selectedCityUrl,
     fetcher,
     {
-      refreshInterval: 15 * 60 * 1000,
+      refreshInterval: 60 * 1000,
       revalidateOnFocus: true,
-      revalidateOnReconnect: true
+      revalidateOnReconnect: true,
+      revalidateOnMount: true,
     }
   )
 
