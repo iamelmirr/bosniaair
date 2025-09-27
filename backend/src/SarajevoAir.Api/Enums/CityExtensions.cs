@@ -8,10 +8,10 @@ public static class CityExtensions
     private static readonly IReadOnlyDictionary<City, string> StationIds = new Dictionary<City, string>
     {
         { City.Sarajevo, "@10557" },
-        { City.Tuzla, "@9321" },
+        { City.Tuzla, "A462985" },
         { City.Zenica, "@9267" },
         { City.Mostar, "@14726" },
-        { City.Vitez, "A475627" },
+        { City.Travnik, "@14693" },
         { City.Bihac, "@13578" }
     };
 
@@ -36,7 +36,7 @@ public static class CityExtensions
         var name = city.ToString();
         return name switch
         {
-            nameof(City.Vitez) => "Vitez",
+            nameof(City.Travnik) => "Travnik",
             _ => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name.ToLowerInvariant())
         };
     }

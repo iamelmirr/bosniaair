@@ -86,9 +86,9 @@ public class AqicnConfiguration
     public static readonly Dictionary<string, string> CityStations = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Sarajevo", "@10557" },    // Sarajevo correct station
-        { "Tuzla", "@9321" },        // Tuzla Bukinje station with forecast  
+        { "Tuzla", "A462985" },      // Tuzla Maršala Tita station  
         { "Mostar", "@14726" },      // Mostar bijeli brijeg station
-        { "Vitez", "A475627" },      // Vitez LUCIUS station
+        { "Travnik", "@14693" },     // Travnik centar with full forecast
         { "Zenica", "@9267" },       // Zenica Centar station
         { "Bihac", "@13578" }        // Bihać nova četvrt station
     };

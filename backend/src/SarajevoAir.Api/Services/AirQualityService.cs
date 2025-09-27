@@ -337,27 +337,28 @@ public class AirQualityService : IAirQualityService
         MergeEntries(forecast.O3, (data, range) => data.O3 = range);
 
         var ordered = map.OrderBy(kvp => kvp.Key).ToList();
-        var distinctKeys = ordered.Select(kvp => kvp.Key).ToList();
         var sarajevoToday = DateOnly.FromDateTime(TimeZoneHelper.GetSarajevoTime());
+        
+        // Only show actual available forecast data from WAQI (no fallback)
+        var results = new List<ForecastDayDto>();
 
-        var results = new List<ForecastDayDto>(capacity: 6);
-
-        for (var offset = 0; offset < 6; offset++)
+        foreach (var (date, data) in ordered)
         {
-            var targetDate = sarajevoToday.AddDays(offset);
-            var data = ResolveForecastDay(map, distinctKeys, targetDate);
+            // Only include dates from today onwards that actually exist in WAQI data
+            if (date >= sarajevoToday && results.Count < 5)
+            {
+                var representativeAqi = data.Pm25?.Avg ?? data.Pm10?.Avg ?? data.O3?.Avg ?? 0;
+                var (category, color, _) = GetAqiInfo(representativeAqi);
+                var forecastPollutants = new ForecastDayPollutants(data.Pm25, data.Pm10, data.O3);
 
-            var representativeAqi = data?.Pm25?.Avg ?? data?.Pm10?.Avg ?? data?.O3?.Avg ?? 0;
-            var (category, color, _) = GetAqiInfo(representativeAqi);
-            var forecastPollutants = new ForecastDayPollutants(data?.Pm25, data?.Pm10, data?.O3);
-
-            results.Add(new ForecastDayDto(
-                Date: targetDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                Aqi: representativeAqi,
-                Category: category,
-                Color: color,
-                Pollutants: forecastPollutants
-            ));
+                results.Add(new ForecastDayDto(
+                    Date: date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    Aqi: representativeAqi,
+                    Category: category,
+                    Color: color,
+                    Pollutants: forecastPollutants
+                ));
+            }
         }
 
         return results;

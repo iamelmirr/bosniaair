@@ -277,7 +277,7 @@ export const CITY_OPTIONS = [
   { id: 'Sarajevo', name: 'Sarajevo' },
   { id: 'Tuzla', name: 'Tuzla' },
   { id: 'Mostar', name: 'Mostar' },
-  { id: 'Vitez', name: 'Vitez' },
+  { id: 'Travnik', name: 'Travnik' },
   { id: 'Zenica', name: 'Zenica' },
   { id: 'Bihac', name: 'Bihać' }
 ] as const

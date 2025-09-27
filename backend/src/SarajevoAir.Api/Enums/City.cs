@@ -10,6 +10,6 @@ public enum City
     Tuzla = 8739,
     Zenica = 8740,
     Mostar = 8741,
-    Vitez = 8742,
+    Travnik = 8742,
     Bihac = 8743
 }
