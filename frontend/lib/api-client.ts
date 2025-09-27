@@ -244,8 +244,10 @@ class ApiClient {
     */
     const response = await fetch(url, {
       credentials: 'include',
+      cache: 'no-cache',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         ...options.headers,
       },
       ...options,

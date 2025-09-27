@@ -75,40 +75,25 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     }
 
     const timeline: TimelineData[] = []
-    const liveAqi = completeData.liveData
     const forecastPayload = completeData.forecastData?.forecast ?? []
 
-    const today = new Date()
-    const todayKey = today.toISOString().split('T')[0]
-
-    timeline.push({
-      date: todayKey,
-      dayName: getDayName(todayKey),
-      shortDay: getShortDay(todayKey),
-      aqi: liveAqi.overallAqi,
-      category: getAqiCategory(liveAqi.overallAqi),
-      color: getAqiColorFromAqi(liveAqi.overallAqi),
-      isToday: true,
-      isPast: false,
-      isForecast: false
-    })
-
-    forecastPayload
-      .filter((day: ForecastData) => day.date !== todayKey)
-      .forEach(day => {
-        const aqiValue = day.aqi || 0
-        timeline.push({
-          date: day.date,
-          dayName: getDayName(day.date),
-          shortDay: getShortDay(day.date),
-          aqi: aqiValue,
-          category: getAqiCategory(aqiValue),
-          color: getAqiColorFromAqi(aqiValue),
-          isForecast: true,
-          isPast: false,
-          isToday: false
-        })
+    // Use only backend forecast data (includes today from backend timezone)
+    forecastPayload.forEach((day, index) => {
+      const aqiValue = day.aqi || 0
+      const isFirstDay = index === 0 // First forecast day is "today" from backend
+      
+      timeline.push({
+        date: day.date,
+        dayName: getDayName(day.date),
+        shortDay: getShortDay(day.date),
+        aqi: aqiValue,
+        category: getAqiCategory(aqiValue),
+        color: getAqiColorFromAqi(aqiValue),
+        isToday: isFirstDay,
+        isPast: false,
+        isForecast: !isFirstDay
       })
+    })
 
     return timeline
   }, [completeData])
