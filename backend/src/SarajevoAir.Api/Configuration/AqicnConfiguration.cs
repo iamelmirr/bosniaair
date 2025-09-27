@@ -85,10 +85,10 @@ public class AqicnConfiguration
     /// </summary>
     public static readonly Dictionary<string, string> CityStations = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "Sarajevo", "@9265" },     // Sarajevo Ivan Sedlo station
-        { "Tuzla", "A462985" },      // Tuzla Maršala Tita station  
+        { "Sarajevo", "@10557" },    // Sarajevo correct station
+        { "Tuzla", "@9321" },        // Tuzla Bukinje station with forecast  
         { "Mostar", "@14726" },      // Mostar bijeli brijeg station
-        { "Banja Luka", "A84268" },  // Banja Luka Save Kovačevića station
+        { "Vitez", "A475627" },      // Vitez LUCIUS station
         { "Zenica", "@9267" },       // Zenica Centar station
         { "Bihac", "@13578" }        // Bihać nova četvrt station
     };

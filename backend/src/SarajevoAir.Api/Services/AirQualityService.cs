@@ -300,7 +300,7 @@ public class AirQualityService : IAirQualityService
 
     private static List<ForecastDayDto> BuildForecastDays(WaqiDailyForecast forecast)
     {
-        var map = new Dictionary<DateTime, ForecastDayData>();
+        var map = new Dictionary<DateOnly, ForecastDayData>();
 
         void MergeEntries(WaqiForecastEntry[]? entries, Action<ForecastDayData, PollutantRangeDto> assign)
         {
@@ -311,16 +311,15 @@ public class AirQualityService : IAirQualityService
 
             foreach (var entry in entries)
             {
-                if (!DateTime.TryParse(entry.Day, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal, out var day))
+                if (!DateOnly.TryParseExact(entry.Day, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
                 {
                     continue;
                 }
 
-                var key = day.Date;
-                if (!map.TryGetValue(key, out var data))
+                if (!map.TryGetValue(day, out var data))
                 {
                     data = new ForecastDayData();
-                    map[key] = data;
+                    map[day] = data;
                 }
 
                 var range = new PollutantRangeDto(
@@ -338,16 +337,22 @@ public class AirQualityService : IAirQualityService
         MergeEntries(forecast.O3, (data, range) => data.O3 = range);
 
         var ordered = map.OrderBy(kvp => kvp.Key).ToList();
-        var results = new List<ForecastDayDto>(ordered.Count);
+        var distinctKeys = ordered.Select(kvp => kvp.Key).ToList();
+        var sarajevoToday = DateOnly.FromDateTime(TimeZoneHelper.GetSarajevoTime());
 
-        foreach (var (date, data) in ordered)
+        var results = new List<ForecastDayDto>(capacity: 6);
+
+        for (var offset = 0; offset < 6; offset++)
         {
-            var representativeAqi = data.Pm25?.Avg ?? data.Pm10?.Avg ?? data.O3?.Avg ?? 0;
+            var targetDate = sarajevoToday.AddDays(offset);
+            var data = ResolveForecastDay(map, distinctKeys, targetDate);
+
+            var representativeAqi = data?.Pm25?.Avg ?? data?.Pm10?.Avg ?? data?.O3?.Avg ?? 0;
             var (category, color, _) = GetAqiInfo(representativeAqi);
-            var forecastPollutants = new ForecastDayPollutants(data.Pm25, data.Pm10, data.O3);
+            var forecastPollutants = new ForecastDayPollutants(data?.Pm25, data?.Pm10, data?.O3);
 
             results.Add(new ForecastDayDto(
-                Date: date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Date: targetDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Aqi: representativeAqi,
                 Category: category,
                 Color: color,
@@ -356,6 +361,41 @@ public class AirQualityService : IAirQualityService
         }
 
         return results;
+    }
+
+    private static ForecastDayData? ResolveForecastDay(IReadOnlyDictionary<DateOnly, ForecastDayData> map, IReadOnlyList<DateOnly> orderedKeys, DateOnly target)
+    {
+        if (map.TryGetValue(target, out var exact))
+        {
+            return exact;
+        }
+
+        ForecastDayData? futureMatch = null;
+        ForecastDayData? pastMatch = null;
+
+        foreach (var key in orderedKeys)
+        {
+            if (key >= target)
+            {
+                futureMatch = map[key];
+                break;
+            }
+        }
+
+        if (futureMatch is null)
+        {
+            for (var i = orderedKeys.Count - 1; i >= 0; i--)
+            {
+                var key = orderedKeys[i];
+                if (key < target)
+                {
+                    pastMatch = map[key];
+                    break;
+                }
+            }
+        }
+
+        return futureMatch ?? pastMatch;
     }
 
     private static int ToInt(double value) => Convert.ToInt32(Math.Round(value, MidpointRounding.AwayFromZero));
