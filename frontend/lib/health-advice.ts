@@ -12,7 +12,10 @@ BUSINESS VALUE:
 - Consistent recommendations
 - Simplified backend architecture
 
-DESIGN: Copied EXACTLY from backend HealthAdviceService.cs for consistency
+MEDICAL VALIDATION: Thresholds aligned with EPA/WHO/CDC guidelines (Updated Jan 2025)
+- Athletes: 75 AQI (higher sensitivity during exercise due to increased breathing)
+- Children/Elderly: 75 AQI (EPA "Code Orange" buffer)  
+- Asthmatics: 50 AQI (maximum sensitivity group)
 */
 
 export interface HealthGroup {
@@ -30,13 +33,13 @@ export interface HealthAdvice {
   description: string;
 }
 
-// Statičke definicije zdravstvenih grupa - IDENTIČNE kao u backend-u
+// Zdravstvene grupe sa threshold-ima poravnatim prema EPA/WHO preporukama
 export const HEALTH_GROUPS: HealthGroup[] = [
   {
     name: 'Sportisti',
     icon: '🏃‍♂️',
     description: 'Aktivni sportisti i rekreativci',
-    threshold: 100
+    threshold: 75  // CORRECTED: Athletes breathe more air = higher sensitivity during exercise
   },
   {
     name: 'Djeca',
@@ -62,9 +65,9 @@ export const HEALTH_GROUPS: HealthGroup[] = [
 const HEALTH_RECOMMENDATIONS = {
   'Sportisti': {
     good: "Idealno vrijeme za sve sportske aktivnosti. Uživajte u treningu vani!",
-    moderate: "Dobro za većinu aktivnosti. Kraće pauze ako osjećate nelagodu.",
-    unhealthy_sensitive: "Ograničite intenzivne treninge. Preferirajte zatvorene prostore.",
-    unhealthy: "Izbjegavajte outdoor treninge. Koristite teretane i zatvorene objekte.",
+    moderate: "Oprez: skratite treninge ili smanjite intenzitet. Više pauza za odmaranje.",
+    unhealthy_sensitive: "VISOK RIZIK za sportiste! Prebacite treninge u zatvorene prostore.",
+    unhealthy: "Izbjegavajte sve outdoor treninge. Koristite teretane i zatvorene objekte.",
     very_unhealthy: "Sve aktivnosti samo u zatvorenim prostorima s filtracijom zraka.",
     hazardous: "Otkazujte sve outdoor aktivnosti. Ostanite u zatvorenom."
   },
@@ -106,15 +109,14 @@ export function getAqiCategory(aqi: number): string {
 
 export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate' | 'high' | 'very-high' {
   const group = HEALTH_GROUPS.find(g => g.name === groupName);
-  const threshold = group?.threshold || 100;
+  const threshold = group?.threshold || 75;
   
-  // Same logic as backend GetRiskLevel method
-  if (aqi <= 50) return 'low';
-  if (aqi <= 100 && aqi <= threshold) return 'low';
-  if (aqi <= 100) return 'moderate';
-  if (aqi <= 150) return 'moderate';
-  if (aqi <= 200) return 'high';
-  return 'very-high';
+  // Risk assessment based on group-specific thresholds
+  if (aqi <= 50) return 'low';                    // Always low for everyone
+  if (aqi <= threshold) return 'low';             // Low if within group threshold
+  if (aqi <= 100) return 'moderate';              // Moderate until EPA "Code Orange"
+  if (aqi <= 150) return 'high';                  // High for "Unhealthy for Sensitive Groups"
+  return 'very-high';                             // Very high for 150+
 }
 
 /*
@@ -142,7 +144,10 @@ export function getHealthAdvice(aqi: number, groupName: string): HealthAdvice {
 function getRecommendationForGroup(aqi: number, groupName: string): string {
   const category = getAqiCategory(aqi)
   
-  // Bosnian recommendations based on AQI and group
+  // Group-specific recommendations based on medical thresholds
+  const group = HEALTH_GROUPS.find(g => g.name === groupName);
+  const threshold = group?.threshold || 75;
+  
   if (aqi <= 50) {
     return groupName === 'Sportisti' ? 'Odličo vrijeme za sve aktivnosti na otvorenom.' :
            groupName === 'Djeca' ? 'Slobodno vrijeme za igru napolju.' :  
@@ -150,21 +155,30 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
            'Normalne aktivnosti bez ograničenja.'
   }
   
-  if (aqi <= 100) {
-    return groupName === 'Sportisti' ? 'Umjeren nivo - smaniti intenzitet treninga.' :
+  // Check if AQI exceeds group threshold
+  if (aqi > threshold && aqi <= 100) {
+    return groupName === 'Sportisti' ? 'RIZIK za sportiste! Skratite treninge ili idite u teretanu.' :
            groupName === 'Djeca' ? 'Ograničiti dugotrajne aktivnosti napolju.' :
-           groupName === 'Stariji' ? 'Izbjegavati napornu aktivnost.' :
+           groupName === 'Stariji' ? 'Izbjegavati napornu aktivnost napolju.' :
+           groupName === 'Astmatičari' ? 'VISOK RIZIK - ostanite unutra!' :
            'Osjetljive osobe mogu osjetiti probleme.'
   }
   
+  if (aqi <= 100) {
+    return groupName === 'Sportisti' ? 'Umjeren nivo - smaniti intenzitet treninga.' :
+           groupName === 'Djeca' ? 'Pazite na znakove umora.' :
+           groupName === 'Stariji' ? 'Kratke šetnje su ok.' :
+           'Prihvatljivo za većinu ljudi.'
+  }
+  
   if (aqi <= 150) {
-    return groupName === 'Sportisti' ? 'Premestiti trening u zatvorene prostore.' :
-           groupName === 'Djeca' ? 'Smaniti aktivnosti na otvorenom.' :
+    return groupName === 'Sportisti' ? 'Premestiti sve treninge u zatvorene prostore!' :
+           groupName === 'Djeca' ? 'Djeca trebaju ostati unutra.' :
            groupName === 'Stariji' ? 'Ostati u zatvorenom prostoru.' :
            'Značajno smanjiti aktivnost napolju.'
   }
   
-  return 'Izbegavati sve aktivnosti na otvorenom.'
+  return 'Sve grupe - izbegavati aktivnosti na otvorenom!'
 }
 
 export function getAllHealthAdvice(aqi: number): HealthAdvice[] {

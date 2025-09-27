@@ -85,7 +85,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("FrontendOnly", policy =>
     {
         // Lista dozvoljenih domena - uključuje development portove i production domain
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", frontendOrigin)
+        // FIXED: Dodano http://localhost:5001 jer backend sada radi na 5001 umjesto 5000 (Apple AirTunes conflict)
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5001", frontendOrigin)
               .AllowAnyHeader()      // Dozvoljava sva HTTP zaglavlja
               .AllowAnyMethod()      // Dozvoljava sve HTTP metode (GET, POST, PUT, DELETE)
               .AllowCredentials();   // Dozvoljava cookies i auth tokene
