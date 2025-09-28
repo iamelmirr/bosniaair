@@ -13,20 +13,20 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   if (isLoading) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card animate-pulse-subtle">
         <div className="animate-pulse">
           <div className="flex items-baseline justify-between mb-4">
-            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48 loading-shimmer"></div>
+            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16 loading-shimmer"></div>
           </div>
           
           <div className="flex items-end gap-6 mb-4">
-            <div className="h-20 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
-            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+            <div className="h-20 bg-gray-300 dark:bg-gray-600 rounded w-32 loading-shimmer"></div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-20 loading-shimmer"></div>
           </div>
           
-          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full mb-4"></div>
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-48"></div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full mb-4 loading-shimmer"></div>
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-48 loading-shimmer"></div>
         </div>
       </section>
     )
@@ -45,9 +45,12 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg 
+                     hover:bg-red-700 hover:scale-105 active:scale-95
+                     mobile-minimal-animation mobile-simple-hover
+                     transition-all duration-200 shadow-md hover:shadow-lg"
           >
-            Pokušaj ponovo
+            🔄 Pokušaj ponovo
           </button>
         </div>
       </section>

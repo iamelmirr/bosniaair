@@ -28,15 +28,21 @@ export default function GroupCard({ city }: GroupCardProps) {
 
   if (isLoading) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card animate-pulse-subtle">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-64 mb-4"></div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="animate-heartbeat text-2xl">👥</div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48 loading-shimmer"></div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20 mb-2"></div>
-                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full mb-2"></div>
-                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full loading-shimmer"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20 loading-shimmer"></div>
+                </div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full mb-2 loading-shimmer"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4 loading-shimmer"></div>
               </div>
             ))}
           </div>
@@ -78,7 +84,7 @@ export default function GroupCard({ city }: GroupCardProps) {
   }
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -92,7 +98,7 @@ export default function GroupCard({ city }: GroupCardProps) {
         
         {/* Overall AQI Badge */}
         <div className="text-center">
-          <div className={`text-2xl font-bold ${getAqiCategoryClass(liveData.overallAqi)}`}>
+          <div className={`text-2xl font-bold transition-colors duration-200 ${getAqiCategoryClass(liveData.overallAqi)}`}>
             {liveData.overallAqi}
           </div>
           <div className="text-xs text-gray-500 uppercase tracking-wide">
@@ -103,10 +109,15 @@ export default function GroupCard({ city }: GroupCardProps) {
 
       {/* Groups Grid - Single column on mobile, double column on tablet+ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {healthAdvice.map((advice) => (
+        {healthAdvice.map((advice, index) => (
           <div
             key={advice.group}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300 dark:hover:border-blue-600"
+            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 
+                     hover:bg-gray-50 dark:hover:bg-gray-800/50 
+                     mobile-minimal-animation mobile-simple-hover
+                     md:hover:shadow-sm md:hover:border-blue-200 dark:md:hover:border-blue-700
+                     animate-fade-in-up"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             {/* Group Header */}
             <div className="flex items-start justify-between mb-3">

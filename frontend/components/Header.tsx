@@ -38,7 +38,10 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
-            className="p-2 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+            className="p-2 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] 
+                     hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-110 active:scale-95
+                     mobile-minimal-animation mobile-simple-hover desktop-enhanced-hover
+                     transition-all duration-200 group shadow-sm hover:shadow-md"
             title={`Trenutna tema: ${theme} (klikni za promenu)`}
           >
             <div className="w-5 h-5 relative">
@@ -69,13 +72,17 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
           {/* City preferences */}
           <button
             onClick={() => onOpenCitySettings?.()}
-            className="px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] 
+                     hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 active:scale-95
+                     mobile-minimal-animation mobile-simple-hover desktop-enhanced-hover
+                     transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md
+                     hover:border-blue-300 dark:hover:border-blue-600"
             title="Odaberi glavne gradove"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
             </svg>
-            <span>{cityLabel}</span>
+            <span className="font-medium">📍 {cityLabel}</span>
           </button>
 
 
@@ -85,7 +92,10 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
         <div className="md:hidden">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] 
+                     hover:bg-gray-100 dark:hover:bg-gray-700 
+                     mobile-simple-hover transition-all duration-200
+                     shadow-sm active:shadow-none active:scale-95"
           >
             <svg className="w-5 h-5 text-[rgb(var(--text))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isMenuOpen ? (
