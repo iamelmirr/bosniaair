@@ -128,13 +128,12 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     return new Intl.DateTimeFormat('bs-BA', {
       dateStyle: 'short',
       timeStyle: 'short',
-      timeZone: 'UTC', // Timestamp is already in local Sarajevo time, don't convert
+      timeZone: 'UTC',
     }).format(timestamp)
   }
 
   return (
     <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
-      {/* Header */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
           Trenutni AQI — {cityLabel}
@@ -145,7 +144,6 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
         </div>
       </div>
       
-      {/* Main AQI Display */}
       <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left animate-fade-in">
         <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0 transition-all duration-500`}>
           {aqiData.overallAqi}
@@ -161,15 +159,13 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           )}
         </div>
       </div>
-      
-      {/* Health Message */}
+
       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-700">
         <p className="text-sm text-gray-700 dark:text-gray-300">
           {getHealthAdvice(aqiData.aqiCategory)}
         </p>
       </div>
-      
-      {/* Timestamp */}
+
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>Zadnje ažuriranje: {formatTimestamp(aqiData.timestamp)}</span>
         <button 
@@ -192,8 +188,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           </svg>
         </button>
       </div>
-      
-      {/* AQI Scale Reference */}
+
       <div className="hidden md:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-6 gap-1 text-[10px] leading-tight">
           <div className="text-center">

@@ -10,16 +10,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // AQI Category Colors (Intuitive and natural progression)
         aqi: {
-          good: '#22C55E',     // Green-500 - fresh, clean air
-          moderate: '#EAB308',  // Yellow-500 - caution, like traffic light
-          usg: '#F97316',      // Orange-500 - warning progression
-          unhealthy: '#EF4444', // Red-500 - clear danger signal
-          very: '#A855F7',     // Purple-500 - serious concern
-          hazardous: '#7C2D12' // Brown-900 - toxic, polluted
+          good: '#22C55E',
+          moderate: '#EAB308',
+          usg: '#F97316',
+          unhealthy: '#EF4444',
+          very: '#A855F7',
+          hazardous: '#7C2D12'
         },
-        // Theme Colors
         bg: {
           light: '#F7FAFC',
           dark: '#0B1220'

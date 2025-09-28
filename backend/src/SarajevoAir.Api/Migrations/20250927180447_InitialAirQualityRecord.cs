@@ -5,10 +5,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace SarajevoAir.Api.Migrations
 {
-    /// <inheritdoc />
     public partial class InitialAirQualityRecord : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -50,8 +48,6 @@ namespace SarajevoAir.Api.Migrations
                 unique: true,
                 filter: "[RecordType] = 'Forecast'");
         }
-
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

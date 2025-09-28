@@ -1,56 +1,13 @@
-/*
-===========================================================================================
-                                  REACT HOOKS LIBRARY
-===========================================================================================
-
-PURPOSE & STATE MANAGEMENT:
-Custom React hooks za API state management sa SWR (stale-while-revalidate).
-Provides consistent data fetching, caching, i error handling across components.
-
-SWR INTEGRATION BENEFITS:
-- Background data revalidation za fresh content
-- Automatic caching za improved performance  
-- Network error handling sa retry logic
-- Focus revalidation za up-to-date data
-- Optimistic updates za better UX
-
-HOOK ARCHITECTURE:
-┌─────────────────────┐    ┌──────────────────────────┐    ┌─────────────────────┐
-│  REACT COMPONENTS   │────│      CUSTOM HOOKS        │────│    API CLIENT       │
-│                     │    │    (This Library)        │    │                     │
-│ • LiveAqiCard       │────│ • useLiveAqi()           │────│ • getLive()         │
-│ • DailyTimeline     │────│ • useComplete()          │────│ • getComplete()     │
-│ • GroupCard         │────│ • useComplete()          │────│ • getComplete()     │
-└─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
-
-CACHING STRATEGY:
-10-minute refresh interval aligns sa backend refresh service
-Balances data freshness sa API rate limiting i performance
-*/
-
 import { useCallback, useEffect } from 'react'
 import useSWR, { SWRConfiguration } from 'swr'
-import { apiClient, AqiResponse, ForecastResponse, CompleteAqiResponse } from './api-client'
+import { apiClient, AqiResponse, CompleteAqiResponse } from './api-client'
 import { airQualityObservable } from './observable'
-
-/*
-=== SWR GLOBAL CONFIGURATION ===
-
-OPTIMIZED CACHE SETTINGS:
-Synchronized sa backend refresh patterns za consistency
-Error handling sa exponential backoff za resilience
-*/
-
-/// <summary>
-/// Default SWR configuration optimized za air quality data patterns
-/// Balances freshness, performance, i API rate limiting
-/// </summary>
 const defaultConfig: SWRConfiguration = {
-  refreshInterval: 10 * 60 * 1000, // 10 minutes - synchronized sa backend storage
-  revalidateOnFocus: true,          // Fresh data kada user returns to tab
-  revalidateOnReconnect: true,      // Revalidate after network reconnection  
-  errorRetryCount: 3,               // Retry failed requests 3 times
-  errorRetryInterval: 5000,         // 5 second delay between retries
+  refreshInterval: 10 * 60 * 1000,
+  revalidateOnFocus: true,
+  revalidateOnReconnect: true,
+  errorRetryCount: 3,
+  errorRetryInterval: 5000,
 }
 
 const DEFAULT_OBSERVABLE_INTERVAL = 60 * 1000
@@ -60,18 +17,6 @@ function resolveInterval(config?: SWRConfiguration, fallback: number = DEFAULT_O
   return typeof value === 'number' && value > 0 ? value : fallback
 }
 
-/*
-===========================================================================================
-                               UNIFIED CITY-AWARE HOOKS
-===========================================================================================
-
-SINGLE ENTRY POINTS:
-Sve funkcije koriste nove /api/v1/air-quality endpoint-e bez posebnih Sarajevo pravila
-*/
-
-/// <summary>
-/// Hook za live AQI podatke sa automatskim 60s refresh intervalom
-/// </summary>
 export function useLiveAqi(cityId: string | null, config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<AqiResponse>(
     cityId ? `aqi-live-${cityId}` : null,
@@ -111,9 +56,6 @@ export function useLiveAqi(cityId: string | null, config?: SWRConfiguration) {
   }
 }
 
-/// <summary>
-/// Hook za kompletan payload (live + forecast) u jednom pozivu
-/// </summary>
 export function useComplete(cityId: string | null, config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useSWR<CompleteAqiResponse>(
     cityId ? `aqi-complete-${cityId}` : null,

@@ -1,18 +1,8 @@
-/*
-WAQI API DTOs - World Air Quality Index API
-PURPOSE: Data Transfer Objects za parsiranje odgovora od WAQI API
-API Documentation: https://aqicn.org/json-api/doc/
-*/
-
 namespace SarajevoAir.Api.Dtos;
-
-// Root response object sa WAQI API
 public record WaqiApiResponse(
     string Status,
     WaqiData? Data
 );
-
-// Main data object
 public record WaqiData(
     int Aqi,
     int Idx,
@@ -22,15 +12,11 @@ public record WaqiData(
     WaqiTime Time,
     WaqiForecast? Forecast
 );
-
-// City information
 public record WaqiCity(
     double[] Geo,
     string Name,
     string Url
 );
-
-// Individual Air Quality Index measurements
 public record WaqiIaqi(
     WaqiMeasurement? Co,
     WaqiMeasurement? H,
@@ -44,21 +30,15 @@ public record WaqiIaqi(
     WaqiMeasurement? W,
     WaqiMeasurement? Wg
 );
-
-// Single measurement value
 public record WaqiMeasurement(
     double V
 );
-
-// Time information
 public record WaqiTime(
     string S,
     string Tz,
     long V,
     string Iso
 );
-
-// Forecast data
 public record WaqiForecast(
     WaqiDailyForecast Daily
 );

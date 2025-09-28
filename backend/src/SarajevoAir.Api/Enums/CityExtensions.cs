@@ -15,9 +15,6 @@ public static class CityExtensions
         { City.Bihac, "@13578" }
     };
 
-    /// <summary>
-    /// Returns WAQI station identifier for the city (prefixed with '@' or alternative format).
-    /// </summary>
     public static string ToStationId(this City city)
     {
         if (StationIds.TryGetValue(city, out var stationId))
@@ -28,9 +25,6 @@ public static class CityExtensions
         return $"@{(int)city}";
     }
 
-    /// <summary>
-    /// Returns a user friendly display name (adds space between words).
-    /// </summary>
     public static string ToDisplayName(this City city)
     {
         var name = city.ToString();

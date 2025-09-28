@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -11,16 +10,39 @@ using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Services;
 
+/// <summary>
+/// Main interface for air quality operations - fetching live data, forecasts, and refreshing from WAQI.
+/// </summary>
 public interface IAirQualityService
 {
+    /// <summary>
+    /// Gets the latest live AQI data for a city. Throws if no cached data exists.
+    /// </summary>
+    /// <example>var live = await service.GetLiveAsync(City.Sarajevo);</example>
     Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches forecast data for a city. Might throw if cache is empty or corrupted.
+    /// </summary>
     Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Combines live and forecast into one call. Always returns live data, forecast might be empty.
+    /// </summary>
+    /// <example>var full = await service.GetCompleteAsync(City.Tuzla);</example>
     Task<CompleteAqiResponse> GetCompleteAsync(
         City city,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Forces a refresh from the WAQI API for the given city.
+    /// </summary>
     Task RefreshCityAsync(City city, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Handles all air quality logic: API calls to WAQI, caching, and data transformation.
+/// </summary>
 public class AirQualityService : IAirQualityService
 {
     private static readonly JsonSerializerOptions CacheSerializerOptions = new()
@@ -34,6 +56,9 @@ public class AirQualityService : IAirQualityService
     private readonly ILogger<AirQualityService> _logger;
     private readonly string _apiToken;
 
+    /// <summary>
+    /// Sets up the service with HTTP client, repo, and WAQI token from config.
+    /// </summary>
     public AirQualityService(
         HttpClient httpClient,
         IAirQualityRepository repository,
@@ -51,6 +76,7 @@ public class AirQualityService : IAirQualityService
         }
     }
 
+    /// <inheritdoc />
     public async Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default)
     {
         var cached = await _repository.GetLatestSnapshotAsync(city, cancellationToken);
@@ -63,6 +89,7 @@ public class AirQualityService : IAirQualityService
         throw new DataUnavailableException(city, "live");
     }
 
+    /// <inheritdoc />
     public async Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default)
     {
         var cached = await _repository.GetForecastAsync(city, cancellationToken);
@@ -85,6 +112,7 @@ public class AirQualityService : IAirQualityService
         throw new DataUnavailableException(city, "forecast");
     }
 
+    /// <inheritdoc />
     public async Task<CompleteAqiResponse> GetCompleteAsync(
         City city,
         CancellationToken cancellationToken = default)
@@ -107,11 +135,15 @@ public class AirQualityService : IAirQualityService
         return new CompleteAqiResponse(live, forecast, TimeZoneHelper.GetSarajevoTime());
     }
 
+    /// <inheritdoc />
     public Task RefreshCityAsync(City city, CancellationToken cancellationToken = default)
     {
         return RefreshInternalAsync(city, cancellationToken);
     }
 
+    /// <summary>
+    /// Internal refresh logic: fetches from WAQI, saves to DB, returns fresh data.
+    /// </summary>
     private async Task<RefreshResult> RefreshInternalAsync(City city, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Refreshing air quality data for {City}", city);
@@ -156,6 +188,9 @@ public class AirQualityService : IAirQualityService
         return new RefreshResult(liveResponse, forecastResponse);
     }
 
+    /// <summary>
+    /// Hits the WAQI API for the city's station data. Validates response and deserializes.
+    /// </summary>
     private async Task<WaqiData> FetchWaqiDataAsync(City city, CancellationToken cancellationToken)
     {
         var stationId = city.ToStationId();
@@ -182,6 +217,9 @@ public class AirQualityService : IAirQualityService
         return waqiResponse.Data;
     }
 
+    /// <summary>
+    /// Converts WAQI timestamp to Sarajevo local time. Prefers ISO string, falls back to Unix seconds.
+    /// </summary>
     private static DateTime ParseTimestamp(WaqiTime time)
     {
         if (!string.IsNullOrWhiteSpace(time.Iso) && DateTime.TryParse(time.Iso, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsedIso))
@@ -198,6 +236,9 @@ public class AirQualityService : IAirQualityService
         return TimeZoneHelper.GetSarajevoTime();
     }
 
+    /// <summary>
+    /// Transforms a DB record into the API response format with category, color, and measurements.
+    /// </summary>
     private static LiveAqiResponse MapToLiveResponse(AirQualityRecord record)
     {
         var aqi = record.AqiValue ?? 0;
@@ -216,6 +257,9 @@ public class AirQualityService : IAirQualityService
         );
     }
 
+    /// <summary>
+    /// Creates measurement DTOs from the record's pollutant values. Only includes non-null values.
+    /// </summary>
     private static IReadOnlyList<MeasurementDto> BuildMeasurements(AirQualityRecord record)
     {
         var measurements = new List<MeasurementDto>();
@@ -251,6 +295,9 @@ public class AirQualityService : IAirQualityService
         return measurements;
     }
 
+    /// <summary>
+    /// Safely deserializes cached forecast JSON. Returns null on failure.
+    /// </summary>
     private static ForecastCache? DeserializeForecastCache(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -268,6 +315,9 @@ public class AirQualityService : IAirQualityService
         }
     }
 
+    /// <summary>
+    /// Processes WAQI forecast data into our DTOs, merging pollutants by date and filtering future days.
+    /// </summary>
     private static List<ForecastDayDto> BuildForecastDays(WaqiDailyForecast forecast)
     {
         var map = new Dictionary<DateOnly, ForecastDayData>();
@@ -308,13 +358,11 @@ public class AirQualityService : IAirQualityService
 
         var ordered = map.OrderBy(kvp => kvp.Key).ToList();
         var sarajevoToday = DateOnly.FromDateTime(TimeZoneHelper.GetSarajevoTime());
-        
-        // Only show actual available forecast data from WAQI (no fallback)
+
         var results = new List<ForecastDayDto>();
 
         foreach (var (date, data) in ordered)
         {
-            // Only include dates from today onwards that actually exist in WAQI data
             if (date >= sarajevoToday)
             {
                 var representativeAqi = data.Pm25?.Avg ?? data.Pm10?.Avg ?? data.O3?.Avg ?? 0;
@@ -334,8 +382,14 @@ public class AirQualityService : IAirQualityService
         return results;
     }
 
+    /// <summary>
+    /// Rounds a double to int using away-from-zero rounding.
+    /// </summary>
     private static int ToInt(double value) => Convert.ToInt32(Math.Round(value, MidpointRounding.AwayFromZero));
 
+    /// <summary>
+    /// Maps AQI value to category, color, and health message based on EPA standards.
+    /// </summary>
     private static (string Category, string Color, string Message) GetAqiInfo(int aqi) => aqi switch
     {
         <= 50 => ("Good", "#00E400", "Air quality is considered satisfactory, and air pollution poses little or no risk."),
@@ -346,6 +400,9 @@ public class AirQualityService : IAirQualityService
         _ => ("Hazardous", "#7E0023", "Health alert: everyone may experience more serious health effects.")
     };
 
+    /// <summary>
+    /// Converts WAQI pollutant codes to readable names.
+    /// </summary>
     private static string MapDominantPollutant(string? pollutant) => pollutant?.ToLowerInvariant() switch
     {
         "pm25" => "PM2.5",
@@ -357,10 +414,19 @@ public class AirQualityService : IAirQualityService
         _ => "Unknown"
     };
 
+    /// <summary>
+    /// Internal result of a refresh operation, containing both live and forecast data.
+    /// </summary>
     private sealed record RefreshResult(LiveAqiResponse Live, ForecastResponse? Forecast);
 
+    /// <summary>
+    /// Cached forecast data with retrieval timestamp.
+    /// </summary>
     private sealed record ForecastCache(DateTime RetrievedAt, IReadOnlyList<ForecastDayDto> Days);
 
+    /// <summary>
+    /// Temporary holder for merging forecast pollutants by date.
+    /// </summary>
     private sealed class ForecastDayData
     {
         public PollutantRangeDto? Pm25 { get; set; }

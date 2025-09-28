@@ -27,7 +27,7 @@ export default function HomePage() {
 
   const cityLabel = primaryCity ? cityIdToLabel(primaryCity) : ''
   const { data: aqiData, error, isLoading } = useLiveAqi(primaryCity)
-  usePeriodicRefresh(60 * 1000) // Enable automatic refresh every 60 seconds
+  usePeriodicRefresh(60 * 1000)
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -48,12 +48,10 @@ export default function HomePage() {
         setPrimaryCity(storedPrimary)
         setPreferencesModalOpen(false)
       } else {
-        // Nema stored city - ne postavljaj nikakav grad, samo otvori modal
         setPrimaryCity(null)
         setPreferencesModalOpen(true)
       }
     } catch {
-      // Greška pri učitavanju - otvori modal za odabir
       setPrimaryCity(null)
       setPreferencesModalOpen(true)
     } finally {
@@ -68,13 +66,11 @@ export default function HomePage() {
     localStorage.setItem(PRIMARY_CITY_STORAGE_KEY, primaryCity)
   }, [preferencesLoaded, primaryCity])
 
-  // Auto-refresh data kada se promeni primary city
   useEffect(() => {
     if (!preferencesLoaded || !primaryCity) {
       return
     }
 
-    // Force re-fetch podataka iz baze za novi grad (ne poziva WAQI API)
     airQualityObservable.notify()
   }, [primaryCity, preferencesLoaded])
 
@@ -85,7 +81,6 @@ export default function HomePage() {
     setPreferencesModalOpen(false)
   }
 
-  // Prikaži loading ili modal za odabir grada ako grad nije odabran
   if (!primaryCity) {
     return (
       <>

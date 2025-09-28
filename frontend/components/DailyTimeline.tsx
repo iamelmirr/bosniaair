@@ -23,7 +23,6 @@ interface DailyTimelineProps {
   city: CityId
 }
 
-// Helper functions - moved outside component to prevent re-creation
 const getDayName = (dateStr: string): string => {
   const date = new Date(dateStr)
   const today = new Date()
@@ -57,12 +56,12 @@ const getAqiCategory = (aqi: number): string => {
 }
 
 const getAqiColorFromAqi = (aqi: number): string => {
-  if (aqi <= 50) return '#22C55E'    // aqi-good
-  if (aqi <= 100) return '#EAB308'   // aqi-moderate  
-  if (aqi <= 150) return '#F97316'   // aqi-usg
-  if (aqi <= 200) return '#EF4444'   // aqi-unhealthy
-  if (aqi <= 300) return '#A855F7'   // aqi-very
-  return '#7C2D12'                   // aqi-hazardous
+  if (aqi <= 50) return '#22C55E'
+  if (aqi <= 100) return '#EAB308'
+  if (aqi <= 150) return '#F97316'
+  if (aqi <= 200) return '#EF4444'
+  if (aqi <= 300) return '#A855F7'
+  return '#7C2D12'
 }
 
 export default function DailyTimeline({ city }: DailyTimelineProps) {
@@ -76,10 +75,9 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     const timeline: TimelineData[] = []
     const forecastPayload = completeData.forecastData?.forecast ?? []
 
-    // Use only backend forecast data (includes today from backend timezone)
     forecastPayload.forEach((day, index) => {
       const aqiValue = day.aqi || 0
-      const isFirstDay = index === 0 // First forecast day is "today" from backend
+      const isFirstDay = index === 0
       
       timeline.push({
         date: day.date,
@@ -118,7 +116,6 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     return baseStyles
   }
 
-  // DayCard component
   const DayCard = ({ day }: { day: TimelineData }) => {
     return (
       <div className="h-full flex flex-col justify-between">
@@ -187,7 +184,6 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
       </div>
 
       <div className="p-4">
-        {/* Mobile: Horizontal scrollable slider */}
         <div className="md:hidden">
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2" style={{ scrollBehavior: 'smooth' }}>
             {timelineData.map((day, index) => (
@@ -201,7 +197,6 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
           </div>
         </div>
 
-        {/* Desktop: Full width adaptive grid */}
         <div className="hidden md:block">
           <div className={`grid gap-3 ${timelineData.length === 6 ? 'grid-cols-6' : timelineData.length === 7 ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {timelineData.map((day, index) => (

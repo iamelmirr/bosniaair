@@ -61,7 +61,6 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
   const { data: primaryData } = useLiveAqi(primaryCity)
   const { data: selectedData, isLoading: isSelectedLoading } = useLiveAqi(selectedCity || null)
 
-  // Cache data to prevent flickering when switching cities
   React.useEffect(() => {
     if (selectedData && selectedCity) {
       setCachedData(selectedData)
@@ -70,7 +69,6 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
     }
   }, [selectedData, selectedCity])
 
-  // Use cached data while loading new data
   const displayData = selectedCity ? (isSelectedLoading && cachedData ? cachedData : selectedData) : null
 
   const availableCities = CITY_OPTIONS.filter(option => option.id !== primaryCity)
@@ -178,7 +176,6 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
         )}
       </div>
 
-      {/* Reserved space for comparison result - prevents layout shift */}
       <div className="text-center h-12 flex items-center justify-center">
         <div className={`
           transition-all duration-300 ease-in-out

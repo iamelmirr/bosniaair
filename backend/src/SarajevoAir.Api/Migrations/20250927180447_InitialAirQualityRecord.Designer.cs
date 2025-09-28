@@ -14,7 +14,6 @@ namespace SarajevoAir.Api.Migrations
     [Migration("20250927180447_InitialAirQualityRecord")]
     partial class InitialAirQualityRecord
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

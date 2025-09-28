@@ -30,7 +30,6 @@ export default function CitySelectorModal({
     onClose()
   }
 
-  // Sprečava zatvaranje modala klikom van njega ili ESC
   useEffect(() => {
     if (!isOpen) return
 
@@ -52,7 +51,6 @@ export default function CitySelectorModal({
         className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-auto overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center">
             Odaberite grad
@@ -62,7 +60,6 @@ export default function CitySelectorModal({
           </p>
         </div>
 
-        {/* Lista gradova */}
         <div>
           {CITY_OPTIONS.map((option, index) => (
             <button

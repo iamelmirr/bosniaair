@@ -8,7 +8,6 @@ interface PollutantCardProps {
 
 export default function PollutantCard({ measurement }: PollutantCardProps) {
   const getStatusColor = (parameter: string, value: number) => {
-    // EPA AQI breakpoints for common pollutants (simplified)
     const breakpoints: Record<string, { good: number; moderate: number; unhealthy: number }> = {
       'pm25': { good: 12, moderate: 35.4, unhealthy: 55.4 },
       'pm10': { good: 54, moderate: 154, unhealthy: 254 },
@@ -74,10 +73,8 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
 
   const formatValue = (value: number) => {
     if (value < 1) {
-      // Remove trailing zeros for values < 1 (0.50 → 0.5)
       return parseFloat(value.toFixed(2)).toString()
     } else if (value < 10) {
-      // Remove trailing zeros for values 1-9.9 (5.50 → 5.5, 5.00 → 5)
       return parseFloat(value.toFixed(1)).toString()
     } else {
       return Math.round(value).toString()
@@ -90,14 +87,12 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
 
   return (
     <div className={`bg-[rgb(var(--card))] rounded-lg p-2 sm:p-3 border ${borderClass} md:hover:shadow-md transition-all duration-300 md:hover:-translate-y-1 md:hover:scale-105`}>
-      {/* Parameter name - centered */}
       <div className="text-center mb-3">
         <h3 className="text-sm font-medium text-[rgb(var(--text))]">
           {getParameterName(measurement.parameter)}
         </h3>
       </div>
-      
-      {/* Value display - clean and minimal */}
+
       <div className="text-center">
         <div className="text-xl font-bold text-[rgb(var(--text))] mb-1">
           {formatValue(measurement.value)}

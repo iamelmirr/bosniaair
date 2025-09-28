@@ -1,9 +1,5 @@
 namespace SarajevoAir.Api.Enums;
 
-/// <summary>
-/// Supported Bosnian cities for air quality monitoring.
-/// The numeric part of the enum maps directly to the WAQI station identifier.
-/// </summary>
 public enum City
 {
     Sarajevo = 10557,

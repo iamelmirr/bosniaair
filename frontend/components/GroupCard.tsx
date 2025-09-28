@@ -7,10 +7,6 @@ import { getAllHealthAdvice, RISK_COLORS, RISK_TRANSLATIONS } from '../lib/healt
 interface GroupCardProps {
   city: CityId
 }
-
-// All group constants moved to health-advice.ts
-
-// AQI Category translations to Bosnian
 const getAqiCategoryBosnian = (aqi: number): string => {
   if (aqi <= 50) return 'Dobro'
   if (aqi <= 100) return 'Umjereno'
@@ -85,9 +81,7 @@ export default function GroupCard({ city }: GroupCardProps) {
 
   return (
     <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-6 border border-[rgb(var(--border))] shadow-card">
-      {/* Header */}
       <div className="relative mb-3 sm:mb-4">
-        {/* Mobile: AQI Badge in top-right corner */}
         <div className="absolute top-0 right-0 text-center sm:hidden">
           <div className={`text-xl font-bold transition-colors duration-200 ${getAqiCategoryClass(liveData.overallAqi)}`}>
             {liveData.overallAqi}
@@ -97,7 +91,6 @@ export default function GroupCard({ city }: GroupCardProps) {
           </div>
         </div>
 
-        {/* Desktop: Flex layout with AQI on the right */}
         <div className="hidden sm:flex sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
@@ -119,7 +112,6 @@ export default function GroupCard({ city }: GroupCardProps) {
           </div>
         </div>
 
-        {/* Mobile: Title and subtitle with right margin for AQI */}
         <div className="sm:hidden pr-16">
           <h2 className="text-lg font-semibold text-[rgb(var(--text))]">
             Zdravstveni savjeti
@@ -130,7 +122,6 @@ export default function GroupCard({ city }: GroupCardProps) {
         </div>
       </div>
 
-      {/* Groups Grid - Single column on mobile, double column on tablet+ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {healthAdvice.map((advice, index) => (
           <div
@@ -142,7 +133,6 @@ export default function GroupCard({ city }: GroupCardProps) {
                      animate-fade-in-up"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            {/* Group Header */}
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-lg sm:text-2xl" role="img" aria-label={advice.group}>
@@ -158,7 +148,6 @@ export default function GroupCard({ city }: GroupCardProps) {
                 </div>
               </div>
               
-              {/* Risk Level Badge */}
               <span
                 className={classNames(
                   'px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium flex-shrink-0',
@@ -169,7 +158,6 @@ export default function GroupCard({ city }: GroupCardProps) {
               </span>
             </div>
 
-            {/* Health Recommendation */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-2 sm:p-3">
               <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                 {advice.recommendation}

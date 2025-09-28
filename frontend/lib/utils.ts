@@ -1,17 +1,3 @@
-/*
-===========================================================================================
-                             FRONTEND UTILITY HELPERS
-===========================================================================================
-
-PURPOSE:
-Lightweight shared helpers that are actively consumed across multiple
-components (city metadata, formatting helpers, and class name utilities).
-
-Only exports that are referenced in the current frontend remain—previous
-unused helpers (number/date formatting, Web Share API wrappers, etc.) were
-removed to keep the bundle lean and easier to reason about.
-*/
-
 export function classNames(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }
