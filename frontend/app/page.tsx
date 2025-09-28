@@ -178,7 +178,7 @@ export default function HomePage() {
           </div>
 
           <div className="mb-12">
-            <CityComparison primaryCity={primaryCity} />
+            <CityComparison key={primaryCity} primaryCity={primaryCity} />
           </div>
 
           <div className="mb-8">

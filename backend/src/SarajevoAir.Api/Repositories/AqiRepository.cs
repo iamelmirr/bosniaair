@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SarajevoAir.Api.Data;
 using SarajevoAir.Api.Entities;
 using SarajevoAir.Api.Enums;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Repositories;
 
@@ -27,7 +28,7 @@ public class AirQualityRepository : IAirQualityRepository
     public async Task AddLiveSnapshotAsync(AirQualityRecord record, CancellationToken cancellationToken = default)
     {
         record.RecordType = AirQualityRecordType.LiveSnapshot;
-        record.CreatedAt = DateTime.UtcNow;
+        record.CreatedAt = TimeZoneHelper.GetSarajevoTime();
         _context.AirQualityRecords.Add(record);
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -65,14 +66,14 @@ public class AirQualityRepository : IAirQualityRepository
                 RecordType = AirQualityRecordType.Forecast,
                 Timestamp = timestamp,
                 ForecastJson = forecastJson,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = TimeZoneHelper.GetSarajevoTime()
             });
         }
         else
         {
             existing.Timestamp = timestamp;
             existing.ForecastJson = forecastJson;
-            existing.UpdatedAt = DateTime.UtcNow;
+            existing.UpdatedAt = TimeZoneHelper.GetSarajevoTime();
         }
 
         await _context.SaveChangesAsync(cancellationToken);

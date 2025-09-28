@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using SarajevoAir.Api.Enums;
+using SarajevoAir.Api.Utilities;
 
 namespace SarajevoAir.Api.Entities;
 
@@ -44,6 +45,6 @@ public class AirQualityRecord
     /// </summary>
     public string? ForecastJson { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = TimeZoneHelper.GetSarajevoTime();
     public DateTime? UpdatedAt { get; set; }
 }

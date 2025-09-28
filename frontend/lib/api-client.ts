@@ -212,8 +212,8 @@ class ApiClient {
     Localhost fallback enables seamless local development
     Docker i Kubernetes deployments can override URL easily
     */
-    // Use environment variable za production, fallback to localhost:5001 za development
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
+    // Use environment variable za production, fallback to localhost:5000 za development
+    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
     this.baseUrl = `${baseApiUrl}/api/v1`
   }
 

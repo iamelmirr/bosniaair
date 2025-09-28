@@ -120,14 +120,14 @@ public class AirQualityService : IAirQualityService
         {
             var refreshed = await RefreshInternalAsync(city, cancellationToken);
             var forecast = refreshed.Forecast ?? await GetForecastAsync(city, false, cancellationToken);
-            return new CompleteAqiResponse(refreshed.Live, forecast, DateTime.UtcNow);
+            return new CompleteAqiResponse(refreshed.Live, forecast, TimeZoneHelper.GetSarajevoTime());
         }
 
         var liveTask = GetLiveAsync(city, false, cancellationToken);
         var forecastTask = GetForecastAsync(city, false, cancellationToken);
         await Task.WhenAll(liveTask, forecastTask);
 
-        return new CompleteAqiResponse(liveTask.Result, forecastTask.Result, DateTime.UtcNow);
+        return new CompleteAqiResponse(liveTask.Result, forecastTask.Result, TimeZoneHelper.GetSarajevoTime());
     }
 
     public async Task<IReadOnlyDictionary<City, LiveAqiResponse>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default)
@@ -163,7 +163,7 @@ public class AirQualityService : IAirQualityService
             No2 = waqiData.Iaqi?.No2?.V,
             Co = waqiData.Iaqi?.Co?.V,
             So2 = waqiData.Iaqi?.So2?.V,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = TimeZoneHelper.GetSarajevoTime()
         };
 
         await _repository.AddLiveSnapshotAsync(record, cancellationToken);
