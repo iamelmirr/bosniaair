@@ -21,12 +21,12 @@ import {
 const PRIMARY_CITY_STORAGE_KEY = 'sarajevoair.primaryCity'
 
 export default function HomePage() {
-  const [primaryCity, setPrimaryCity] = useState<CityId>(DEFAULT_PRIMARY_CITY)
+  const [primaryCity, setPrimaryCity] = useState<CityId | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isPreferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [preferencesLoaded, setPreferencesLoaded] = useState(false)
 
-  const cityLabel = cityIdToLabel(primaryCity)
+  const cityLabel = primaryCity ? cityIdToLabel(primaryCity) : ''
   const { data: aqiData, error, isLoading } = useLiveAqi(primaryCity)
   usePeriodicRefresh(60 * 1000) // Enable automatic refresh every 60 seconds
 
@@ -45,19 +45,17 @@ export default function HomePage() {
     try {
       const storedPrimary = localStorage.getItem(PRIMARY_CITY_STORAGE_KEY)
 
-      let nextPrimary: CityId = DEFAULT_PRIMARY_CITY
-      let shouldOpenModal = false
-
       if (isValidCityId(storedPrimary)) {
-        nextPrimary = storedPrimary
+        setPrimaryCity(storedPrimary)
+        setPreferencesModalOpen(false)
       } else {
-        shouldOpenModal = true
+        // Nema stored city - ne postavljaj nikakav grad, samo otvori modal
+        setPrimaryCity(null)
+        setPreferencesModalOpen(true)
       }
-
-      setPrimaryCity(nextPrimary)
-      setPreferencesModalOpen(shouldOpenModal)
     } catch {
-      setPrimaryCity(DEFAULT_PRIMARY_CITY)
+      // Greška pri učitavanju - otvori modal za odabir
+      setPrimaryCity(null)
       setPreferencesModalOpen(true)
     } finally {
       setPreferencesLoaded(true)
@@ -65,7 +63,7 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (!preferencesLoaded) {
+    if (!preferencesLoaded || !primaryCity) {
       return
     }
     localStorage.setItem(PRIMARY_CITY_STORAGE_KEY, primaryCity)
@@ -96,6 +94,31 @@ export default function HomePage() {
   const handleModalSave = (city: CityId) => {
     setPrimaryCity(city)
     setPreferencesModalOpen(false)
+  }
+
+  // Prikaži loading ili modal za odabir grada ako grad nije odabran
+  if (!primaryCity) {
+    return (
+      <>
+        <main className="min-h-screen py-6 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Kvaliteta vazduha u BiH
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Molimo odaberite grad za praćenje kvaliteta vazduha
+            </p>
+          </div>
+        </main>
+        
+        <CitySelectorModal
+          isOpen={isPreferencesModalOpen}
+          onClose={() => setPreferencesModalOpen(false)}
+          onSave={handleModalSave}
+          initialPrimaryCity={DEFAULT_PRIMARY_CITY}
+        />
+      </>
+    )
   }
 
   if (error) {
@@ -143,7 +166,7 @@ export default function HomePage() {
           </div>
 
           <div className="mb-8">
-            <LiveAqiCard city={primaryCity} />
+            <LiveAqiCard city={primaryCity!} />
           </div>
 
           <div className="mb-12">
@@ -181,15 +204,15 @@ export default function HomePage() {
           </div>
 
           <div className="mb-12">
-            <DailyTimeline city={primaryCity} />
+            <DailyTimeline city={primaryCity!} />
           </div>
 
           <div className="mb-12">
-            <GroupCard city={primaryCity} />
+            <GroupCard city={primaryCity!} />
           </div>
 
           <div className="mb-12">
-            <CityComparison key={primaryCity} primaryCity={primaryCity} />
+            <CityComparison key={primaryCity} primaryCity={primaryCity!} />
           </div>
 
           <div className="mb-8">
@@ -238,7 +261,7 @@ export default function HomePage() {
         isOpen={isPreferencesModalOpen}
         onClose={() => setPreferencesModalOpen(false)}
         onSave={handleModalSave}
-        initialPrimaryCity={primaryCity}
+        initialPrimaryCity={primaryCity || DEFAULT_PRIMARY_CITY}
       />
     </>
   )

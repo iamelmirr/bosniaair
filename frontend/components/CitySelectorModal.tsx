@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CITY_OPTIONS, CityId, cityIdToLabel } from '../lib/utils'
+import { CITY_OPTIONS, CityId } from '../lib/utils'
 
 interface CitySelectorModalProps {
   isOpen: boolean
@@ -24,65 +24,88 @@ export default function CitySelectorModal({
     }
   }, [isOpen, initialPrimaryCity])
 
-  const handleSave = () => {
-    onSave(primarySelection)
+  const handleCitySelect = (cityId: CityId) => {
+    setPrimarySelection(cityId)
+    onSave(cityId)
     onClose()
   }
+
+  // Sprečava zatvaranje modala klikom van njega ili ESC
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[rgb(var(--card))] rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-[rgb(var(--text))]">Odaberite glavni grad</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Glavni grad
-              </h3>
-              <div className="space-y-2">
-                {CITY_OPTIONS.map(option => (
-                  <label key={option.id} className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="primaryCity"
-                      value={option.id}
-                      checked={primarySelection === option.id}
-                      onChange={(e) => setPrimarySelection(e.target.value as CityId)}
-                      className="w-4 h-4 text-blue-600 bg-[rgb(var(--card))] border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <span className="text-sm text-[rgb(var(--text))]">{option.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-            >
-              Otkaži
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              Sačuvaj
-            </button>
-          </div>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div 
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-auto overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center">
+            Odaberite grad
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
+            Glavni grad za praćenje kvaliteta vazduha
+          </p>
         </div>
+
+        {/* Lista gradova */}
+        <div>
+          {CITY_OPTIONS.map((option, index) => (
+            <button
+              key={option.id}
+              onClick={() => handleCitySelect(option.id)}
+              className={`w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 flex items-center justify-between group ${
+                index !== CITY_OPTIONS.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''
+              } ${
+                primarySelection === option.id 
+                  ? 'bg-blue-50 dark:bg-blue-900/20' 
+                  : ''
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full border-2 transition-all ${
+                  primarySelection === option.id
+                    ? 'bg-blue-500 border-blue-500'
+                    : 'border-gray-300 dark:border-gray-500 group-hover:border-blue-400'
+                }`}>
+                  {primarySelection === option.id && (
+                    <div className="w-full h-full rounded-full bg-white transform scale-50"></div>
+                  )}
+                </div>
+                
+                <span className={`text-base font-medium transition-colors ${
+                  primarySelection === option.id
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                }`}>
+                  {option.name}
+                </span>
+              </div>
+              
+              {primarySelection === option.id && (
+                <svg className="w-5 h-5 text-blue-500 animate-in fade-in duration-200" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+
+
       </div>
     </div>
   )
