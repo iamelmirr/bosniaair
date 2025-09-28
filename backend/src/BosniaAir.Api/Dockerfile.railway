@@ -1,14 +1,14 @@
-# Railway Deployment
+# Railway Deployment - Build context is from repository root
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["BosniaAir.Api.csproj", "."]
-RUN dotnet restore "./BosniaAir.Api.csproj"
-COPY . .
-WORKDIR "/src/."
+COPY ["backend/src/BosniaAir.Api/BosniaAir.Api.csproj", "BosniaAir.Api/"]
+RUN dotnet restore "BosniaAir.Api/BosniaAir.Api.csproj"
+COPY backend/src/BosniaAir.Api/ BosniaAir.Api/
+WORKDIR "/src/BosniaAir.Api"
 RUN dotnet build "BosniaAir.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
