@@ -26,7 +26,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SA</span>
+              <span className="text-white font-bold text-sm">BA</span>
             </div>
             <h1 className="text-2xl font-bold text-[rgb(var(--text))]">
               BosniaAir
@@ -83,9 +83,6 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
                      hover:border-blue-300 dark:hover:border-blue-600"
             title="Odaberi glavne gradove"
           >
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
-            </svg>
             <span className="font-medium">📍 {cityLabel}</span>
           </button>
 

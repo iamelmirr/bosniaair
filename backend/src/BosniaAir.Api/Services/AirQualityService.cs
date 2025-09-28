@@ -18,19 +18,19 @@ public interface IAirQualityService
     /// <summary>
     /// Gets the latest live AQI data for a city. Throws if no cached data exists.
     /// </summary>
-    /// <example>var live = await service.GetLiveAsync(City.Sarajevo);</example>
-    Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default);
+    /// <example>var live = await service.GetLiveAqi(City.Sarajevo);</example>
+    Task<LiveAqiResponse> GetLiveAqi(City city, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetches forecast data for a city. Might throw if cache is empty or corrupted.
     /// </summary>
-    Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default);
+    Task<ForecastResponse> GetAqiForecast(City city, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Combines live and forecast into one call. Always returns live data, forecast might be empty.
     /// </summary>
-    /// <example>var full = await service.GetCompleteAsync(City.Tuzla);</example>
-    Task<CompleteAqiResponse> GetCompleteAsync(
+    /// <example>var full = await service.GetLiveAqiAndForecast(City.Tuzla);</example>
+    Task<CompleteAqiResponse> GetLiveAqiAndForecast(
         City city,
         CancellationToken cancellationToken = default);
 
@@ -77,9 +77,9 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default)
+    public async Task<LiveAqiResponse> GetLiveAqi(City city, CancellationToken cancellationToken = default)
     {
-        var cached = await _repository.GetLatestSnapshotAsync(city, cancellationToken);
+        var cached = await _repository.GetLatestAqi(city, cancellationToken);
         if (cached is not null)
         {
             return MapToLiveResponse(cached);
@@ -90,7 +90,7 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default)
+    public async Task<ForecastResponse> GetAqiForecast(City city, CancellationToken cancellationToken = default)
     {
         var cached = await _repository.GetForecastAsync(city, cancellationToken);
         if (cached is not null)
@@ -113,16 +113,16 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<CompleteAqiResponse> GetCompleteAsync(
+    public async Task<CompleteAqiResponse> GetLiveAqiAndForecast(
         City city,
         CancellationToken cancellationToken = default)
     {
-        var live = await GetLiveAsync(city, cancellationToken);
+        var live = await GetLiveAqi(city, cancellationToken);
         ForecastResponse forecast;
 
         try
         {
-            forecast = await GetForecastAsync(city, cancellationToken);
+            forecast = await GetAqiForecast(city, cancellationToken);
         }
         catch (DataUnavailableException)
         {
@@ -168,7 +168,7 @@ public class AirQualityService : IAirQualityService
             CreatedAt = TimeZoneHelper.GetSarajevoTime()
         };
 
-        await _repository.AddLiveSnapshotAsync(record, cancellationToken);
+        await _repository.AddLatestAqi(record, cancellationToken);
         var liveResponse = MapToLiveResponse(record);
 
         ForecastResponse? forecastResponse = null;
@@ -179,7 +179,7 @@ public class AirQualityService : IAirQualityService
             {
                 var cachePayload = new ForecastCache(timestamp, forecastDays);
                 var serialized = JsonSerializer.Serialize(cachePayload, CacheSerializerOptions);
-                await _repository.UpsertForecastAsync(city, serialized, timestamp, cancellationToken);
+                await _repository.UpdateAqiForecast(city, serialized, timestamp, cancellationToken);
 
                 forecastResponse = new ForecastResponse(city.ToDisplayName(), forecastDays, timestamp);
             }

@@ -135,11 +135,11 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       case 'unhealthy for sensitive groups':
         return 'Osjetljive grupe mogu osjetiti zdravstvene efekte. Ostala populacija vjerojatno neće biti pogođena.'
       case 'unhealthy':
-        return 'Svi mogu početi da osjeća zdravstvene efekte. Osjetljive grupe mogu imati ozbiljnije zdravstvene probleme.'
+        return 'Svi mogu početi osjećati zdravstvene efekte. Osjetljive grupe mogu imati ozbiljnije zdravstvene probleme.'
       case 'very unhealthy':
-        return 'Zdravstvena upozorenja hitnih uslova. Cijela populacija je vjerojatnija da bude pogođena.'
+        return 'Zdravstvena upozorenja hitnih uslova. Cijela populacija je vjerovatna da bude pogođena.'
       case 'hazardous':
-        return 'Zdravstvena uzbuna: svi mogu imati ozbiljnije zdravstvene efekte.'
+        return 'Zdravstvena uzbuna - svi mogu imati ozbiljnije zdravstvene efekte.'
       default:
         return 'Pratite uslove kvaliteta zraka.'
     }
@@ -159,10 +159,10 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   // Main card content with AQI data
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-6 md:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
       {/* Header with city name and live indicator */}
-      <div className="flex items-baseline justify-between mb-6">
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+      <div className="flex align-center justify-between mb-6">
+        <h2 className="sm:text-lg md:text-xl font-semibold text-[rgb(var(--text))]">
           Trenutni AQI — {cityLabel}
         </h2>
         <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
       
       {/* Main AQI display with value and category */}
-      <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-2 md:mb-6 text-center md:text-left animate-fade-in">
         <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0 transition-all duration-500`}>
           {aqiData.overallAqi}
         </div>
@@ -189,26 +189,26 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
       </div>
 
       {/* Health advice box */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg py-4 md:mb-4 transition-all duration-300 hover:bg-gray-100">
+        <p className="text-center md:text-left text-sm text-gray-700 dark:text-gray-300">
           {getHealthAdvice(aqiData.aqiCategory)}
         </p>
       </div>
 
       {/* Footer with timestamp and share button */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="hidden md:flex items-center justify-between text-xs text-gray-500">
         <span>Zadnje ažuriranje: {formatTimestamp(aqiData.timestamp)}</span>
         <button 
           onClick={() => {
             // Share current AQI data using Web Share API or fallback to clipboard
             if (navigator.share) {
               navigator.share({
-                title: 'Kvaliteta zraka u ' + cityLabel,
-                text: 'Trenutni AQI: ' + aqiData.overallAqi + ' (' + translateAqiCategory(aqiData.aqiCategory) + ')',
-                url: window.location.href
+                title: 'Kvaliteta zraka',
+                text: 'Provjeri trenutni kvalitet zraka u tvom gradu: http://localhost:3000',
+                url: 'http://localhost:3000'
               })
             } else {
-              navigator.clipboard.writeText(window.location.href)
+              navigator.clipboard.writeText('Provjeri trenutni kvalitet zraka u tvom gradu: http://localhost:3000')
             }
           }}
           className="flex items-center gap-1 hover:text-blue-600 transition-colors p-1 -m-1"

@@ -202,10 +202,10 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
     <div className="w-full bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-sm">
       <div className="p-4 border-b border-[rgb(var(--border))]">
         <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-          Vremenska linija kvalitete zraka
+          Prognoza kvalitete zraka
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Danas • Forecast narednih {forecastDaysCount} dana
+          Prognoza narednih {forecastDaysCount} dana
         </p>
       </div>
 
@@ -215,7 +215,7 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
             {timelineData.map((day, index) => (
               <div 
                 key={`${day.date}-${day.isToday ? 'today' : 'forecast'}-${index}`}
-                className={`${getCardStyles(day)} min-w-[160px] max-w-[160px] flex-shrink-0 snap-center`}
+                className={`${getCardStyles(day)} min-w-[120px] max-w-[120px] flex-shrink-0 snap-center`}
               >
                 <DayCard day={day} />
               </div>

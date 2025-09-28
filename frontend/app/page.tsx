@@ -150,11 +150,11 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-8">
           {/* Page title and description */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Kvaliteta vazduha u {cityLabel}
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Kvalitet zraka u gradu {cityLabel}
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
-              Praćenje kvaliteta vazduha za sve glavne gradove u BiH
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-6">
+              Praćenje indeksa kvaliteta zraka
             </p>
           </div>
 
@@ -223,9 +223,9 @@ export default function HomePage() {
                 O aplikaciji
               </h3>
               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                <p>• Real-time praćenje kvaliteta vazduha u Bosni i Hercegovini</p>
-                <p>• 7-dnevni timeline sa prošlim i budućim podacima</p>
-                <p>• Personalizirano poređenje između gradova koje sami odaberete</p>
+                <p>• Real-time praćenje kvalitete zraka u Bosni i Hercegovini</p>
+                <p>• Prognoza kvalitete zraka</p>
+                <p>• Usporedba kvalitete zraka između gradova</p>
               </div>
             </div>
           </div>

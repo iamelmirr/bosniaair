@@ -7,10 +7,15 @@ using BosniaAir.Api.Middleware;
 using BosniaAir.Api.Repositories;
 using BosniaAir.Api.Services;
 using Serilog;
+using DotNetEnv;
+using System.IO;
 
 /// <summary>
 /// Main entry point for the BosniaAir API. Sets up ASP.NET Core with services, middleware, and background workers.
 /// </summary>
+// Load environment variables from .env file
+Env.Load("../../../.env");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Early logging setup so we capture any startup issues

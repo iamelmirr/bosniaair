@@ -141,10 +141,10 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
 
   if (aqi <= 30) {
     switch (groupName) {
-      case 'Astmatičari': return '🌟 Izvrsno! Sve aktivnosti na otvorenom su sigurne. Uvijek nosite inhaler.';
-      case 'Sportisti': return '🏃‍♂️ Savršeno za intenzivne treninge! Iskoristite ovo vrijeme za najbolje rezultate.';
-      case 'Djeca': return '👶 Fantastično! Neograničeno vrijeme za igru i sport napolju.';
-      case 'Stariji': return '👴 Odličo za sve aktivnosti - šetnje, rad u bašti, sport.';
+      case 'Astmatičari': return 'Izvrsno! Sve aktivnosti na otvorenom su sigurne. Uvijek nosite inhaler.';
+      case 'Sportisti': return 'Savršeno za intenzivne treninge! Iskoristite ovo vrijeme za najbolji napredak.';
+      case 'Djeca': return 'Fantastično! Neograničeno vrijeme za igru i sport napolju.';
+      case 'Stariji': return 'Odlično za sve aktivnosti - šetnje, rad u bašti, sport.';
       default: return 'Savršen kvalitet zraka za sve aktivnosti!';
     }
   }
@@ -153,47 +153,47 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
     switch (groupName) {
       case 'Astmatičari': 
         return aqi > threshold 
-          ? '⚠️ PAŽNJA! Možete osjetiti blage simptome. Skratite boravak napolju i pripremite lijekove.'
-          : '😊 Dobro za većinu aktivnosti. Pazite na simptome i imajte inhaler pri sebi.';
+          ? 'PAŽNJA! Možete osjetiti blage simptome. Skratite boravak napolju i pripremite lijekove.'
+          : 'Dobro za većinu aktivnosti. Pazite na simptome i imajte inhaler pri sebi.';
       case 'Sportisti': 
         return aqi > threshold
-          ? '🏃‍♂️ OPREZ sportisti! Smanjite intenzitet treninga za 20-30% ili prebacite u zatvoreni prostor.'
-          : '💪 Odlično za treninge! Možda osjetite blažu zamorenost ranije nego obično.';
+          ? 'OPREZ sportisti! Smanjite intenzitet treninga za 20-30% ili prebacite u zatvoreni prostor.'
+          : 'Odlično za treninge! Možda osjetite blažu zamorenost ranije nego obično.';
       case 'Djeca': 
         return aqi > threshold
-          ? '👶 Pazite na djecu! Kratke aktivnosti vani su ok, dugotrajne igre ograničiti.'
-          : '🎯 Dobro za igru napolju. Pazite na znakove umora ili kašlja.';
+          ? 'Pazite na djecu! Kratke aktivnosti vani su ok, dugotrajne igre ograničiti.'
+          : 'Dobro za igru napolju. Pazite na znakove umora ili kašlja.';
       case 'Stariji': 
         return aqi > threshold
-          ? '👴 Umjereno. Kratke šetnje su ok, izbjegavajte naporne poslove u bašti.'
-          : '🚶‍♂️ Dobro za šetnje i blagu aktivnost. Pazite kako se osjećate.';
+          ? 'Umjereno. Kratke šetnje su ok, izbjegavajte naporne poslove u bašti.'
+          : 'Dobro za šetnje i blagu aktivnost. Pazite kako se osjećate.';
       default: return 'Prihvatljivo za većinu ljudi.';
     }
   }
 
   if (aqi <= 100) {
     switch (groupName) {
-      case 'Astmatičari': return '⚠️ Umjeren rizik za astmatičare. Skratite boravak napolju i pripremite inhaler.';
-      case 'Sportisti': return '🏋️‍♂️ Prebacite treninge u teretanu ili smanjite intenzitet za 50%. Više pauza za odmor.';
-      case 'Djeca': return '👶 Ograničiti vanjsku igru. Kratke šetnje ok, dugotrajni sport izbjegavati.';
-      case 'Stariji': return '👴 Kratke aktivnosti napolju. Izbjegavajte naporne radove i dugotrajno izlaganje.';
+      case 'Astmatičari': return 'Umjeren rizik za astmatičare. Skratite boravak napolju i pripremite inhaler.';
+      case 'Sportisti': return 'Prebacite treninge u teretanu ili smanjite intenzitet za 50%. Više pauza za odmor.';
+      case 'Djeca': return 'Ograničiti vanjsku igru. Kratke šetnje ok, dugotrajni sport izbjegavati.';
+      case 'Stariji': return 'Kratke aktivnosti napolju. Izbjegavajte naporne radove i dugotrajno izlaganje.';
       default: return 'Osjetljive grupe trebaju paziti. Zdravi odrasli mogu normalne aktivnosti.';
     }
   }
 
   if (aqi <= 150) {
     switch (groupName) {
-      case 'Astmatičari': return '🚨 Visok rizik za astmatičare! Ostanite unutra. Pri simptomima kontaktirajte ljekara.';
-      case 'Sportisti': return '🏠 Visok rizik! Sve treninge prebaciti u zatvorene prostore.';
-      case 'Djeca': return '🏠 Visok rizik za djecu! Moraju ostati unutra osim hitnih izlazaka.';
-      case 'Stariji': return '🏠 Visok rizik! Ostanite u zatvorenom. Zatvorite prozore i koristite čišća zraka.';
+      case 'Astmatičari': return 'Visok rizik za astmatičare! Ostanite unutra. Pri simptomima kontaktirajte ljekara.';
+      case 'Sportisti': return 'Visok rizik! Sve treninge prebaciti u zatvorene prostore.';
+      case 'Djeca': return 'Visok rizik za djecu! Moraju ostati unutra osim hitnih izlazaka.';
+      case 'Stariji': return 'Visok rizik! Ostanite u zatvorenom. Zatvorite prozore i koristite čišći zrak.';
       default: return 'Visok rizik za sve osjetljive grupe. Ograničiti izlaganje na otvorenom.';
     }
   }
   if (aqi <= 200) {
-    return '🚨 HITNO! Svi moraju ostati unutra. Zatvorite prozore, koristite čišće zraka ako imate.';
+    return 'HITNO! Svi moraju ostati unutra. Zatvorite prozore, koristite čišći zrak ako imate.';
   }
-  return '☢️ ZDRAVSTVENA HITNOST! Ne izlazite osim u krajnjoj nuždi. Kontaktirajte zdravstvene službe pri simptomima.';
+  return 'HITNO! Ne izlazite osim u krajnjoj nuždi. Kontaktirajte zdravstvene službe pri simptomima.';
 }
 
 /**

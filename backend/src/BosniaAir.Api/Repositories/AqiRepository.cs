@@ -15,17 +15,17 @@ public interface IAirQualityRepository
     /// <summary>
     /// Adds a new live air quality snapshot to the database.
     /// </summary>
-    Task AddLiveSnapshotAsync(AirQualityRecord record, CancellationToken cancellationToken = default);
+    Task AddLatestAqi(AirQualityRecord record, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the most recent live snapshot for a city.
     /// </summary>
-    Task<AirQualityRecord?> GetLatestSnapshotAsync(City city, CancellationToken cancellationToken = default);
+    Task<AirQualityRecord?> GetLatestAqi(City city, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Inserts or updates forecast data for a city.
     /// </summary>
-    Task UpsertForecastAsync(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default);
+    Task UpdateAqiForecast(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves forecast data for a city.
@@ -56,7 +56,7 @@ public class AirQualityRepository : IAirQualityRepository
     /// </summary>
     /// <param name="record">The air quality record to add</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task AddLiveSnapshotAsync(AirQualityRecord record, CancellationToken cancellationToken = default)
+    public async Task AddLatestAqi(AirQualityRecord record, CancellationToken cancellationToken = default)
     {
         record.RecordType = AirQualityRecordType.LiveSnapshot;
         record.CreatedAt = TimeZoneHelper.GetSarajevoTime();
@@ -70,7 +70,7 @@ public class AirQualityRepository : IAirQualityRepository
     /// </summary>
     /// <param name="city">The city to get data for</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task<AirQualityRecord?> GetLatestSnapshotAsync(City city, CancellationToken cancellationToken = default)
+    public async Task<AirQualityRecord?> GetLatestAqi(City city, CancellationToken cancellationToken = default)
     {
         return await _context.AirQualityRecords
             .AsNoTracking()
@@ -87,7 +87,7 @@ public class AirQualityRepository : IAirQualityRepository
     /// <param name="forecastJson">JSON string containing forecast data</param>
     /// <param name="timestamp">Timestamp of the forecast</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task UpsertForecastAsync(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default)
+    public async Task UpdateAqiForecast(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default)
     {
         var existing = await _context.AirQualityRecords
             .FirstOrDefaultAsync(r => r.City == city && r.RecordType == AirQualityRecordType.Forecast, cancellationToken);

@@ -112,7 +112,7 @@ export default function GroupCard({ city }: GroupCardProps) {
               Zdravstveni savjeti
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Preporuke za osjetljive grupe stanovništva u gradu {cityLabel}
+              Preporuke za osjetljive grupe
             </p>
           </div>
           
@@ -132,7 +132,7 @@ export default function GroupCard({ city }: GroupCardProps) {
             Zdravstveni savjeti
           </h2>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            Preporuke za osjetljive grupe u {cityLabel}
+            Preporuke za osjetljive grupe
           </p>
         </div>
       </div>
