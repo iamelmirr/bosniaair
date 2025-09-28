@@ -1,4 +1,4 @@
--- Database initialization script for SarajevoAir
+-- Database initialization script for BosniaAir
 -- This script will run automatically when the PostgreSQL container starts
 
 -- Enable UUID extension for generating UUIDs

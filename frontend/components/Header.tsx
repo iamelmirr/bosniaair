@@ -29,7 +29,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
               <span className="text-white font-bold text-sm">SA</span>
             </div>
             <h1 className="text-2xl font-bold text-[rgb(var(--text))]">
-              SarajevoAir
+              BosniaAir
             </h1>
           </div>
           <span className="hidden md:inline-block text-sm px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full">

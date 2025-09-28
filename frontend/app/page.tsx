@@ -17,10 +17,10 @@ import {
   CityId
 } from '../lib/utils'
 
-const PRIMARY_CITY_STORAGE_KEY = 'sarajevoair.primaryCity'
+const PRIMARY_CITY_STORAGE_KEY = 'bosniaair.primaryCity'
 
 /// <summary>
-/// Main page component for the SarajevoAir app. Displays live AQI, forecasts, and city selection.
+/// Main page component for the BosniaAir app. Displays live AQI, forecasts, and city selection.
 /// Handles user preferences and responsive layout.
 /// </summary>
 export default function HomePage() {

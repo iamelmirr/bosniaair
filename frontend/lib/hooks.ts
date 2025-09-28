@@ -1,5 +1,5 @@
 /**
- * Custom React hooks for SarajevoAir application.
+ * Custom React hooks for BosniaAir application.
  * Provides data fetching hooks for air quality information using SWR caching
  * and observable patterns for real-time updates.
  */

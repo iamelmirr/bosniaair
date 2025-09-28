@@ -1,17 +1,17 @@
 docker-compose up --build
-# SarajevoAir – Simplified Air Quality Monitoring
+# BosniaAir – Simplified Air Quality Monitoring
 
-[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
+[![FSnapshots of Sarajevo's AQI are stored in `bosniaair-aqi.db` (auto-created). The hosted worker keeps that table up to date every 10 minutes.ontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
 [![Backend](https://img.shields.io/badge/Backend-.NET%208-purple)](https://dotnet.microsoft.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite-green)](https://www.sqlite.org/)
 
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://localhost:5000" dotnet run --project /Users/elmirbesirovic/Desktop/projects/sarajevoairvibe/backend/src/SarajevoAir.Api/SarajevoAir.Api.csproj
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://localhost:5000" dotnet run --project /Users/elmirbesirovic/Desktop/projects/sarajevoairvibe/backend/src/BosniaAir.Api/BosniaAir.Api.csproj
 
-sqlite3 sarajevoair-aqi.db "SELECT * FROM SimpleAqiRecords ORDER BY Timestamp DESC LIMIT 10;"
+sqlite3 bosniaair-aqi.db "SELECT * FROM SimpleAqiRecords ORDER BY Timestamp DESC LIMIT 10;"
 
-sqlite3 sarajevoair-aqi.db "SELECT * FROM SarajevoMeasurements ORDER BY Timestamp DESC LIMIT 5;"
+sqlite3 bosniaair-aqi.db "SELECT * FROM SarajevoMeasurements ORDER BY Timestamp DESC LIMIT 5;"
 
-sqlite3 sarajevoair-aqi.db "SELECT * FROM SarajevoForecasts ORDER BY Date DESC LIMIT 10;"
+sqlite3 bosniaair-aqi.db "SELECT * FROM SarajevoForecasts ORDER BY Date DESC LIMIT 10;"
 
 
 Lightweight full-stack project that tracks Sarajevo’s air quality, built to demonstrate a clear repository → service → controller flow in ASP.NET Core with a matching Next.js UI.
@@ -30,7 +30,7 @@ Lightweight full-stack project that tracks Sarajevo’s air quality, built to de
 ```
 Next.js frontend
           │
-ASP.NET Core API (SarajevoAir.Api)
+ASP.NET Core API (BosniaAir.Api)
           ├── Controllers  → HTTP endpoints
           ├── Services     → Business logic + orchestrations
           ├── Repository   → EF Core over SQLite
@@ -38,17 +38,17 @@ ASP.NET Core API (SarajevoAir.Api)
           └── Hosted Worker→ 10 min refresh of Sarajevo live AQI
 ```
 
-All former `Domain`, `Application`, `Infrastructure`, and external worker projects were removed. Everything now lives inside `SarajevoAir.Api`, keeping the focus on the repository/service/controller pattern with a single data model (`SimpleAqiRecord`).
+All former `Domain`, `Application`, `Infrastructure`, and external worker projects were removed. Everything now lives inside `BosniaAir.Api`, keeping the focus on the repository/service/controller pattern with a single data model (`SimpleAqiRecord`).
 
 ## 🗂️ Repository Layout
 
 ```
 backend/
-├── SarajevoAir.sln            # Solution with Api + Tests
+├── BosniaAir.sln            # Solution with Api + Tests
 ├── src/
-│   └── SarajevoAir.Api/       # Controllers, services, repository, DTOs, hosted refresh
+│   └── BosniaAir.Api/       # Controllers, services, repository, DTOs, hosted refresh
 └── tests/
-     └── SarajevoAir.Tests/     # Unit tests for services
+     └── BosniaAir.Tests/     # Unit tests for services
 
 frontend/
 └── …                          # Next.js app (unchanged)
@@ -65,7 +65,7 @@ Backups of the original clean-architecture projects are kept under `backend_BACK
 
 2. **Run the API**
     ```bash
-    cd backend/src/SarajevoAir.Api
+    cd backend/src/BosniaAir.Api
     dotnet run
     ```
 
@@ -100,7 +100,7 @@ Set `NEXT_PUBLIC_API_BASE_URL` to your backend URL (defaults to `http://localhos
 
 ## ✅ What Changed (and Why)
 
-- **One project**: everything runs from `SarajevoAir.Api`; the extra projects were deleted to keep focus on the core flow.
+- **One project**: everything runs from `BosniaAir.Api`; the extra projects were deleted to keep focus on the core flow.
 - **SQLite persistence**: a single `SimpleAqiRecord` entity powers history, forecast, and admin views.
 - **Clear layering**: controllers → services → repository; DTOs are explicitly separated from EF entities.
 - **City comparison**: now always calls the upstream API (`forceFresh: true`), matching the “no cache” requirement.

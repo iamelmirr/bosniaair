@@ -1,5 +1,5 @@
 /**
- * API client module for SarajevoAir application.
+ * API client module for BosniaAir application.
  * Contains TypeScript interfaces for API responses and a client class for making HTTP requests
  * to the backend API with automatic date conversion and error handling.
  */
@@ -95,7 +95,7 @@ export interface AqicnForecastResponse {
 }
 
 /**
- * API client class for making HTTP requests to the SarajevoAir backend.
+ * API client class for making HTTP requests to the BosniaAir backend.
  * Handles authentication, caching, date conversion, and error handling.
  */
 class ApiClient {

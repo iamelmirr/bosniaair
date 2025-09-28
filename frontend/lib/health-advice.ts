@@ -1,5 +1,5 @@
 /**
- * Health advice module for SarajevoAir application.
+ * Health advice module for BosniaAir application.
  * Provides health recommendations and risk assessments for different population groups
  * based on air quality index (AQI) levels. Includes localized advice in Bosnian language.
  */

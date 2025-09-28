@@ -11,8 +11,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: {
-    default: 'SarajevoAir - Real-time Air Quality Monitoring',
-    template: '%s | SarajevoAir',
+    default: 'BosniaAir - Real-time Air Quality Monitoring',
+    template: '%s | BosniaAir',
   },
   description: 'Real-time air quality monitoring for Sarajevo and Bosnia & Herzegovina. Track AQI, pollutants, and get health recommendations.',
   keywords: [
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     'monitoring',
     'real-time',
   ],
-  authors: [{ name: 'SarajevoAir Team' }],
-  creator: 'SarajevoAir',
-  publisher: 'SarajevoAir',
+  authors: [{ name: 'BosniaAir Team' }],
+  creator: 'BosniaAir',
+  publisher: 'BosniaAir',
   formatDetection: {
     email: false,
     address: false,
@@ -38,21 +38,21 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'bs_BA',
     url: '/',
-    siteName: 'SarajevoAir',
-    title: 'SarajevoAir - Real-time Air Quality Monitoring',
+    siteName: 'BosniaAir',
+    title: 'BosniaAir - Real-time Air Quality Monitoring',
     description: 'Real-time air quality monitoring for Sarajevo and Bosnia & Herzegovina.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'SarajevoAir - Air Quality Dashboard',
+        alt: 'BosniaAir - Air Quality Dashboard',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SarajevoAir - Real-time Air Quality Monitoring',
+    title: 'BosniaAir - Real-time Air Quality Monitoring',
     description: 'Track real-time air quality in Sarajevo and Bosnia & Herzegovina.',
   },
   manifest: '/site.webmanifest',

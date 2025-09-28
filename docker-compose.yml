@@ -3,9 +3,9 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: sarajevoair_db
+    container_name: bosniaair_db
     environment:
-      POSTGRES_DB: sarajevoair
+      POSTGRES_DB: bosniaair
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
     ports:
@@ -14,21 +14,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d sarajevoair"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d bosniaair"]
       interval: 5s
       timeout: 5s
       retries: 20
     networks:
-      - sarajevoair
+      - bosniaair
 
   api:
     build:
-      context: ./backend/src/SarajevoAir.Api
+      context: ./backend/src/BosniaAir.Api
       dockerfile: Dockerfile
-    container_name: sarajevoair_api
+    container_name: bosniaair_api
     environment:
       - ASPNETCORE_URLS=http://+:80
-      - CONNECTION_STRING=Host=db;Database=sarajevoair;Username=dev;Password=dev
+      - CONNECTION_STRING=Host=db;Database=bosniaair;Username=dev;Password=dev
       - OPENAQ_API_KEY=${OPENAQ_API_KEY}
       - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
       - ASPNETCORE_ENVIRONMENT=Development
@@ -38,7 +38,7 @@ services:
     ports:
       - "5000:80"
     networks:
-      - sarajevoair
+      - bosniaair
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
@@ -50,5 +50,5 @@ volumes:
   postgres_data:
 
 networks:
-  sarajevoair:
+  bosniaair:
     driver: bridge

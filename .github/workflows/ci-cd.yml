@@ -8,8 +8,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: sarajevoair-backend
-  FRONTEND_IMAGE_NAME: sarajevoair-frontend
+  BACKEND_IMAGE_NAME: bosniaair-backend
+  FRONTEND_IMAGE_NAME: bosniaair-frontend
 
 jobs:
   # Backend Tests and Build
@@ -23,7 +23,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: testpassword
           POSTGRES_USER: testuser
-          POSTGRES_DB: sarajevoair_test
+          POSTGRES_DB: bosniaair_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -61,7 +61,7 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
       working-directory: ./backend
       env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=sarajevoair_test;Username=testuser;Password=testpassword"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=bosniaair_test;Username=testuser;Password=testpassword"
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
@@ -151,7 +151,7 @@ jobs:
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
         build-args: |
-          NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'https://api.sarajevoair.app/api' }}
+          NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'https://api.bosniaair.app/api' }}
 
   # Security Scanning
   security-scan:
@@ -186,7 +186,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: staging
-      url: https://staging.sarajevoair.app
+      url: https://staging.bosniaair.app
 
     steps:
     - name: Deploy to staging
@@ -204,7 +204,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://sarajevoair.app
+      url: https://bosniaair.app
 
     steps:
     - name: Deploy to production
