@@ -115,18 +115,10 @@ export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate'
 ===========================================================================================
 */
 
-// Dynamic icon logic based on risk level and AQI
+// Keep original group icons, don't change them based on risk
 function getHealthIcon(aqi: number, groupName: string): string {
   const baseGroup = HEALTH_GROUPS.find(g => g.name === groupName);
-  const baseIcon = baseGroup?.icon || '📊';
-  const riskLevel = getRiskLevel(aqi, groupName);
-  
-  // Return risk-appropriate icons
-  if (aqi <= 30) return '🌟'; // Excellent for everyone
-  if (riskLevel === 'low') return baseIcon;
-  if (riskLevel === 'moderate') return '⚠️';
-  if (riskLevel === 'high') return '🚨'; 
-  return '☢️'; // very-high risk
+  return baseGroup?.icon || '📊'; // Always return the original group icon
 }
 
 /// <summary>
@@ -185,7 +177,7 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
   // UMJERENO (51-100 AQI) - sensitive groups watch out
   if (aqi <= 100) {
     switch (groupName) {
-      case 'Astmatičari': return '🚨 VISOK RIZIK! Ostanite unutra. Ako morate vani, kratko i pripremite sav lijekove.';
+      case 'Astmatičari': return '⚠️ Umjeren rizik za astmatičare. Skratite boravak napolju i pripremite inhaler.';
       case 'Sportisti': return '🏋️‍♂️ Prebacite treninge u teretanu ili smanjite intenzitet za 50%. Više pauza za odmor.';
       case 'Djeca': return '👶 Ograničiti vanjsku igru. Kratke šetnje ok, dugotrajni sport izbjegavati.';
       case 'Stariji': return '👴 Kratke aktivnosti napolju. Izbjegavajte naporne radove i dugotrajno izlaganje.';
@@ -196,11 +188,11 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
   // NEZDRAVO ZA OSJETLJIVE (101-150 AQI)
   if (aqi <= 150) {
     switch (groupName) {
-      case 'Astmatičari': return '🆘 OPASNOST! Ostanite unutra. Pri prvim simptomima kontaktirajte ljekara.';
-      case 'Sportisti': return '🏠 SVE TRENINGE UNUTRA! Otvoreni trenig može izazvati ozbiljne probleme.';
-      case 'Djeca': return '🏠 Djeca moraju ostati unutra. Samo hitni izlasci uz masku.';
-      case 'Stariji': return '🏠 Ostanite u zatvorenom prostoru. Zatvorite prozore i uključite čišć zraka.';
-      default: return 'Sve osjetljive grupe moraju ograničiti izlaganje na otvorenom.';
+      case 'Astmatičari': return '🚨 Visok rizik za astmatičare! Ostanite unutra. Pri simptomima kontaktirajte ljekara.';
+      case 'Sportisti': return '🏠 Visok rizik! Sve treninge prebaciti u zatvorene prostore.';
+      case 'Djeca': return '🏠 Visok rizik za djecu! Moraju ostati unutra osim hitnih izlazaka.';
+      case 'Stariji': return '🏠 Visok rizik! Ostanite u zatvorenom. Zatvorite prozore i koristite čišća zraka.';
+      default: return 'Visok rizik za sve osjetljive grupe. Ograničiti izlaganje na otvorenom.';
     }
   }
   
