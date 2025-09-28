@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { CITY_OPTIONS, CityId } from '../lib/utils'
 
+/**
+ * Props for the CitySelectorModal component.
+ */
 interface CitySelectorModalProps {
   isOpen: boolean
   onClose: () => void
@@ -10,6 +13,16 @@ interface CitySelectorModalProps {
   initialPrimaryCity: CityId
 }
 
+/**
+ * CitySelectorModal component provides a modal interface for selecting the primary city
+ * to monitor air quality. Features a clean list of available cities with selection indicators
+ * and keyboard accessibility (Escape key support).
+ *
+ * @param isOpen - Whether the modal is visible
+ * @param onClose - Callback to close the modal
+ * @param onSave - Callback when a city is selected and saved
+ * @param initialPrimaryCity - The initially selected city
+ */
 export default function CitySelectorModal({
   isOpen,
   onClose,

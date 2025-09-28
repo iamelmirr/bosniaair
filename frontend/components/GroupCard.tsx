@@ -4,9 +4,17 @@ import { useComplete } from '../lib/hooks'
 import { getAqiCategoryClass, classNames, cityIdToLabel, CityId } from '../lib/utils'
 import { getAllHealthAdvice, RISK_COLORS, RISK_TRANSLATIONS } from '../lib/health-advice'
 
+/**
+ * Props for the GroupCard component.
+ */
 interface GroupCardProps {
   city: CityId
 }
+
+/**
+ * Converts AQI value to Bosnian air quality category name.
+ * Used for displaying localized category names in the UI.
+ */
 const getAqiCategoryBosnian = (aqi: number): string => {
   if (aqi <= 50) return 'Dobro'
   if (aqi <= 100) return 'Umjereno'
@@ -16,6 +24,13 @@ const getAqiCategoryBosnian = (aqi: number): string => {
   return 'Fatalno'
 }
 
+/**
+ * GroupCard component displays health advice and recommendations for different population groups
+ * based on current air quality levels. Shows risk levels and specific recommendations for
+ * vulnerable groups like children, elderly, pregnant women, and people with respiratory conditions.
+ *
+ * @param city - The city identifier to display health advice for
+ */
 export default function GroupCard({ city }: GroupCardProps) {
   const cityLabel = cityIdToLabel(city)
   const { data: completeData, error, isLoading } = useComplete(city)

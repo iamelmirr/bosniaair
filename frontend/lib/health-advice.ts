@@ -1,3 +1,12 @@
+/**
+ * Health advice module for SarajevoAir application.
+ * Provides health recommendations and risk assessments for different population groups
+ * based on air quality index (AQI) levels. Includes localized advice in Bosnian language.
+ */
+
+/**
+ * Represents a population group with specific health sensitivities to air pollution.
+ */
 export interface HealthGroup {
   name: string;
   icon: string;
@@ -5,6 +14,9 @@ export interface HealthGroup {
   threshold: number;
 }
 
+/**
+ * Represents health advice for a specific population group at a given AQI level.
+ */
 export interface HealthAdvice {
   group: string;
   riskLevel: 'low' | 'moderate' | 'high' | 'very-high';
@@ -13,6 +25,10 @@ export interface HealthAdvice {
   description: string;
 }
 
+/**
+ * Predefined population groups with their health sensitivities and AQI thresholds.
+ * Each group has different tolerance levels for air pollution exposure.
+ */
 export const HEALTH_GROUPS: HealthGroup[] = [
   {
     name: 'Astmatičari',
@@ -21,24 +37,30 @@ export const HEALTH_GROUPS: HealthGroup[] = [
     threshold: 35
   },
   {
-    name: 'Sportisti', 
+    name: 'Sportisti',
     icon: '🏃‍♂️',
     description: 'Aktivni sportisti i rekreativci',
     threshold: 55
   },
   {
     name: 'Djeca',
-    icon: '👶', 
+    icon: '👶',
     description: 'Djeca i mladi do 18 godina',
     threshold: 65
   },
   {
     name: 'Stariji',
     icon: '👴',
-    description: 'Odrasli stariji od 65 godina', 
+    description: 'Odrasli stariji od 65 godina',
     threshold: 70
   }
 ];
+
+/**
+ * Converts AQI value to a standardized category string.
+ * @param aqi - Air Quality Index value
+ * @returns Category string for the AQI level
+ */
 export function getAqiCategory(aqi: number): string {
   if (aqi <= 30) return 'excellent';
   if (aqi <= 50) return 'good';
@@ -49,11 +71,22 @@ export function getAqiCategory(aqi: number): string {
   return 'hazardous';
 }
 
+/**
+ * Returns CSS color class for AQI category styling.
+ * @param aqi - Air Quality Index value
+ * @returns CSS class string for background and text colors
+ */
 export function getAqiColorClass(aqi: number): string {
   const category = getAqiCategory(aqi) as keyof typeof AQI_COLORS;
   return AQI_COLORS[category] || AQI_COLORS.good;
 }
 
+/**
+ * Determines risk level for a specific population group based on AQI.
+ * @param aqi - Air Quality Index value
+ * @param groupName - Name of the population group
+ * @returns Risk level classification
+ */
 export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate' | 'high' | 'very-high' {
   const group = HEALTH_GROUPS.find(g => g.name === groupName);
   const threshold = group?.threshold || 70;
@@ -69,10 +102,23 @@ export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate'
   return 'very-high';
 }
  
+/**
+ * Returns the appropriate icon for a health group.
+ * @param aqi - Air Quality Index value (unused but kept for consistency)
+ * @param groupName - Name of the population group
+ * @returns Emoji icon for the group
+ */
 function getHealthIcon(aqi: number, groupName: string): string {
   const baseGroup = HEALTH_GROUPS.find(g => g.name === groupName);
   return baseGroup?.icon || '📊';
 }
+
+/**
+ * Generates comprehensive health advice for a specific group at given AQI level.
+ * @param aqi - Air Quality Index value
+ * @param groupName - Name of the population group
+ * @returns Complete health advice object
+ */
 export function getHealthAdvice(aqi: number, groupName: string): HealthAdvice {
   return {
     group: groupName,
@@ -83,6 +129,12 @@ export function getHealthAdvice(aqi: number, groupName: string): HealthAdvice {
   }
 }
 
+/**
+ * Generates localized health recommendations in Bosnian for specific groups and AQI levels.
+ * @param aqi - Air Quality Index value
+ * @param groupName - Name of the population group
+ * @returns Personalized health recommendation text
+ */
 function getRecommendationForGroup(aqi: number, groupName: string): string {
   const group = HEALTH_GROUPS.find(g => g.name === groupName);
   const threshold = group?.threshold || 70;
@@ -144,9 +196,18 @@ function getRecommendationForGroup(aqi: number, groupName: string): string {
   return '☢️ ZDRAVSTVENA HITNOST! Ne izlazite osim u krajnjoj nuždi. Kontaktirajte zdravstvene službe pri simptomima.';
 }
 
+/**
+ * Generates health advice for all population groups at a given AQI level.
+ * @param aqi - Air Quality Index value
+ * @returns Array of health advice for all groups
+ */
 export function getAllHealthAdvice(aqi: number): HealthAdvice[] {
   return HEALTH_GROUPS.map(group => getHealthAdvice(aqi, group.name));
 }
+
+/**
+ * CSS color classes for different risk levels in the UI.
+ */
 export const RISK_COLORS = {
   'low': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
   'moderate': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-700',
@@ -154,6 +215,9 @@ export const RISK_COLORS = {
   'very-high': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-700',
 } as const;
 
+/**
+ * Bosnian translations for risk levels.
+ */
 export const RISK_TRANSLATIONS = {
   'low': 'Nizak rizik',
   'moderate': 'Umjeren rizik', 
@@ -161,6 +225,9 @@ export const RISK_TRANSLATIONS = {
   'very-high': 'Vrlo visok rizik',
 } as const;
 
+/**
+ * CSS color classes for different AQI categories.
+ */
 export const AQI_COLORS = {
   excellent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   good: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',

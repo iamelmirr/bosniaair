@@ -19,6 +19,10 @@ import {
 
 const PRIMARY_CITY_STORAGE_KEY = 'sarajevoair.primaryCity'
 
+/// <summary>
+/// Main page component for the SarajevoAir app. Displays live AQI, forecasts, and city selection.
+/// Handles user preferences and responsive layout.
+/// </summary>
 export default function HomePage() {
   const [primaryCity, setPrimaryCity] = useState<CityId | null>(null)
   const [isMobile, setIsMobile] = useState(false)
@@ -27,8 +31,9 @@ export default function HomePage() {
 
   const cityLabel = primaryCity ? cityIdToLabel(primaryCity) : ''
   const { data: aqiData, error, isLoading } = useLiveAqi(primaryCity)
-  usePeriodicRefresh(60 * 1000)
+  usePeriodicRefresh(60 * 1000) // Refresh every minute
 
+  // Detect mobile screen size and update on resize
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768)
@@ -40,6 +45,7 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', checkIsMobile)
   }, [])
 
+  // Load user's primary city preference from localStorage
   useEffect(() => {
     try {
       const storedPrimary = localStorage.getItem(PRIMARY_CITY_STORAGE_KEY)
@@ -59,6 +65,7 @@ export default function HomePage() {
     }
   }, [])
 
+  // Save primary city to localStorage when it changes
   useEffect(() => {
     if (!preferencesLoaded || !primaryCity) {
       return
@@ -66,6 +73,7 @@ export default function HomePage() {
     localStorage.setItem(PRIMARY_CITY_STORAGE_KEY, primaryCity)
   }, [preferencesLoaded, primaryCity])
 
+  // Trigger data refresh when city changes
   useEffect(() => {
     if (!preferencesLoaded || !primaryCity) {
       return
@@ -74,13 +82,13 @@ export default function HomePage() {
     airQualityObservable.notify()
   }, [primaryCity, preferencesLoaded])
 
-
-
+  // Handle city selection from modal
   const handleModalSave = (city: CityId) => {
     setPrimaryCity(city)
     setPreferencesModalOpen(false)
   }
 
+  // Show city selection modal if no city is chosen yet
   if (!primaryCity) {
     return (
       <>
@@ -105,6 +113,7 @@ export default function HomePage() {
     )
   }
 
+  // Display error state if data loading failed
   if (error) {
     return (
       <main className="min-h-screen py-6">
@@ -129,6 +138,7 @@ export default function HomePage() {
     )
   }
 
+  // Main application content with all AQI components
   return (
     <>
       <main className="min-h-screen pb-6">
@@ -138,6 +148,7 @@ export default function HomePage() {
         />
 
         <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-8">
+          {/* Page title and description */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Kvaliteta vazduha u {cityLabel}
@@ -147,10 +158,12 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* Live AQI card showing current air quality */}
           <div className="mb-8">
             <LiveAqiCard city={primaryCity!} />
           </div>
 
+          {/* Pollutant measurements grid */}
           <div className="mb-12">
             <h2 className="text-lg font-semibold mb-6 text-[rgb(var(--text))]">
               Mjerenja zagađivača
@@ -159,6 +172,7 @@ export default function HomePage() {
               {aqiData?.measurements ? (
                 aqiData.measurements
                   .filter(measurement => {
+                    // On mobile, show only the most important pollutants
                     if (isMobile) {
                       const important = ['pm25', 'pm10', 'o3', 'no2']
                       return important.includes(measurement.parameter.toLowerCase().replace('.', ''))
@@ -171,6 +185,7 @@ export default function HomePage() {
                     </div>
                   ))
               ) : isLoading ? (
+                // Loading spinner while fetching data
                 <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
                   <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
                     <span className="sr-only">Loading...</span>
@@ -178,6 +193,7 @@ export default function HomePage() {
                   <p className="mt-2">Učitavam podatke...</p>
                 </div>
               ) : (
+                // No measurements available message
                 <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
                   Trenutno nema dostupnih mjerenja za {cityLabel}
                 </div>
@@ -185,18 +201,22 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Daily timeline showing historical and forecast data */}
           <div className="mb-12">
             <DailyTimeline city={primaryCity!} />
           </div>
 
+          {/* Health advice based on current AQI */}
           <div className="mb-12">
             <GroupCard city={primaryCity!} />
           </div>
 
+          {/* City comparison component */}
           <div className="mb-12">
             <CityComparison key={primaryCity} primaryCity={primaryCity!} />
           </div>
 
+          {/* About section with app features */}
           <div className="mb-8">
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800/50">
               <h3 className="text-base font-semibold text-blue-900 dark:text-blue-100 mb-3">
@@ -210,6 +230,7 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Footer with data source and contact info */}
           <footer className="text-center py-6 border-t border-gray-200 dark:border-gray-700">
             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
               <p>

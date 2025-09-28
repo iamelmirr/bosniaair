@@ -1,7 +1,13 @@
 namespace SarajevoAir.Api.Dtos;
 
+/// <summary>
+/// Geographic coordinate data
+/// </summary>
 public record CoordinateDto(double Latitude, double Longitude);
 
+/// <summary>
+/// Individual air pollutant measurement data
+/// </summary>
 public record MeasurementDto(
     string Id,
     string City,
@@ -15,8 +21,14 @@ public record MeasurementDto(
     AveragingPeriodDto? AveragingPeriod = null
 );
 
+/// <summary>
+/// Time period over which the measurement was averaged
+/// </summary>
 public record AveragingPeriodDto(double Value, string Unit);
 
+/// <summary>
+/// Response containing live air quality data for a city
+/// </summary>
 public record LiveAqiResponse(
     string City = "",
     int OverallAqi = 0,

@@ -2,6 +2,10 @@ using SarajevoAir.Api.Enums;
 
 namespace SarajevoAir.Api.Services;
 
+/// <summary>
+/// Background service that periodically refreshes air quality data for configured cities.
+/// Runs as a hosted service in ASP.NET Core.
+/// </summary>
 public class AirQualityScheduler : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -9,6 +13,14 @@ public class AirQualityScheduler : BackgroundService
     private readonly TimeSpan _interval;
     private readonly IReadOnlyList<City> _cities;
 
+    /// <summary>
+    /// Initializes the scheduler with cities and interval from config.
+    /// Defaults to all cities if none specified.
+    /// <example>
+    /// appsettings.json:
+    /// "Worker": { "FetchIntervalMinutes": 15, "Cities": ["Sarajevo", "Tuzla"] }
+    /// </example>
+    /// </summary>
     public AirQualityScheduler(
         IServiceScopeFactory scopeFactory,
         IConfiguration configuration,
@@ -26,6 +38,9 @@ public class AirQualityScheduler : BackgroundService
             : Enum.GetValues<City>();
     }
 
+    /// <summary>
+    /// Main background loop: refreshes immediately, then repeats on interval.
+    /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var cityList = string.Join(", ", _cities.Select(c => c.ToDisplayName()));
@@ -53,6 +68,9 @@ public class AirQualityScheduler : BackgroundService
         _logger.LogInformation("Air quality scheduler stopped");
     }
 
+    /// <summary>
+    /// Refreshes all configured cities in parallel.
+    /// </summary>
     private async Task RunRefreshCycle(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting scheduled refresh for {CityCount} cities", _cities.Count);
@@ -63,6 +81,9 @@ public class AirQualityScheduler : BackgroundService
         _logger.LogInformation("Completed scheduled refresh");
     }
 
+    /// <summary>
+    /// Refreshes a single city using a scoped service instance. Logs errors but doesn't fail the whole cycle.
+    /// </summary>
     private async Task RefreshCityAsync(City city, CancellationToken cancellationToken)
     {
         try
@@ -79,6 +100,9 @@ public class AirQualityScheduler : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Parses a city name string to City enum, case-insensitive.
+    /// </summary>
     private static City? ParseCity(string value)
     {
         return Enum.TryParse<City>(value, true, out var city) ? city : null;

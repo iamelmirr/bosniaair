@@ -3,6 +3,9 @@
 import React from 'react'
 import useSWR from 'swr'
 
+/**
+ * Represents a single day's air quality data in the weekly trend.
+ */
 interface DailyData {
   date: string
   dayName: string
@@ -12,6 +15,10 @@ interface DailyData {
   color: string
 }
 
+/**
+ * Response structure for the daily AQI API endpoint.
+ * Contains weekly air quality data for a specific city.
+ */
 interface DailyAqiResponse {
   city: string
   period: string
@@ -19,12 +26,25 @@ interface DailyAqiResponse {
   timestamp: string
 }
 
+/**
+ * Props for the DailyAqiCard component.
+ */
 interface DailyAqiCardProps {
   city: string
 }
 
+/**
+ * SWR fetcher function for making API requests.
+ */
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
+/**
+ * DailyAqiCard component displays a weekly air quality index trend for a specific city.
+ * Shows 7 days of AQI data with color-coded categories and highlights today's data.
+ * Automatically refreshes every 15 minutes and supports real-time updates.
+ *
+ * @param city - The city name to display AQI data for
+ */
 export default function DailyAqiCard({ city }: DailyAqiCardProps) {
   const { data, error, isLoading } = useSWR<DailyAqiResponse>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/daily?city=${encodeURIComponent(city)}`,

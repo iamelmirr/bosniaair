@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { useTheme, getThemeIcon } from '../lib/theme'
 
+/// <summary>
+/// Application header component with logo, theme toggle, city selection, and mobile menu.
+/// Provides navigation and settings access with responsive design.
+/// </summary>
 interface HeaderProps {
   onOpenCitySettings?: () => void
   selectedCityLabel?: string
@@ -69,7 +73,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
             </div>
           </button>
 
-          {/* City preferences */}
+          {/* City selection button */}
           <button
             onClick={() => onOpenCitySettings?.()}
             className="px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] 
@@ -88,7 +92,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
 
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile menu toggle button */}
         <div className="md:hidden">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -108,7 +112,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Collapsible mobile menu */}
       <div className={`
         md:hidden overflow-hidden transition-all duration-300 ease-in-out
         ${isMenuOpen 
@@ -123,7 +127,7 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
             : 'transform -translate-y-4'
           }
         `}>
-          {/* Mobile Action Buttons */}
+          {/* Mobile action buttons */}
           <div className="flex gap-2">
             <button 
               onClick={() => {

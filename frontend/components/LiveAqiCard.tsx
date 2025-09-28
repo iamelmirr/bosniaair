@@ -3,6 +3,11 @@
 import { useLiveAqi } from '../lib/hooks'
 import { cityIdToLabel, CityId } from '../lib/utils'
 
+/// <summary>
+/// Component that displays the current live air quality index (AQI) for a preferred city.
+/// Shows the overall AQI value, category, dominant pollutant, health advice, and AQI scale.
+/// Includes loading states, error handling, and a share button.
+/// </summary>
 interface LiveAqiCardProps {
   city: CityId
 }
@@ -11,6 +16,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
   const { data: aqiData, error, isLoading } = useLiveAqi(city)
   const cityLabel = cityIdToLabel(city)
 
+  // Loading skeleton while fetching AQI data
   if (isLoading) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card animate-pulse-subtle">
@@ -32,6 +38,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     )
   }
 
+  // Error state with retry button
   if (error) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-red-300 dark:border-red-600 shadow-card md:hover:shadow-card-hover transition-all duration-300">
@@ -57,6 +64,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     )
   }
 
+  // No data available state
   if (!aqiData) {
     return (
       <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card">
@@ -67,6 +75,11 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     )
   }
 
+  /// <summary>
+  /// Returns CSS class for AQI value color based on category
+  /// </summary>
+  /// <param name="aqi">The AQI value</param>
+  /// <param name="category">The AQI category string</param>
   const getAqiColorClass = (aqi: number, category: string) => {
     switch (category.toLowerCase()) {
       case 'good':
@@ -86,6 +99,10 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     }
   }
 
+  /// <summary>
+  /// Translates English AQI category to Bosnian
+  /// </summary>
+  /// <param name="category">English AQI category</param>
   const translateAqiCategory = (category: string) => {
     switch (category.toLowerCase()) {
       case 'good':
@@ -105,6 +122,10 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     }
   }
 
+  /// <summary>
+  /// Returns health advice text based on AQI category
+  /// </summary>
+  /// <param name="category">AQI category string</param>
   const getHealthAdvice = (category: string) => {
     switch (category.toLowerCase()) {
       case 'good':
@@ -124,6 +145,10 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     }
   }
 
+  /// <summary>
+  /// Formats timestamp for display in Bosnian locale
+  /// </summary>
+  /// <param name="timestamp">Date object to format</param>
   const formatTimestamp = (timestamp: Date) => {
     return new Intl.DateTimeFormat('bs-BA', {
       dateStyle: 'short',
@@ -132,8 +157,10 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
     }).format(timestamp)
   }
 
+  // Main card content with AQI data
   return (
     <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
+      {/* Header with city name and live indicator */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
           Trenutni AQI — {cityLabel}
@@ -144,6 +171,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
         </div>
       </div>
       
+      {/* Main AQI display with value and category */}
       <div className="flex flex-col md:flex-row md:items-end md:gap-6 mb-6 text-center md:text-left animate-fade-in">
         <div className={`text-6xl font-bold ${getAqiColorClass(aqiData.overallAqi, aqiData.aqiCategory)} mb-2 md:mb-0 transition-all duration-500`}>
           {aqiData.overallAqi}
@@ -160,16 +188,19 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
         </div>
       </div>
 
+      {/* Health advice box */}
       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-700">
         <p className="text-sm text-gray-700 dark:text-gray-300">
           {getHealthAdvice(aqiData.aqiCategory)}
         </p>
       </div>
 
+      {/* Footer with timestamp and share button */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>Zadnje ažuriranje: {formatTimestamp(aqiData.timestamp)}</span>
         <button 
           onClick={() => {
+            // Share current AQI data using Web Share API or fallback to clipboard
             if (navigator.share) {
               navigator.share({
                 title: 'Kvaliteta zraka u ' + cityLabel,
@@ -184,11 +215,12 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
           title="Podijeli"
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
           </svg>
         </button>
       </div>
 
+      {/* AQI scale reference (hidden on mobile) */}
       <div className="hidden md:block mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-6 gap-1 text-[10px] leading-tight">
           <div className="text-center">

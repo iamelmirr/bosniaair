@@ -55,6 +55,13 @@ const getAqiBackgroundClass = (category: string) => {
   }
 }
 
+/**
+ * CityComparison component allows users to compare air quality between different cities.
+ * Shows the primary city alongside a selected comparison city with visual indicators
+ * and difference calculations. Includes interactive city selection and responsive design.
+ *
+ * @param primaryCity - The main city to compare against
+ */
 export default function CityComparison({ primaryCity }: CityComparisonProps) {
   const [selectedCity, setSelectedCity] = useState<CityId | ''>('')
   const [cachedData, setCachedData] = useState<any>(null)

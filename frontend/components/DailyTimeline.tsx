@@ -4,6 +4,9 @@ import { useMemo } from 'react'
 import { useComplete } from '../lib/hooks'
 import { CityId } from '../lib/utils'
 
+/**
+ * Represents basic daily air quality data.
+ */
 interface DailyData {
   date: string
   dayName: string
@@ -13,39 +16,55 @@ interface DailyData {
   color: string
 }
 
+/**
+ * Extended timeline data with additional properties for UI rendering.
+ */
 interface TimelineData extends DailyData {
   isToday?: boolean
   isForecast?: boolean
   isPast?: boolean
 }
 
+/**
+ * Props for the DailyTimeline component.
+ */
 interface DailyTimelineProps {
   city: CityId
 }
 
+/**
+ * Returns the localized day name in Bosnian for a given date.
+ * Handles special cases like "Danas" (Today), "Sutra" (Tomorrow), "Jučer" (Yesterday).
+ */
 const getDayName = (dateStr: string): string => {
   const date = new Date(dateStr)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   date.setHours(0, 0, 0, 0)
-  
+
   const diffTime = date.getTime() - today.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) return 'Danas'
   if (diffDays === 1) return 'Sutra'
   if (diffDays === -1) return 'Jučer'
-  
+
   const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
   return dayNames[date.getDay()]
 }
 
+/**
+ * Returns the abbreviated day name for a given date.
+ */
 const getShortDay = (dateStr: string): string => {
   const date = new Date(dateStr)
   const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
   return dayNames[date.getDay()]
 }
 
+/**
+ * Converts AQI value to Bosnian air quality category name.
+ */
 const getAqiCategory = (aqi: number): string => {
   if (aqi <= 50) return 'Dobro'
   if (aqi <= 100) return 'Umjereno'
@@ -64,6 +83,13 @@ const getAqiColorFromAqi = (aqi: number): string => {
   return '#7C2D12'
 }
 
+/**
+ * DailyTimeline component displays a horizontal timeline of air quality data.
+ * Shows current day and forecast data in a responsive grid/carousel layout.
+ * Includes localized day names and AQI categories in Bosnian language.
+ *
+ * @param city - The city identifier to display timeline data for
+ */
 export default function DailyTimeline({ city }: DailyTimelineProps) {
   const { data: completeData, error, isLoading } = useComplete(city)
 

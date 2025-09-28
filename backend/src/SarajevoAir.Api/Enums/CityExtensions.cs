@@ -3,8 +3,15 @@ using System.Globalization;
 
 namespace SarajevoAir.Api.Enums;
 
+/// <summary>
+/// Extension methods for the City enum providing utility functions.
+/// </summary>
 public static class CityExtensions
 {
+    /// <summary>
+    /// Mapping of cities to their WAQI API station identifiers.
+    /// Some cities use custom station IDs while others use the enum value prefixed with @.
+    /// </summary>
     private static readonly IReadOnlyDictionary<City, string> StationIds = new Dictionary<City, string>
     {
         { City.Sarajevo, "@10557" },
@@ -15,6 +22,11 @@ public static class CityExtensions
         { City.Bihac, "@13578" }
     };
 
+    /// <summary>
+    /// Converts a City enum value to its corresponding WAQI station ID string.
+    /// </summary>
+    /// <param name="city">The city to convert</param>
+    /// <returns>The WAQI station ID for the city</returns>
     public static string ToStationId(this City city)
     {
         if (StationIds.TryGetValue(city, out var stationId))
@@ -25,6 +37,11 @@ public static class CityExtensions
         return $"@{(int)city}";
     }
 
+    /// <summary>
+    /// Converts a City enum value to a properly formatted display name.
+    /// </summary>
+    /// <param name="city">The city to convert</param>
+    /// <returns>The display name for the city</returns>
     public static string ToDisplayName(this City city)
     {
         var name = city.ToString();
