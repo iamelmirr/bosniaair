@@ -14,7 +14,6 @@ FRONTEND ARCHITECTURE ROLE:
 │                     │    │                          │    │                     │
 │ • LiveAqiCard       │────│ • getLive()              │────│ • /api/v1/air-quality/{city}/live │
 │ • DailyTimeline     │────│ • getComplete()          │────│ • /api/v1/air-quality/{city}/complete │
-│ • CityComparison    │────│ • getSnapshots()         │────│ • /api/v1/air-quality/snapshots │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
 TYPE SAFETY STRATEGY:
@@ -357,30 +356,11 @@ class ApiClient {
   }
 
   /// <summary>
-  /// Retrieves forecast podatke za odabrani grad iz lokalne baze
-  /// </summary>
-  async getForecast(cityId: string): Promise<ForecastResponse> {
-    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/forecast`
-    return this.request<ForecastResponse>(endpoint)
-  }
-
-  /// <summary>
   /// Retrieves combined live + forecast payload u jednom pozivu iz cache-a
   /// </summary>
   async getComplete(cityId: string): Promise<CompleteAqiResponse> {
     const endpoint = `/air-quality/${encodeURIComponent(cityId)}/complete`
     return this.request<CompleteAqiResponse>(endpoint)
-  }
-
-  /// <summary>
-  /// Returns latest live snapshot za više gradova odjednom
-  /// </summary>
-  async getSnapshots(cities?: string[]): Promise<Record<string, AqiResponse>> {
-    const params = new URLSearchParams()
-    cities?.forEach(city => params.append('cities', city))
-    const query = params.toString()
-    const endpoint = `/air-quality/snapshots${query ? `?${query}` : ''}`
-    return this.request<Record<string, AqiResponse>>(endpoint)
   }
 
   /*

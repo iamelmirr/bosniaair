@@ -136,7 +136,7 @@ export default function HomePage() {
 
   return (
     <>
-      <main className="min-h-screen py-6">
+      <main className="min-h-screen pb-6">
         <Header
           onOpenCitySettings={() => setPreferencesModalOpen(true)}
           selectedCityLabel={cityLabel}

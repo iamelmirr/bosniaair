@@ -14,12 +14,10 @@ namespace SarajevoAir.Api.Services;
 public interface IAirQualityService
 {
     Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<LiveAqiResponse>> GetHistoryAsync(City city, int limit, CancellationToken cancellationToken = default);
     Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default);
     Task<CompleteAqiResponse> GetCompleteAsync(
         City city,
         CancellationToken cancellationToken = default);
-    Task<IReadOnlyDictionary<City, LiveAqiResponse>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default);
     Task RefreshCityAsync(City city, CancellationToken cancellationToken = default);
 }
 
@@ -65,12 +63,6 @@ public class AirQualityService : IAirQualityService
         throw new DataUnavailableException(city, "live");
     }
 
-    public async Task<IReadOnlyList<LiveAqiResponse>> GetHistoryAsync(City city, int limit, CancellationToken cancellationToken = default)
-    {
-        var records = await _repository.GetSnapshotHistoryAsync(city, limit, cancellationToken);
-        return records.Select(MapToLiveResponse).ToList();
-    }
-
     public async Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default)
     {
         var cached = await _repository.GetForecastAsync(city, cancellationToken);
@@ -113,13 +105,6 @@ public class AirQualityService : IAirQualityService
         }
 
         return new CompleteAqiResponse(live, forecast, TimeZoneHelper.GetSarajevoTime());
-    }
-
-    public async Task<IReadOnlyDictionary<City, LiveAqiResponse>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default)
-    {
-        var records = await _repository.GetLatestSnapshotsAsync(cities, cancellationToken);
-        var mapped = records.ToDictionary(kvp => kvp.Key, kvp => MapToLiveResponse(kvp.Value));
-        return new ReadOnlyDictionary<City, LiveAqiResponse>(mapped);
     }
 
     public Task RefreshCityAsync(City city, CancellationToken cancellationToken = default)

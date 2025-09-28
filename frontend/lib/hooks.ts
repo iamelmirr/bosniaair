@@ -20,7 +20,6 @@ HOOK ARCHITECTURE:
 │                     │    │    (This Library)        │    │                     │
 │ • LiveAqiCard       │────│ • useLiveAqi()           │────│ • getLive()         │
 │ • DailyTimeline     │────│ • useComplete()          │────│ • getComplete()     │
-│ • CityComparison    │────│ • useSnapshots()         │────│ • getSnapshots()    │
 │ • GroupCard         │────│ • useComplete()          │────│ • getComplete()     │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
@@ -113,48 +112,6 @@ export function useLiveAqi(cityId: string | null, config?: SWRConfiguration) {
 }
 
 /// <summary>
-/// Hook za forecast podatke prebačen na unified backend endpoint
-/// </summary>
-export function useForecast(cityId: string | null, config?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<ForecastResponse>(
-    cityId ? `aqi-forecast-${cityId}` : null,
-    () => apiClient.getForecast(cityId!),
-    {
-      ...defaultConfig,
-      ...config,
-      refreshInterval: 0,
-      revalidateOnFocus: true,
-      revalidateOnMount: true,
-    }
-  )
-
-  const intervalMs = resolveInterval(config)
-
-  useEffect(() => {
-    if (!cityId) {
-      return
-    }
-
-    const unsubscribe = airQualityObservable.subscribe(() => {
-      void mutate()
-    }, { intervalMs })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [cityId, mutate, intervalMs])
-
-  const refresh = useCallback(() => mutate(), [mutate])
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh,
-  }
-}
-
-/// <summary>
 /// Hook za kompletan payload (live + forecast) u jednom pozivu
 /// </summary>
 export function useComplete(cityId: string | null, config?: SWRConfiguration) {
@@ -185,50 +142,6 @@ export function useComplete(cityId: string | null, config?: SWRConfiguration) {
       unsubscribe()
     }
   }, [cityId, mutate, intervalMs])
-
-  const refresh = useCallback(() => mutate(), [mutate])
-
-  return {
-    data,
-    error,
-    isLoading,
-    refresh,
-  }
-}
-
-/// <summary>
-/// Helper hook za batch dohvat snapshot podataka (korisno za comparison grid)
-/// </summary>
-export function useSnapshots(cityIds: string[] | null, config?: SWRConfiguration) {
-  const normalized = cityIds && cityIds.length > 0 ? cityIds : null
-  const subscriptionKey = normalized ? normalized.join(',') : null
-  const { data, error, isLoading, mutate } = useSWR<Record<string, AqiResponse>>(
-    normalized ? ['aqi-snapshots', ...normalized] : null,
-    () => apiClient.getSnapshots(normalized || undefined),
-    {
-      ...defaultConfig,
-      ...config,
-      refreshInterval: 0,
-      revalidateOnFocus: true,
-      revalidateOnMount: true,
-    }
-  )
-
-  const intervalMs = resolveInterval(config)
-
-  useEffect(() => {
-    if (!subscriptionKey) {
-      return
-    }
-
-    const unsubscribe = airQualityObservable.subscribe(() => {
-      void mutate()
-    }, { intervalMs })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [subscriptionKey, mutate, intervalMs])
 
   const refresh = useCallback(() => mutate(), [mutate])
 

@@ -44,32 +44,6 @@ public class AirQualityController : ControllerBase
         }
     }
 
-    [HttpGet("{city}/history")]
-    [ProducesResponseType(typeof(IReadOnlyList<LiveAqiResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IReadOnlyList<LiveAqiResponse>>> GetHistoryAsync(
-        [FromRoute] City city,
-        [FromQuery] int limit = 100,
-        CancellationToken cancellationToken = default)
-    {
-        if (limit <= 0)
-        {
-            return BadRequest(new { error = "Bad Request", message = "History limit must be greater than zero." });
-        }
-
-        try
-        {
-            var response = await _airQualityService.GetHistoryAsync(city, limit, cancellationToken);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve history for {City}", city);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Internal server error", message = ex.Message });
-        }
-    }
-
     [HttpGet("{city}/forecast")]
     [ProducesResponseType(typeof(ForecastResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -116,28 +90,6 @@ public class AirQualityController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to retrieve complete air quality data for {City}", city);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Internal server error", message = ex.Message });
-        }
-    }
-
-    [HttpGet("snapshots")]
-    [ProducesResponseType(typeof(IDictionary<City, LiveAqiResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IReadOnlyDictionary<City, LiveAqiResponse>>> GetSnapshotsAsync(
-        [FromQuery] City[]? cities,
-        CancellationToken cancellationToken = default)
-    {
-        var targetCities = cities is { Length: > 0 } ? cities : Enum.GetValues<City>();
-
-        try
-        {
-            var response = await _airQualityService.GetLatestSnapshotsAsync(targetCities, cancellationToken);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve snapshot summary");
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Internal server error", message = ex.Message });
         }
     }

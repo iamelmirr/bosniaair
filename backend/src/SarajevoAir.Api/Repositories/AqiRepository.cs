@@ -10,10 +10,8 @@ public interface IAirQualityRepository
 {
     Task AddLiveSnapshotAsync(AirQualityRecord record, CancellationToken cancellationToken = default);
     Task<AirQualityRecord?> GetLatestSnapshotAsync(City city, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<AirQualityRecord>> GetSnapshotHistoryAsync(City city, int limit, CancellationToken cancellationToken = default);
     Task UpsertForecastAsync(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default);
     Task<AirQualityRecord?> GetForecastAsync(City city, CancellationToken cancellationToken = default);
-    Task<IReadOnlyDictionary<City, AirQualityRecord>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default);
 }
 
 public class AirQualityRepository : IAirQualityRepository
@@ -40,16 +38,6 @@ public class AirQualityRepository : IAirQualityRepository
             .Where(r => r.City == city && r.RecordType == AirQualityRecordType.LiveSnapshot)
             .OrderByDescending(r => r.Timestamp)
             .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<AirQualityRecord>> GetSnapshotHistoryAsync(City city, int limit, CancellationToken cancellationToken = default)
-    {
-        return await _context.AirQualityRecords
-            .AsNoTracking()
-            .Where(r => r.City == city && r.RecordType == AirQualityRecordType.LiveSnapshot)
-            .OrderByDescending(r => r.Timestamp)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
     }
 
     public async Task UpsertForecastAsync(City city, string forecastJson, DateTime timestamp, CancellationToken cancellationToken = default)
@@ -85,18 +73,5 @@ public class AirQualityRepository : IAirQualityRepository
             .AsNoTracking()
             .Where(r => r.City == city && r.RecordType == AirQualityRecordType.Forecast)
             .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<IReadOnlyDictionary<City, AirQualityRecord>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default)
-    {
-        var cityList = cities.ToList();
-        var results = await _context.AirQualityRecords
-            .AsNoTracking()
-            .Where(r => cityList.Contains(r.City) && r.RecordType == AirQualityRecordType.LiveSnapshot)
-            .GroupBy(r => r.City)
-            .Select(g => g.OrderByDescending(x => x.Timestamp).First())
-            .ToListAsync(cancellationToken);
-
-        return results.ToDictionary(r => r.City, r => r);
     }
 }
