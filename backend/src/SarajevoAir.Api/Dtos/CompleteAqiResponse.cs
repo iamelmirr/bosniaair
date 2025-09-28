@@ -23,16 +23,3 @@ public record CompleteAqiResponse(
     ForecastResponse ForecastData,
     DateTime RetrievedAt
 );
-
-/// <summary>
-/// Legacy DTO for Sarajevo-specific complete response
-/// Maintained for backward compatibility
-/// </summary>
-/// <param name="LiveData">Current air quality conditions</param>
-/// <param name="ForecastData">Air quality forecast for coming days</param>
-/// <param name="RetrievedAt">Timestamp kada su data combined</param>
-public record SarajevoCompleteDto(
-    LiveAqiResponse LiveData,
-    ForecastResponse ForecastData,
-    DateTime RetrievedAt
-);

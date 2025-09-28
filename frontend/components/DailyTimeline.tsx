@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo } from 'react'
-import { ForecastData } from '../lib/api-client'
 import { useComplete } from '../lib/hooks'
 import { CityId } from '../lib/utils'
 

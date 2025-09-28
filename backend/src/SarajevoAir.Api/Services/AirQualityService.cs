@@ -349,41 +349,6 @@ public class AirQualityService : IAirQualityService
         return results;
     }
 
-    private static ForecastDayData? ResolveForecastDay(IReadOnlyDictionary<DateOnly, ForecastDayData> map, IReadOnlyList<DateOnly> orderedKeys, DateOnly target)
-    {
-        if (map.TryGetValue(target, out var exact))
-        {
-            return exact;
-        }
-
-        ForecastDayData? futureMatch = null;
-        ForecastDayData? pastMatch = null;
-
-        foreach (var key in orderedKeys)
-        {
-            if (key >= target)
-            {
-                futureMatch = map[key];
-                break;
-            }
-        }
-
-        if (futureMatch is null)
-        {
-            for (var i = orderedKeys.Count - 1; i >= 0; i--)
-            {
-                var key = orderedKeys[i];
-                if (key < target)
-                {
-                    pastMatch = map[key];
-                    break;
-                }
-            }
-        }
-
-        return futureMatch ?? pastMatch;
-    }
-
     private static int ToInt(double value) => Convert.ToInt32(Math.Round(value, MidpointRounding.AwayFromZero));
 
     private static (string Category, string Color, string Message) GetAqiInfo(int aqi) => aqi switch

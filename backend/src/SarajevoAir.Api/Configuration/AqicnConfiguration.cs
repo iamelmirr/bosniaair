@@ -7,16 +7,13 @@ Koristi se kroz Options Pattern u ASP.NET Core
 
 DESIGN PATTERNS:
 1. OPTIONS PATTERN - type-safe binding iz appsettings.json
-2. STATIC CONFIGURATION - city-to-station mapping za performance
-3. FALLBACK VALUES - default prazan string umesto null reference exceptions
+2. FALLBACK VALUES - default prazan string umesto null reference exceptions
 
 INTEGRATION FLOW:
 appsettings.json → IConfiguration → AqicnConfiguration → AqicnClient → HTTP API
 
 LOW LEVEL DETAILS:
 - Properties se bind-uju automatski iz "Aqicn" sekcije u appsettings.json
-- CityStations Dictionary omogućava O(1) lookup performanse
-- StringComparer.OrdinalIgnoreCase čini gradove case-insensitive
 */
 
 namespace SarajevoAir.Api.Configuration;
@@ -36,8 +33,7 @@ public class AqicnConfiguration
     {
       "Aqicn": {
         "ApiUrl": "https://api.waqi.info",
-        "ApiToken": "your-api-token-here",
-        "City": "sarajevo"
+        "ApiToken": "your-api-token-here"
       }
     }
     */
@@ -53,43 +49,4 @@ public class AqicnConfiguration
     /// Dobija se registracijom na https://aqicn.org/data-platform/token/
     /// </summary>
     public string ApiToken { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Default grad za background service koji automatski prikuplja podatke
-    /// Obično "sarajevo" jer je to glavni grad aplikacije
-    /// </summary>
-    public string City { get; set; } = string.Empty;
-    
-    /*
-    === CITY-TO-STATION MAPPING ===
-    WAQI API zahteva specifične station ID-jeve umesto imena gradova
-    
-    STATION ID TYPES:
-    1. @XXXXX format - javni station ID (npr. @9265 za Sarajevo Ivan Sedlo)
-    2. AXXXXXX format - alternative station format (npr. A462985 za Tuzla)
-    
-    PERFORMANCE OPTIMIZATION:
-    - static readonly = kreiran jednom pri load-u klase, deli se među svim instance-ovima
-    - Dictionary<string,string> = O(1) lookup complexity
-    - StringComparer.OrdinalIgnoreCase = "Sarajevo", "sarajevo", "SARAJEVO" su isti ključ
-    
-    BUSINESS LOGIC:
-    Korisnik poziva /api/v1/live?city=Tuzla
-    → AqicnClient gleda CityStations["Tuzla"] = "A462985"
-    → Poziva https://api.waqi.info/feed/A462985/?token=xxx
-    */
-    
-    /// <summary>
-    /// Static mapping gradova na njihove specifične WAQI station ID-jeve
-    /// Koristi se u AqicnClient-u za konvertovanje imena grada u station ID
-    /// </summary>
-    public static readonly Dictionary<string, string> CityStations = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "Sarajevo", "@10557" },    // Sarajevo correct station
-        { "Tuzla", "A462985" },      // Tuzla Maršala Tita station  
-        { "Mostar", "@14726" },      // Mostar bijeli brijeg station
-        { "Travnik", "@14693" },     // Travnik centar with full forecast
-        { "Zenica", "@9267" },       // Zenica Centar station
-        { "Bihac", "@13578" }        // Bihać nova četvrt station
-    };
 }

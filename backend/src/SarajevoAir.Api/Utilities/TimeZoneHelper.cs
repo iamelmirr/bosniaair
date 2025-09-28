@@ -45,13 +45,4 @@ public static class TimeZoneHelper
         return TimeZoneInfo.ConvertTimeFromUtc(utcTime, SarajevoTimeZone);
     }
 
-    /// <summary>
-    /// Konvertuje Sarajevo lokalno vrijeme u UTC
-    /// </summary>
-    /// <param name="localTime">Sarajevo local DateTime to convert</param>
-    /// <returns>DateTime in UTC</returns>
-    public static DateTime ConvertToUtc(DateTime localTime)
-    {
-        return TimeZoneInfo.ConvertTimeToUtc(localTime, SarajevoTimeZone);
-    }
 }

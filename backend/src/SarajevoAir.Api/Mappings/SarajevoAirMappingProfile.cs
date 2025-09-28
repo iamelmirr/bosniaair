@@ -1,1 +1,0 @@
-// Legacy AutoMapper profile removed. Mapping handled in AirQualityService.
