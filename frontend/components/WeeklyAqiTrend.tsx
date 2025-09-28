@@ -27,9 +27,9 @@ interface DailyAqiResponse {
 }
 
 /**
- * Props for the DailyAqiCard component.
+ * Props for the WeeklyAqiTrend component.
  */
-interface DailyAqiCardProps {
+interface WeeklyAqiTrendProps {
   city: string
 }
 
@@ -39,13 +39,13 @@ interface DailyAqiCardProps {
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 /**
- * DailyAqiCard component displays a weekly air quality index trend for a specific city.
+ * WeeklyAqiTrend component displays a weekly air quality index trend for a specific city.
  * Shows 7 days of AQI data with color-coded categories and highlights today's data.
  * Automatically refreshes every 15 minutes and supports real-time updates.
  *
  * @param city - The city name to display AQI data for
  */
-export default function DailyAqiCard({ city }: DailyAqiCardProps) {
+export default function WeeklyAqiTrend({ city }: WeeklyAqiTrendProps) {
   const { data, error, isLoading } = useSWR<DailyAqiResponse>(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/daily?city=${encodeURIComponent(city)}`,
     fetcher,

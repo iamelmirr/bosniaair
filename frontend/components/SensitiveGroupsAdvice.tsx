@@ -5,9 +5,9 @@ import { getAqiCategoryClass, classNames, cityIdToLabel, CityId } from '../lib/u
 import { getAllHealthAdvice, RISK_COLORS, RISK_TRANSLATIONS } from '../lib/health-advice'
 
 /**
- * Props for the GroupCard component.
+ * Props for the SensitiveGroupsAdvice component.
  */
-interface GroupCardProps {
+interface SensitiveGroupsAdviceProps {
   city: CityId
 }
 
@@ -25,13 +25,13 @@ const getAqiCategoryBosnian = (aqi: number): string => {
 }
 
 /**
- * GroupCard component displays health advice and recommendations for different population groups
+ * SensitiveGroupsAdvice component displays health advice and recommendations for different population groups
  * based on current air quality levels. Shows risk levels and specific recommendations for
  * vulnerable groups like children, elderly, pregnant women, and people with respiratory conditions.
  *
  * @param city - The city identifier to display health advice for
  */
-export default function GroupCard({ city }: GroupCardProps) {
+export default function SensitiveGroupsAdvice({ city }: SensitiveGroupsAdviceProps) {
   const cityLabel = cityIdToLabel(city)
   const { data: completeData, error, isLoading } = useComplete(city)
   const liveData = completeData?.liveData

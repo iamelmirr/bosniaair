@@ -26,9 +26,9 @@ interface TimelineData extends DailyData {
 }
 
 /**
- * Props for the DailyTimeline component.
+ * Props for the ForecastTimeline component.
  */
-interface DailyTimelineProps {
+interface ForecastTimelineProps {
   city: CityId
 }
 
@@ -84,13 +84,13 @@ const getAqiColorFromAqi = (aqi: number): string => {
 }
 
 /**
- * DailyTimeline component displays a horizontal timeline of air quality data.
+ * ForecastTimeline component displays a horizontal timeline of air quality data.
  * Shows current day and forecast data in a responsive grid/carousel layout.
  * Includes localized day names and AQI categories in Bosnian language.
  *
  * @param city - The city identifier to display timeline data for
  */
-export default function DailyTimeline({ city }: DailyTimelineProps) {
+export default function ForecastTimeline({ city }: ForecastTimelineProps) {
   const { data: completeData, error, isLoading } = useComplete(city)
 
   const timelineData = useMemo(() => {

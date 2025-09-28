@@ -6,11 +6,11 @@ import { Measurement } from '../lib/api-client'
 /// Component that displays a single air pollutant measurement with color-coded health status.
 /// Shows the pollutant name, value, and unit with visual indicators based on EPA breakpoints.
 /// </summary>
-interface PollutantCardProps {
+interface PollutantsProps {
   measurement: Measurement
 }
 
-export default function PollutantCard({ measurement }: PollutantCardProps) {
+export default function Pollutants({ measurement }: PollutantsProps) {
   /// <summary>
   /// Determines the health status of a pollutant measurement based on EPA breakpoints
   /// </summary>

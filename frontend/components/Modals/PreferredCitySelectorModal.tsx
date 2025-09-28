@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CITY_OPTIONS, CityId } from '../lib/utils'
+import { CITY_OPTIONS, CityId } from '../../lib/utils'
 
 /**
- * Props for the CitySelectorModal component.
+ * Props for the PreferredCitySelectorModal component.
  */
-interface CitySelectorModalProps {
+interface PreferredCitySelectorModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (primaryCity: CityId) => void
@@ -14,7 +14,7 @@ interface CitySelectorModalProps {
 }
 
 /**
- * CitySelectorModal component provides a modal interface for selecting the primary city
+ * PreferredCitySelectorModal component provides a modal interface for selecting the primary city
  * to monitor air quality. Features a clean list of available cities with selection indicators
  * and keyboard accessibility (Escape key support).
  *
@@ -23,12 +23,12 @@ interface CitySelectorModalProps {
  * @param onSave - Callback when a city is selected and saved
  * @param initialPrimaryCity - The initially selected city
  */
-export default function CitySelectorModal({
+export default function PreferredCitySelectorModal({
   isOpen,
   onClose,
   onSave,
   initialPrimaryCity
-}: CitySelectorModalProps) {
+}: PreferredCitySelectorModalProps) {
   const [primarySelection, setPrimarySelection] = useState<CityId>(initialPrimaryCity)
 
   useEffect(() => {

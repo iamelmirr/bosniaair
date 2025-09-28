@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import LiveAqiCard from '../components/LiveAqiCard'
-import PollutantCard from '../components/PollutantCard'
+import LiveAqiPanel from '../components/LiveAqiPanel'
+import Pollutants from '../components/Pollutants'
 import Header from '../components/Header'
-import DailyTimeline from '../components/DailyTimeline'
-import GroupCard from '../components/GroupCard'
-import CityComparison from '../components/CityComparison'
-import CitySelectorModal from '../components/CitySelectorModal'
+import ForecastTimeline from '../components/ForecastTimeline'
+import SensitiveGroupsAdvice from '../components/SensitiveGroupsAdvice'
+import CitiesComparison from '../components/CitiesComparison'
+import PreferredCitySelectorModal from '../components/Modals/PreferredCitySelectorModal'
 import { useLiveAqi, usePeriodicRefresh } from '../lib/hooks'
 import { airQualityObservable } from '../lib/observable'
 import {
@@ -103,7 +103,7 @@ export default function HomePage() {
           </div>
         </main>
         
-        <CitySelectorModal
+        <PreferredCitySelectorModal
           isOpen={isPreferencesModalOpen}
           onClose={() => setPreferencesModalOpen(false)}
           onSave={handleModalSave}
@@ -160,7 +160,7 @@ export default function HomePage() {
 
           {/* Live AQI card showing current air quality */}
           <div className="mb-8">
-            <LiveAqiCard city={primaryCity!} />
+            <LiveAqiPanel city={primaryCity!} />
           </div>
 
           {/* Pollutant measurements grid */}
@@ -181,7 +181,7 @@ export default function HomePage() {
                   })
                   .map((measurement, index) => (
                     <div key={measurement.parameter} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <PollutantCard measurement={measurement} />
+                      <Pollutants measurement={measurement} />
                     </div>
                   ))
               ) : isLoading ? (
@@ -203,17 +203,15 @@ export default function HomePage() {
 
           {/* Daily timeline showing historical and forecast data */}
           <div className="mb-12">
-            <DailyTimeline city={primaryCity!} />
+            <ForecastTimeline city={primaryCity!} />
           </div>
 
           {/* Health advice based on current AQI */}
           <div className="mb-12">
-            <GroupCard city={primaryCity!} />
-          </div>
-
-          {/* City comparison component */}
+            <SensitiveGroupsAdvice city={primaryCity!} />
+          </div>          {/* City comparison component */}
           <div className="mb-12">
-            <CityComparison key={primaryCity} primaryCity={primaryCity!} />
+            <CitiesComparison key={primaryCity} primaryCity={primaryCity!} />
           </div>
 
           {/* About section with app features */}
@@ -260,7 +258,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <CitySelectorModal
+      <PreferredCitySelectorModal
         isOpen={isPreferencesModalOpen}
         onClose={() => setPreferencesModalOpen(false)}
         onSave={handleModalSave}

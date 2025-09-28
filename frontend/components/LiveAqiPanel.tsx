@@ -8,11 +8,11 @@ import { cityIdToLabel, CityId } from '../lib/utils'
 /// Shows the overall AQI value, category, dominant pollutant, health advice, and AQI scale.
 /// Includes loading states, error handling, and a share button.
 /// </summary>
-interface LiveAqiCardProps {
+interface LiveAqiPanelProps {
   city: CityId
 }
 
-export default function LiveAqiCard({ city }: LiveAqiCardProps) {
+export default function LiveAqiPanel({ city }: LiveAqiPanelProps) {
   const { data: aqiData, error, isLoading } = useLiveAqi(city)
   const cityLabel = cityIdToLabel(city)
 

@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useLiveAqi } from '../lib/hooks'
 import { CITY_OPTIONS, CityId, cityIdToLabel } from '../lib/utils'
 
-interface CityComparisonProps {
+interface CitiesComparisonProps {
   primaryCity: CityId
 }
 
@@ -56,13 +56,13 @@ const getAqiBackgroundClass = (category: string) => {
 }
 
 /**
- * CityComparison component allows users to compare air quality between different cities.
+ * CitiesComparison component allows users to compare air quality between different cities.
  * Shows the primary city alongside a selected comparison city with visual indicators
  * and difference calculations. Includes interactive city selection and responsive design.
  *
  * @param primaryCity - The main city to compare against
  */
-export default function CityComparison({ primaryCity }: CityComparisonProps) {
+export default function CitiesComparison({ primaryCity }: CitiesComparisonProps) {
   const [selectedCity, setSelectedCity] = useState<CityId | ''>('')
   const [cachedData, setCachedData] = useState<any>(null)
   const { data: primaryData } = useLiveAqi(primaryCity)
