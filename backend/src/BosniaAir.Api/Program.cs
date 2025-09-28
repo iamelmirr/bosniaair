@@ -83,8 +83,18 @@ else
         options.UseSqlite(connectionString));
 }
 
-// Bind WAQI config section
-builder.Services.Configure<AqicnConfiguration>(builder.Configuration.GetSection("Aqicn"));
+// Bind WAQI config section with environment variable override
+builder.Services.Configure<AqicnConfiguration>(options =>
+{
+    builder.Configuration.GetSection("Aqicn").Bind(options);
+    
+    // Override ApiToken from environment variable if provided
+    var envToken = builder.Configuration["WAQI_API_TOKEN"];
+    if (!string.IsNullOrWhiteSpace(envToken))
+    {
+        options.ApiToken = envToken;
+    }
+});
 
 // Typed HTTP client for WAQI API with resilience and custom headers
 builder.Services.AddHttpClient<AirQualityService>()
