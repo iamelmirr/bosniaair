@@ -256,8 +256,8 @@ AirQualityRefreshService:
 - Ne blokira HTTP request-ove
 */
 
-// BACKGROUND SERVICE za periodično osvježavanje podataka
-builder.Services.AddHostedService<AirQualityScheduler>(); // Prikuplja podatke svakih X minuta
+// BACKGROUND SERVICE za periodično osvježavanje podataka (inicijalni fetch + 10-min interval)
+builder.Services.AddHostedService<AirQualityScheduler>();
 
 /*
 === HEALTH CHECKS ===

@@ -254,6 +254,7 @@ export function usePeriodicRefresh(intervalMs: number = 10 * 60 * 1000) {
   useEffect(() => {
     const previousInterval = airQualityObservable.getIntervalMs()
     airQualityObservable.setIntervalMs(intervalMs)
+    airQualityObservable.notify()
 
     return () => {
       airQualityObservable.setIntervalMs(previousInterval)

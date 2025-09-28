@@ -15,7 +15,6 @@ FRONTEND ARCHITECTURE ROLE:
 │ • LiveAqiCard       │────│ • getLive()              │────│ • /api/v1/air-quality/{city}/live │
 │ • DailyTimeline     │────│ • getComplete()          │────│ • /api/v1/air-quality/{city}/complete │
 │ • CityComparison    │────│ • getSnapshots()         │────│ • /api/v1/air-quality/snapshots │
-│ • GroupCard         │────│ • refreshCity()          │────│ • /api/v1/air-quality/refresh/{city} │
 └─────────────────────┘    └──────────────────────────┘    └─────────────────────┘
 
 TYPE SAFETY STRATEGY:
@@ -350,44 +349,26 @@ class ApiClient {
   */
 
   /// <summary>
-  /// Retrieves latest cached or freshly refreshed live AQI podatke
+  /// Retrieves latest cached live AQI podatke
   /// </summary>
-  async getLive(cityId: string, options?: { forceRefresh?: boolean }): Promise<AqiResponse> {
-    const params = new URLSearchParams()
-    if (options?.forceRefresh) {
-      params.set('forceRefresh', 'true')
-    }
-    const query = params.toString()
-    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/live${query ? `?${query}` : ''}`
+  async getLive(cityId: string): Promise<AqiResponse> {
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/live`
     return this.request<AqiResponse>(endpoint)
   }
 
   /// <summary>
-  /// Retrieves forecast podatke za odabrani grad, cached unless forceRefresh specified
+  /// Retrieves forecast podatke za odabrani grad iz lokalne baze
   /// </summary>
-  async getForecast(cityId: string, options?: { forceRefresh?: boolean }): Promise<ForecastResponse> {
-    const params = new URLSearchParams()
-    if (options?.forceRefresh) {
-      params.set('forceRefresh', 'true')
-    }
-    const query = params.toString()
-    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/forecast${query ? `?${query}` : ''}`
+  async getForecast(cityId: string): Promise<ForecastResponse> {
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/forecast`
     return this.request<ForecastResponse>(endpoint)
   }
 
   /// <summary>
-  /// Retrieves combined live + forecast payload u jednom pozivu
+  /// Retrieves combined live + forecast payload u jednom pozivu iz cache-a
   /// </summary>
-  async getComplete(cityId: string, options?: { forceLiveRefresh?: boolean; forceForecastRefresh?: boolean }): Promise<CompleteAqiResponse> {
-    const params = new URLSearchParams()
-    if (options?.forceLiveRefresh) {
-      params.set('forceLiveRefresh', 'true')
-    }
-    if (options?.forceForecastRefresh) {
-      params.set('forceForecastRefresh', 'true')
-    }
-    const query = params.toString()
-    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/complete${query ? `?${query}` : ''}`
+  async getComplete(cityId: string): Promise<CompleteAqiResponse> {
+    const endpoint = `/air-quality/${encodeURIComponent(cityId)}/complete`
     return this.request<CompleteAqiResponse>(endpoint)
   }
 
@@ -400,15 +381,6 @@ class ApiClient {
     const query = params.toString()
     const endpoint = `/air-quality/snapshots${query ? `?${query}` : ''}`
     return this.request<Record<string, AqiResponse>>(endpoint)
-  }
-
-  /// <summary>
-  /// Kreira manualni refresh za određeni grad
-  /// </summary>
-  async refreshCity(cityId: string): Promise<void> {
-    await this.request<{ message: string }>(`/air-quality/refresh/${encodeURIComponent(cityId)}`, {
-      method: 'POST'
-    })
   }
 
   /*

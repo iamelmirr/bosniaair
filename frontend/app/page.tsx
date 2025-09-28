@@ -9,6 +9,7 @@ import GroupCard from '../components/GroupCard'
 import CityComparison from '../components/CityComparison'
 import CitySelectorModal from '../components/CitySelectorModal'
 import { useLiveAqi, usePeriodicRefresh } from '../lib/hooks'
+import { airQualityObservable } from '../lib/observable'
 import {
   shareData,
   cityIdToLabel,
@@ -69,6 +70,16 @@ export default function HomePage() {
     }
     localStorage.setItem(PRIMARY_CITY_STORAGE_KEY, primaryCity)
   }, [preferencesLoaded, primaryCity])
+
+  // Auto-refresh data kada se promeni primary city
+  useEffect(() => {
+    if (!preferencesLoaded || !primaryCity) {
+      return
+    }
+
+    // Force re-fetch podataka iz baze za novi grad (ne poziva WAQI API)
+    airQualityObservable.notify()
+  }, [primaryCity, preferencesLoaded])
 
   const handleShare = async () => {
     try {

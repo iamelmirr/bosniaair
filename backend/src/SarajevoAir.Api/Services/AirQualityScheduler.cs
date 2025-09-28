@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,7 +18,10 @@ public class AirQualityScheduler : BackgroundService
     private readonly TimeSpan _interval;
     private readonly IReadOnlyList<City> _cities;
 
-    public AirQualityScheduler(IServiceScopeFactory scopeFactory, IConfiguration configuration, ILogger<AirQualityScheduler> logger)
+    public AirQualityScheduler(
+        IServiceScopeFactory scopeFactory,
+        IConfiguration configuration,
+        ILogger<AirQualityScheduler> logger)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -29,8 +37,12 @@ public class AirQualityScheduler : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Air quality scheduler starting with {CityCount} cities. Interval: {Interval} minutes", _cities.Count, _interval.TotalMinutes);
-
+        var cityList = string.Join(", ", _cities.Select(c => c.ToDisplayName()));
+        _logger.LogInformation(
+            "Air quality scheduler starting with {CityCount} cities ({Cities}). Interval: {Interval} minutes",
+            _cities.Count,
+            cityList,
+            _interval.TotalMinutes);
         await RunRefreshCycle(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)

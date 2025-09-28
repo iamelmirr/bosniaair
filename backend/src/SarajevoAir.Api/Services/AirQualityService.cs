@@ -13,13 +13,11 @@ namespace SarajevoAir.Api.Services;
 
 public interface IAirQualityService
 {
-    Task<LiveAqiResponse> GetLiveAsync(City city, bool forceRefresh = false, CancellationToken cancellationToken = default);
+    Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiveAqiResponse>> GetHistoryAsync(City city, int limit, CancellationToken cancellationToken = default);
-    Task<ForecastResponse> GetForecastAsync(City city, bool forceRefresh = false, CancellationToken cancellationToken = default);
+    Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default);
     Task<CompleteAqiResponse> GetCompleteAsync(
         City city,
-        bool forceRefreshLive = false,
-        bool forceRefreshForecast = false,
         CancellationToken cancellationToken = default);
     Task<IReadOnlyDictionary<City, LiveAqiResponse>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default);
     Task RefreshCityAsync(City city, CancellationToken cancellationToken = default);
@@ -55,19 +53,16 @@ public class AirQualityService : IAirQualityService
         }
     }
 
-    public async Task<LiveAqiResponse> GetLiveAsync(City city, bool forceRefresh = false, CancellationToken cancellationToken = default)
+    public async Task<LiveAqiResponse> GetLiveAsync(City city, CancellationToken cancellationToken = default)
     {
-        if (!forceRefresh)
+        var cached = await _repository.GetLatestSnapshotAsync(city, cancellationToken);
+        if (cached is not null)
         {
-            var cached = await _repository.GetLatestSnapshotAsync(city, cancellationToken);
-            if (cached is not null)
-            {
-                return MapToLiveResponse(cached);
-            }
+            return MapToLiveResponse(cached);
         }
 
-        var result = await RefreshInternalAsync(city, cancellationToken);
-        return result.Live;
+        _logger.LogWarning("Live data requested for {City} but cache is empty", city);
+        throw new DataUnavailableException(city, "live");
     }
 
     public async Task<IReadOnlyList<LiveAqiResponse>> GetHistoryAsync(City city, int limit, CancellationToken cancellationToken = default)
@@ -76,58 +71,48 @@ public class AirQualityService : IAirQualityService
         return records.Select(MapToLiveResponse).ToList();
     }
 
-    public async Task<ForecastResponse> GetForecastAsync(City city, bool forceRefresh = false, CancellationToken cancellationToken = default)
+    public async Task<ForecastResponse> GetForecastAsync(City city, CancellationToken cancellationToken = default)
     {
-        if (!forceRefresh)
+        var cached = await _repository.GetForecastAsync(city, cancellationToken);
+        if (cached is not null)
         {
-            var cached = await _repository.GetForecastAsync(city, cancellationToken);
-            if (cached is not null)
+            var forecast = DeserializeForecastCache(cached.ForecastJson);
+            if (forecast is not null)
             {
-                var forecast = DeserializeForecastCache(cached.ForecastJson);
-                if (forecast is not null)
-                {
-                    var timestamp = forecast.RetrievedAt;
-                    return new ForecastResponse(
-                        City: city.ToDisplayName(),
-                        Forecast: forecast.Days,
-                        Timestamp: timestamp
-                    );
-                }
+                return new ForecastResponse(
+                    City: city.ToDisplayName(),
+                    Forecast: forecast.Days,
+                    Timestamp: forecast.RetrievedAt
+                );
             }
+
+            _logger.LogWarning("Forecast cache deserialization failed for {City}", city);
         }
 
-        var refreshed = await RefreshInternalAsync(city, cancellationToken);
-        if (refreshed.Forecast is not null)
-        {
-            return refreshed.Forecast;
-        }
-
-        var fallbackTimestamp = TimeZoneHelper.GetSarajevoTime();
-        return new ForecastResponse(
-            City: city.ToDisplayName(),
-            Forecast: Array.Empty<ForecastDayDto>(),
-            Timestamp: fallbackTimestamp
-        );
+        _logger.LogWarning("Forecast data requested for {City} but cache is empty", city);
+        throw new DataUnavailableException(city, "forecast");
     }
 
     public async Task<CompleteAqiResponse> GetCompleteAsync(
         City city,
-        bool forceRefreshLive = false,
-        bool forceRefreshForecast = false,
         CancellationToken cancellationToken = default)
     {
-        if (forceRefreshLive || forceRefreshForecast)
+        var live = await GetLiveAsync(city, cancellationToken);
+        ForecastResponse forecast;
+
+        try
         {
-            var refreshed = await RefreshInternalAsync(city, cancellationToken);
-            var forecast = refreshed.Forecast ?? await GetForecastAsync(city, false, cancellationToken);
-            return new CompleteAqiResponse(refreshed.Live, forecast, TimeZoneHelper.GetSarajevoTime());
+            forecast = await GetForecastAsync(city, cancellationToken);
+        }
+        catch (DataUnavailableException)
+        {
+            forecast = new ForecastResponse(
+                City: city.ToDisplayName(),
+                Forecast: Array.Empty<ForecastDayDto>(),
+                Timestamp: TimeZoneHelper.GetSarajevoTime());
         }
 
-        var liveTask = GetLiveAsync(city, false, cancellationToken);
-        var forecastTask = GetForecastAsync(city, false, cancellationToken);
-        await Task.WhenAll(liveTask, forecastTask);
-
-        return new CompleteAqiResponse(liveTask.Result, forecastTask.Result, TimeZoneHelper.GetSarajevoTime());
+        return new CompleteAqiResponse(live, forecast, TimeZoneHelper.GetSarajevoTime());
     }
 
     public async Task<IReadOnlyDictionary<City, LiveAqiResponse>> GetLatestSnapshotsAsync(IEnumerable<City> cities, CancellationToken cancellationToken = default)

@@ -25,13 +25,17 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<LiveAqiResponse>> GetLiveAsync(
         [FromRoute] City city,
-        [FromQuery] bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetLiveAsync(city, forceRefresh, cancellationToken);
+            var response = await _airQualityService.GetLiveAsync(city, cancellationToken);
             return Ok(response);
+        }
+        catch (DataUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Live data unavailable for {City}", city);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Data unavailable", message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -72,13 +76,17 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ForecastResponse>> GetForecastAsync(
         [FromRoute] City city,
-        [FromQuery] bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetForecastAsync(city, forceRefresh, cancellationToken);
+            var response = await _airQualityService.GetForecastAsync(city, cancellationToken);
             return Ok(response);
+        }
+        catch (DataUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Forecast data unavailable for {City}", city);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Data unavailable", message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -93,14 +101,17 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompleteAqiResponse>> GetCompleteAsync(
         [FromRoute] City city,
-        [FromQuery] bool forceLiveRefresh = false,
-        [FromQuery] bool forceForecastRefresh = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetCompleteAsync(city, forceLiveRefresh, forceForecastRefresh, cancellationToken);
+            var response = await _airQualityService.GetCompleteAsync(city, cancellationToken);
             return Ok(response);
+        }
+        catch (DataUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Complete data unavailable for {City}", city);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Data unavailable", message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -131,23 +142,4 @@ public class AirQualityController : ControllerBase
         }
     }
 
-    [HttpPost("refresh/{city}")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> RefreshCityAsync(
-        [FromRoute] City city,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _airQualityService.RefreshCityAsync(city, cancellationToken);
-            return Accepted(new { message = $"Refresh scheduled for {city}." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to refresh data for {City}", city);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Internal server error", message = ex.Message });
-        }
-    }
 }
