@@ -82,10 +82,10 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
   }) => {
     if (!data) {
       return (
-        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 border border-[rgb(var(--border))] animate-pulse-subtle">
-          <div className="animate-pulse space-y-4">
-            <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-20 mx-auto transition-all duration-200"></div>
-            <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded w-16 mx-auto transition-all duration-200"></div>
+        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 sm:p-6 border border-[rgb(var(--border))] animate-pulse-subtle">
+          <div className="animate-pulse space-y-3 sm:space-y-4">
+            <div className="h-4 sm:h-5 bg-gray-300 dark:bg-gray-600 rounded w-20 mx-auto transition-all duration-200"></div>
+            <div className="h-8 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded w-12 sm:w-16 mx-auto transition-all duration-200"></div>
           </div>
         </div>
       )
@@ -95,22 +95,22 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
 
     return (
       <div className={`
-        bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 border 
+        bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 sm:p-6 border 
         transition-all duration-300 ease-in-out
-        hover:shadow-lg hover:bg-white dark:hover:bg-gray-800/60
+        md:hover:shadow-lg md:hover:bg-white dark:md:hover:bg-gray-800/60
         ${isPrimary 
           ? 'border-blue-300 dark:border-blue-600 ring-2 ring-blue-100 dark:ring-blue-900/30' 
-          : 'border-[rgb(var(--border))] hover:border-blue-200 dark:hover:border-blue-700'
+          : 'border-[rgb(var(--border))] md:hover:border-blue-200 dark:md:hover:border-blue-700'
         }
         md:hover:-translate-y-1 md:hover:scale-[1.02] 
         mobile-simple-hover
       `}>
-        <div className="text-center space-y-4">
-          <h3 className="text-lg font-semibold text-[rgb(var(--text))] transition-colors duration-200">
+        <div className="text-center space-y-3 sm:space-y-4">
+          <h3 className="text-base sm:text-lg font-semibold text-[rgb(var(--text))] transition-colors duration-200">
             {cityIdToLabel(cityId)}
           </h3>
           
-          <div className={`text-4xl font-bold transition-all duration-300 ${textColorClass}`}>
+          <div className={`text-3xl sm:text-4xl font-bold transition-all duration-300 ${textColorClass}`}>
             {data.overallAqi}
           </div>
         </div>
@@ -162,15 +162,15 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
             <CityCard cityId={selectedCity} data={displayData} />
           </div>
         ) : (
-          <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-xl p-8 sm:p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 transition-all duration-300 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50 group cursor-pointer animate-float">
+          <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 sm:p-8 md:p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 transition-all duration-300 md:hover:border-gray-400 dark:md:hover:border-gray-500 md:hover:bg-gray-100 dark:md:hover:bg-gray-800/50 group cursor-pointer animate-float">
             <div className="text-center">
-              <div className="text-3xl sm:text-4xl opacity-50 mb-2 transition-all duration-300 group-hover:scale-110 group-hover:opacity-70 animate-float">
+              <div className="text-2xl sm:text-3xl md:text-4xl opacity-50 mb-2 transition-all duration-300 md:group-hover:scale-110 md:group-hover:opacity-70 animate-float">
                 🏙️
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200 font-medium">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200 font-medium">
                 ✨ Odaberite grad za poređenje
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
                 Kliknite na dugme iznad
               </p>
             </div>

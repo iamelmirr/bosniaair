@@ -109,8 +109,20 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
       </div>
 
       {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden mt-4 pt-4 border-t border-[rgb(var(--border))] space-y-4">
+      <div className={`
+        md:hidden overflow-hidden transition-all duration-300 ease-in-out
+        ${isMenuOpen 
+          ? 'max-h-32 opacity-100 mt-4 pt-4 border-t border-[rgb(var(--border))]' 
+          : 'max-h-0 opacity-0 mt-0 pt-0'
+        }
+      `}>
+        <div className={`
+          space-y-3 transition-all duration-200 ease-in-out
+          ${isMenuOpen 
+            ? 'transform translate-y-0' 
+            : 'transform -translate-y-4'
+          }
+        `}>
           {/* Mobile Action Buttons */}
           <div className="flex gap-2">
             <button 
@@ -118,9 +130,14 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
                 toggleTheme()
                 setIsMenuOpen(false)
               }}
-              className="flex-1 px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
+              className="flex-1 px-3 py-2 border border-[rgb(var(--border))] rounded-lg 
+                       bg-[rgb(var(--card))] text-[rgb(var(--text))] 
+                       active:bg-gray-100 dark:active:bg-gray-700 
+                       transition-all duration-150 text-center text-sm
+                       active:scale-95 flex items-center justify-center gap-1"
             >
-              {getThemeIcon(theme, resolvedTheme)} Tema
+              <span className="text-base">{getThemeIcon(theme, resolvedTheme)}</span>
+              <span>Tema</span>
             </button>
             
             <button 
@@ -128,15 +145,18 @@ export default function Header({ onOpenCitySettings, selectedCityLabel }: Header
                 onOpenCitySettings?.()
                 setIsMenuOpen(false)
               }}
-              className="flex-1 px-4 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
+              className="flex-1 px-3 py-2 border border-[rgb(var(--border))] rounded-lg 
+                       bg-[rgb(var(--card))] text-[rgb(var(--text))] 
+                       active:bg-gray-100 dark:active:bg-gray-700 
+                       transition-all duration-150 text-center text-sm
+                       active:scale-95 flex items-center justify-center gap-1"
             >
-              Gradovi
+              <span className="text-base">📍</span>
+              <span>{cityLabel}</span>
             </button>
-
-
           </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }

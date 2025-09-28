@@ -89,7 +89,7 @@ export default function PollutantCard({ measurement }: PollutantCardProps) {
   const borderClass = getBorderColorClass(status)
 
   return (
-    <div className={`bg-[rgb(var(--card))] rounded-lg p-3 border ${borderClass} hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-105`}>
+    <div className={`bg-[rgb(var(--card))] rounded-lg p-2 sm:p-3 border ${borderClass} md:hover:shadow-md transition-all duration-300 md:hover:-translate-y-1 md:hover:scale-105`}>
       {/* Parameter name - centered */}
       <div className="text-center mb-3">
         <h3 className="text-sm font-medium text-[rgb(var(--text))]">

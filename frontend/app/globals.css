@@ -321,3 +321,34 @@ body {
   background-size: 200px 100%;
   animation: shimmer 1.2s ease-in-out infinite;
 }
+
+/* Mobile-optimized utility classes */
+@media (max-width: 768px) {
+  /* Mobile compact spacing */
+  .mobile-compact-p {
+    padding: 0.75rem !important; /* p-3 instead of p-6 */
+  }
+  
+  .mobile-compact-text {
+    font-size: 0.875rem !important; /* text-sm instead of text-base */
+  }
+  
+  .mobile-compact-title {
+    font-size: 1.125rem !important; /* text-lg instead of text-xl */
+  }
+  
+  /* Remove desktop hover effects on mobile */
+  .mobile-no-hover:hover {
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  
+  /* Smaller font sizes for mobile */
+  .mobile-text-xs {
+    font-size: 0.75rem !important;
+  }
+  
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+}

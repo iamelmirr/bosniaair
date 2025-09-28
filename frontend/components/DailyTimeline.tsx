@@ -107,12 +107,12 @@ export default function DailyTimeline({ city }: DailyTimelineProps) {
   }
 
   const getCardStyles = (day: TimelineData): string => {
-    let baseStyles = 'relative w-full h-44 p-5 rounded-lg border-2 transition-all duration-300 hover:shadow-card-hover hover:-translate-y-2 hover:scale-105 cursor-pointer flex flex-col text-center '
+    let baseStyles = 'relative w-full h-44 p-5 rounded-lg border-2 transition-all duration-300 md:hover:shadow-card-hover md:hover:-translate-y-2 md:hover:scale-105 cursor-pointer flex flex-col text-center '
     
     if (day.isToday) {
       baseStyles += 'bg-[rgb(var(--card))] border-blue-500 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800 '
     } else {
-      baseStyles += 'bg-[rgb(var(--card))] border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 '
+      baseStyles += 'bg-[rgb(var(--card))] border-gray-200 dark:border-gray-700 md:hover:border-blue-300 dark:md:hover:border-blue-600 '
     }
     
     return baseStyles

@@ -13,7 +13,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   if (isLoading) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card animate-pulse-subtle">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card animate-pulse-subtle">
         <div className="animate-pulse">
           <div className="flex items-baseline justify-between mb-4">
             <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48 loading-shimmer"></div>
@@ -34,7 +34,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
 
   if (error) {
     return (
-      <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-red-300 dark:border-red-600 shadow-card hover:shadow-card-hover transition-all duration-300">
+      <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-red-300 dark:border-red-600 shadow-card md:hover:shadow-card-hover transition-all duration-300">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
@@ -133,7 +133,7 @@ export default function LiveAqiCard({ city }: LiveAqiCardProps) {
   }
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-8 border border-[rgb(var(--border))] shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
       {/* Header */}
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="text-xl font-semibold text-[rgb(var(--text))]">

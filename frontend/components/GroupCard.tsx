@@ -84,52 +84,75 @@ export default function GroupCard({ city }: GroupCardProps) {
   }
 
   return (
-    <section className="bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgb(var(--border))] shadow-card">
+    <section className="bg-[rgb(var(--card))] rounded-xl p-4 sm:p-6 border border-[rgb(var(--border))] shadow-card">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-            Zdravstveni savjeti
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Preporuke za osjetljive grupe stanovništva u gradu {cityLabel}
-          </p>
-        </div>
-        
-        {/* Overall AQI Badge */}
-        <div className="text-center">
-          <div className={`text-2xl font-bold transition-colors duration-200 ${getAqiCategoryClass(liveData.overallAqi)}`}>
+      <div className="relative mb-3 sm:mb-4">
+        {/* Mobile: AQI Badge in top-right corner */}
+        <div className="absolute top-0 right-0 text-center sm:hidden">
+          <div className={`text-xl font-bold transition-colors duration-200 ${getAqiCategoryClass(liveData.overallAqi)}`}>
             {liveData.overallAqi}
           </div>
           <div className="text-xs text-gray-500 uppercase tracking-wide">
             {getAqiCategoryBosnian(liveData.overallAqi)}
           </div>
         </div>
+
+        {/* Desktop: Flex layout with AQI on the right */}
+        <div className="hidden sm:flex sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+              Zdravstveni savjeti
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Preporuke za osjetljive grupe stanovništva u gradu {cityLabel}
+            </p>
+          </div>
+          
+          {/* Desktop AQI Badge */}
+          <div className="text-center">
+            <div className={`text-2xl font-bold transition-colors duration-200 ${getAqiCategoryClass(liveData.overallAqi)}`}>
+              {liveData.overallAqi}
+            </div>
+            <div className="text-xs text-gray-500 uppercase tracking-wide">
+              {getAqiCategoryBosnian(liveData.overallAqi)}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: Title and subtitle with right margin for AQI */}
+        <div className="sm:hidden pr-16">
+          <h2 className="text-lg font-semibold text-[rgb(var(--text))]">
+            Zdravstveni savjeti
+          </h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            Preporuke za osjetljive grupe u {cityLabel}
+          </p>
+        </div>
       </div>
 
       {/* Groups Grid - Single column on mobile, double column on tablet+ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {healthAdvice.map((advice, index) => (
           <div
             key={advice.group}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 
-                     hover:bg-gray-50 dark:hover:bg-gray-800/50 
-                     mobile-minimal-animation mobile-simple-hover
+            className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 
+                     md:hover:bg-gray-50 dark:md:hover:bg-gray-800/50 
+                     mobile-minimal-animation
                      md:hover:shadow-sm md:hover:border-blue-200 dark:md:hover:border-blue-700
                      animate-fade-in-up"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             {/* Group Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl" role="img" aria-label={advice.group}>
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-lg sm:text-2xl" role="img" aria-label={advice.group}>
                   {advice.icon}
                 </span>
                 <div>
-                  <h3 className="font-semibold text-[rgb(var(--text))]">
+                  <h3 className="text-sm sm:text-base font-semibold text-[rgb(var(--text))]">
                     {advice.group}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                     {advice.description}
                   </p>
                 </div>
@@ -138,7 +161,7 @@ export default function GroupCard({ city }: GroupCardProps) {
               {/* Risk Level Badge */}
               <span
                 className={classNames(
-                  'px-2 py-1 rounded-full text-xs font-medium flex-shrink-0',
+                  'px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium flex-shrink-0',
                   RISK_COLORS[advice.riskLevel]
                 )}
               >
@@ -147,8 +170,8 @@ export default function GroupCard({ city }: GroupCardProps) {
             </div>
 
             {/* Health Recommendation */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3">
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-2 sm:p-3">
+              <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                 {advice.recommendation}
               </p>
             </div>
