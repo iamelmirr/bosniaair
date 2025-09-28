@@ -315,7 +315,7 @@ public class AirQualityService : IAirQualityService
         foreach (var (date, data) in ordered)
         {
             // Only include dates from today onwards that actually exist in WAQI data
-            if (date >= sarajevoToday && results.Count < 5)
+            if (date >= sarajevoToday)
             {
                 var representativeAqi = data.Pm25?.Avg ?? data.Pm10?.Avg ?? data.O3?.Avg ?? 0;
                 var (category, color, _) = GetAqiInfo(representativeAqi);
