@@ -11,7 +11,6 @@ import CitySelectorModal from '../components/CitySelectorModal'
 import { useLiveAqi, usePeriodicRefresh } from '../lib/hooks'
 import { airQualityObservable } from '../lib/observable'
 import {
-  shareData,
   cityIdToLabel,
   DEFAULT_PRIMARY_CITY,
   isValidCityId,
@@ -79,17 +78,7 @@ export default function HomePage() {
     airQualityObservable.notify()
   }, [primaryCity, preferencesLoaded])
 
-  const handleShare = async () => {
-    try {
-      await shareData(
-        'SarajevoAir - Kvaliteta vazduha',
-        `Provjerite trenutnu kvalitetu vazduha u ${cityLabel}!`,
-        window.location.href
-      )
-    } catch (shareError) {
-      console.log('Share failed:', shareError)
-    }
-  }
+
 
   const handleModalSave = (city: CityId) => {
     setPrimaryCity(city)
@@ -125,7 +114,6 @@ export default function HomePage() {
     return (
       <main className="min-h-screen py-6">
         <Header
-          onShare={handleShare}
           onOpenCitySettings={() => setPreferencesModalOpen(true)}
           selectedCityLabel={cityLabel}
         />
@@ -150,7 +138,6 @@ export default function HomePage() {
     <>
       <main className="min-h-screen py-6">
         <Header
-          onShare={handleShare}
           onOpenCitySettings={() => setPreferencesModalOpen(true)}
           selectedCityLabel={cityLabel}
         />

@@ -57,8 +57,21 @@ const getAqiBackgroundClass = (category: string) => {
 
 export default function CityComparison({ primaryCity }: CityComparisonProps) {
   const [selectedCity, setSelectedCity] = useState<CityId | ''>('')
+  const [cachedData, setCachedData] = useState<any>(null)
   const { data: primaryData } = useLiveAqi(primaryCity)
-  const { data: selectedData } = useLiveAqi(selectedCity || 'Sarajevo')
+  const { data: selectedData, isLoading: isSelectedLoading } = useLiveAqi(selectedCity || null)
+
+  // Cache data to prevent flickering when switching cities
+  React.useEffect(() => {
+    if (selectedData && selectedCity) {
+      setCachedData(selectedData)
+    } else if (!selectedCity) {
+      setCachedData(null)
+    }
+  }, [selectedData, selectedCity])
+
+  // Use cached data while loading new data
+  const displayData = selectedCity ? (isSelectedLoading && cachedData ? cachedData : selectedData) : null
 
   const availableCities = CITY_OPTIONS.filter(option => option.id !== primaryCity)
 
@@ -123,9 +136,7 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
         <CityCard cityId={primaryCity} data={primaryData} isPrimary />
         
         {selectedCity ? (
-          <div key={selectedCity} className="animate-fade-in">
-            <CityCard cityId={selectedCity} data={selectedData} />
-          </div>
+          <CityCard cityId={selectedCity} data={displayData} />
         ) : (
           <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-xl p-8 sm:p-12 border-2 border-dashed border-gray-300 dark:border-gray-600">
             <div className="text-center">
@@ -138,19 +149,19 @@ export default function CityComparison({ primaryCity }: CityComparisonProps) {
         )}
       </div>
 
-      {selectedCity && selectedData && primaryData && (
-        <div key={`stats-${selectedCity}`} className="animate-fade-in text-center">
+      {selectedCity && displayData && primaryData && (
+        <div className="text-center">
           <div className="inline-flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {Math.abs(selectedData.overallAqi - primaryData.overallAqi) === 0 ? (
+              {Math.abs(displayData.overallAqi - primaryData.overallAqi) === 0 ? (
                 'Isti AQI'
-              ) : selectedData.overallAqi > primaryData.overallAqi ? (
+              ) : displayData.overallAqi > primaryData.overallAqi ? (
                 <span className="text-red-500">
-                  +{selectedData.overallAqi - primaryData.overallAqi} gori
+                  +{displayData.overallAqi - primaryData.overallAqi} gori
                 </span>
               ) : (
                 <span className="text-green-500">
-                  {selectedData.overallAqi - primaryData.overallAqi} bolji
+                  {displayData.overallAqi - primaryData.overallAqi} bolji
                 </span>
               )}
             </span>
