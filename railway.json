@@ -1,0 +1,11 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "backend/src/BosniaAir.Api/Dockerfile.railway"
+  },
+  "deploy": {
+    "startCommand": "dotnet BosniaAir.Api.dll",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300
+  }
+}

@@ -68,11 +68,20 @@ builder.Services.AddSwaggerGen(c =>
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? builder.Configuration["CONNECTION_STRING"]
+                       ?? Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? "Data Source=bosniaair-aqi.db";
 
-// Database setup with SQLite, falling back to embedded file if no connection string
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+// Database setup - PostgreSQL for production, SQLite for development
+if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(connectionString));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString));
+}
 
 // Bind WAQI config section
 builder.Services.Configure<AqicnConfiguration>(builder.Configuration.GetSection("Aqicn"));
