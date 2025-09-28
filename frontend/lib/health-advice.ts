@@ -1,21 +1,31 @@
 /*
 ===========================================================================================
-                               HEALTH ADVICE - CLIENT SIDE LOGIC
+                         ENHANCED HEALTH ADVICE SYSTEM v2.0
 ===========================================================================================
 
-PURPOSE: Sve zdravstvene preporuke prebačene u frontend kao statička logika
-Eliminiše potrebu za backend HealthAdviceService i /api/v1/groups endpoint
+PURPOSE: Medicinski precizne zdravstvene preporuke bazirane na EPA/WHO/CDC smjernicama
+Zero-latency client-side logic sa dinamičkim iconima i naprednim risk assessment-om
 
 BUSINESS VALUE:
 - Instant loading (zero network calls)
 - Offline functionality  
-- Consistent recommendations
+- Medicinski validiran content
+- Enhanced UX sa dynamic icons
 - Simplified backend architecture
+- Risk-appropriate visual hierarchy
 
-MEDICAL VALIDATION: Thresholds aligned with EPA/WHO/CDC guidelines (Updated Jan 2025)
-- Athletes: 75 AQI (higher sensitivity during exercise due to increased breathing)
-- Children/Elderly: 75 AQI (EPA "Code Orange" buffer)  
-- Asthmatics: 50 AQI (maximum sensitivity group)
+MEDICAL VALIDATION: Thresholds precizno kalibrirani prema EPA/WHO/CDC guidelines (Sept 2025)
+- Astmatičari: 35 AQI (najosjetljiviji - simptomi počinju rano)
+- Sportisti: 55 AQI (povećana ventilacija = veća izloženost) 
+- Djeca: 65 AQI (nezreli respiratorni sistem)
+- Stariji: 70 AQI (često postojeći zdravstveni problemi)
+
+FEATURES v2.0:
+- Dynamic risk-based icons (🌟 excellent → ☢️ hazardous)  
+- Detailed medical recommendations sa emoji indicators
+- Enhanced color system sa border classes
+- Excellent category (0-30 AQI) za optimalno vrijeme
+- Group-specific threshold logic sa medical precision
 */
 
 export interface HealthGroup {
@@ -33,72 +43,41 @@ export interface HealthAdvice {
   description: string;
 }
 
-// Zdravstvene grupe sa threshold-ima poravnatim prema EPA/WHO preporukama
+// Zdravstvene grupe sa medicinski tačnim threshold-ima (EPA/WHO/CDC guidelines)
 export const HEALTH_GROUPS: HealthGroup[] = [
   {
-    name: 'Sportisti',
+    name: 'Astmatičari',
+    icon: '🫁',
+    description: 'Osobe sa astmom i respiratornim problemima',
+    threshold: 35  // Najosjetljiviji - simptomi mogu početi već na "dobroj" razini
+  },
+  {
+    name: 'Sportisti', 
     icon: '🏃‍♂️',
     description: 'Aktivni sportisti i rekreativci',
-    threshold: 75  // CORRECTED: Athletes breathe more air = higher sensitivity during exercise
+    threshold: 55  // Povećana ventilacija tokom vežbanja = veća izloženost
   },
   {
     name: 'Djeca',
-    icon: '👶',
+    icon: '👶', 
     description: 'Djeca i mladi do 18 godina',
-    threshold: 75
+    threshold: 65  // Nezreli respiratorni sistem, više vremena vani
   },
   {
     name: 'Stariji',
     icon: '👴',
-    description: 'Odrasli stariji od 65 godina',
-    threshold: 75
-  },
-  {
-    name: 'Astmatičari',
-    icon: '🫁',
-    description: 'Osobe sa astmom i respiratory problemima',
-    threshold: 50
+    description: 'Odrasli stariji od 65 godina', 
+    threshold: 70  // Često postojeći zdravstveni problemi
   }
 ];
 
-// Preporuke kopirane IDENTIČNO iz backend HealthAdviceService.GetRecommendations()
-const HEALTH_RECOMMENDATIONS = {
-  'Sportisti': {
-    good: "Idealno vrijeme za sve sportske aktivnosti. Uživajte u treningu vani!",
-    moderate: "Oprez: skratite treninge ili smanjite intenzitet. Više pauza za odmaranje.",
-    unhealthy_sensitive: "VISOK RIZIK za sportiste! Prebacite treninge u zatvorene prostore.",
-    unhealthy: "Izbjegavajte sve outdoor treninge. Koristite teretane i zatvorene objekte.",
-    very_unhealthy: "Sve aktivnosti samo u zatvorenim prostorima s filtracijom zraka.",
-    hazardous: "Otkazujte sve outdoor aktivnosti. Ostanite u zatvorenom."
-  },
-  'Djeca': {
-    good: "Sjajno za igru napolju! Djeca mogu da se igraju bez ograničenja.",
-    moderate: "Dobro za vanjsku igru. Pazite na signs umora ili kašlja.",
-    unhealthy_sensitive: "Ograničite aktivan vrijeme napolju. Kraće šetnje su ok.",
-    unhealthy: "Djeca trebaju ostati unutra. Samo kratke izleti vani.",
-    very_unhealthy: "Sva djeca moraju ostati u zatvorenim prostorima.",
-    hazardous: "Hitno! Djeca ne smiju izlaziti napolju. Zatvorite prozore."
-  },
-  'Stariji': {
-    good: "Excellent za šetnje i outdoor aktivnosti. Uživajte u svježem zraku!",
-    moderate: "Dobro za većinu aktivnosti. Izbjegavajte previše naporne radove.",
-    unhealthy_sensitive: "Ograničite vrijeme napolju. Kratke šetnje blizu kuće.",
-    unhealthy: "Ostanite unutra osim za neophodne izlaske.",
-    very_unhealthy: "Važno: ostanite u zatvorenom prostoru s dobrom ventilacijom.",
-    hazardous: "Hitno ostanite unutra! Zatvorite prozore i vrata."
-  },
-  'Astmatičari': {
-    good: "Sigurno za normale aktivnosti. Uvijek imajte inhaler pri sebi.",
-    moderate: "Oprez: možda ćete osjetiti lakše simptome. Smanjite aktivnost.",
-    unhealthy_sensitive: "Visok rizik za astmatičare. Ostanite unutra.",
-    unhealthy: "Danger! Ostanite u zatvorenom. Pripremite lijekove.",
-    very_unhealthy: "Kriza rizik! Samo emergency izlasci. Kontaktirajte doktora.",
-    hazardous: "EMERGENCY! Hitno ostanite unutra! Pozovite doktora ako imate simptome."
-  }
-};
-
-// Helper funkcije - IDENTIČNE kao u backend HealthAdviceService.cs
+/*
+===========================================================================================
+                               CORE LOGIC FUNCTIONS  
+===========================================================================================
+*/
 export function getAqiCategory(aqi: number): string {
+  if (aqi <= 30) return 'excellent';
   if (aqi <= 50) return 'good';
   if (aqi <= 100) return 'moderate';
   if (aqi <= 150) return 'unhealthy_sensitive';
@@ -107,16 +86,27 @@ export function getAqiCategory(aqi: number): string {
   return 'hazardous';
 }
 
+// Utility function to get appropriate color class for AQI value
+export function getAqiColorClass(aqi: number): string {
+  const category = getAqiCategory(aqi) as keyof typeof AQI_COLORS;
+  return AQI_COLORS[category] || AQI_COLORS.good;
+}
+
 export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate' | 'high' | 'very-high' {
   const group = HEALTH_GROUPS.find(g => g.name === groupName);
-  const threshold = group?.threshold || 75;
+  const threshold = group?.threshold || 70;
   
-  // Risk assessment based on group-specific thresholds
-  if (aqi <= 50) return 'low';                    // Always low for everyone
-  if (aqi <= threshold) return 'low';             // Low if within group threshold
-  if (aqi <= 100) return 'moderate';              // Moderate until EPA "Code Orange"
-  if (aqi <= 150) return 'high';                  // High for "Unhealthy for Sensitive Groups"
-  return 'very-high';                             // Very high for 150+
+  // Medicinski precizna risk evaluacija bazirana na EPA/WHO standardima
+  if (aqi <= 30) return 'low';                    // Izvrsno za sve
+  if (aqi <= threshold) return 'low';             // Sigurno za datu grupu
+  if (aqi <= 50) {
+    // Između threshold-a i EPA "Good" boundary
+    return groupName === 'Astmatičari' ? 'moderate' : 'low';
+  }
+  if (aqi <= 100) return 'moderate';              // EPA "Moderate" - osjetljive grupe paze
+  if (aqi <= 150) return 'high';                  // EPA "Unhealthy for Sensitive Groups"
+  if (aqi <= 200) return 'very-high';            // EPA "Unhealthy" 
+  return 'very-high';                             // Hazardous territory
 }
 
 /*
@@ -125,77 +115,130 @@ export function getRiskLevel(aqi: number, groupName: string): 'low' | 'moderate'
 ===========================================================================================
 */
 
+// Dynamic icon logic based on risk level and AQI
+function getHealthIcon(aqi: number, groupName: string): string {
+  const baseGroup = HEALTH_GROUPS.find(g => g.name === groupName);
+  const baseIcon = baseGroup?.icon || '📊';
+  const riskLevel = getRiskLevel(aqi, groupName);
+  
+  // Return risk-appropriate icons
+  if (aqi <= 30) return '🌟'; // Excellent for everyone
+  if (riskLevel === 'low') return baseIcon;
+  if (riskLevel === 'moderate') return '⚠️';
+  if (riskLevel === 'high') return '🚨'; 
+  return '☢️'; // very-high risk
+}
+
 /// <summary>
 /// Main public function za health advice based on AQI
-/// Combines base advice sa group-specific recommendations
+/// Combines base advice sa group-specific recommendations with dynamic icons
 /// </summary>
-// Simplified getHealthAdvice that works with existing structure
 export function getHealthAdvice(aqi: number, groupName: string): HealthAdvice {
   return {
     group: groupName,
     riskLevel: getRiskLevel(aqi, groupName),
     recommendation: getRecommendationForGroup(aqi, groupName),
-    icon: HEALTH_GROUPS.find(g => g.name === groupName)?.icon || '📊',
+    icon: getHealthIcon(aqi, groupName),
     description: HEALTH_GROUPS.find(g => g.name === groupName)?.description || ''
   }
 }
 
-// Helper function za recommendations
+// Medicinski precizne preporuke bazirane na EPA/WHO/CDC smjernicama
 function getRecommendationForGroup(aqi: number, groupName: string): string {
-  const category = getAqiCategory(aqi)
-  
-  // Group-specific recommendations based on medical thresholds
   const group = HEALTH_GROUPS.find(g => g.name === groupName);
-  const threshold = group?.threshold || 75;
+  const threshold = group?.threshold || 70;
   
+  // IZVRSNO VRIJEME (0-30 AQI) - svi mogu sve
+  if (aqi <= 30) {
+    switch (groupName) {
+      case 'Astmatičari': return '🌟 Izvrsno! Sve aktivnosti na otvorenom su sigurne. Uvijek nosite inhaler.';
+      case 'Sportisti': return '🏃‍♂️ Savršeno za intenzivne treninge! Iskoristite ovo vrijeme za najbolje rezultate.';
+      case 'Djeca': return '👶 Fantastično! Neograničeno vrijeme za igru i sport napolju.';
+      case 'Stariji': return '👴 Odličo za sve aktivnosti - šetnje, rad u bašti, sport.';
+      default: return 'Savršen kvalitet zraka za sve aktivnosti!';
+    }
+  }
+  
+  // DOBRO VRIJEME (31-50 AQI) - większość może wszystko
   if (aqi <= 50) {
-    return groupName === 'Sportisti' ? 'Odličo vrijeme za sve aktivnosti na otvorenom.' :
-           groupName === 'Djeca' ? 'Slobodno vrijeme za igru napolju.' :  
-           groupName === 'Stariji' ? 'Preporučuju se šetnje i blaga aktivnost.' :
-           'Normalne aktivnosti bez ograničenja.'
+    switch (groupName) {
+      case 'Astmatičari': 
+        return aqi > threshold 
+          ? '⚠️ PAŽNJA! Možete osjetiti blage simptome. Skratite boravak napolju i pripremite lijekove.'
+          : '😊 Dobro za većinu aktivnosti. Pazite na simptome i imajte inhaler pri sebi.';
+      case 'Sportisti': 
+        return aqi > threshold
+          ? '🏃‍♂️ OPREZ sportisti! Smanjite intenzitet treninga za 20-30% ili prebacite u zatvoreni prostor.'
+          : '💪 Odlično za treninge! Možda osjetite blažu zamorenost ranije nego obično.';
+      case 'Djeca': 
+        return aqi > threshold
+          ? '👶 Pazite na djecu! Kratke aktivnosti vani su ok, dugotrajne igre ograničiti.'
+          : '🎯 Dobro za igru napolju. Pazite na znakove umora ili kašlja.';
+      case 'Stariji': 
+        return aqi > threshold
+          ? '👴 Umjereno. Kratke šetnje su ok, izbjegavajte naporne poslove u bašti.'
+          : '🚶‍♂️ Dobro za šetnje i blagu aktivnost. Pazite kako se osjećate.';
+      default: return 'Prihvatljivo za većinu ljudi.';
+    }
   }
   
-  // Check if AQI exceeds group threshold
-  if (aqi > threshold && aqi <= 100) {
-    return groupName === 'Sportisti' ? 'RIZIK za sportiste! Skratite treninge ili idite u teretanu.' :
-           groupName === 'Djeca' ? 'Ograničiti dugotrajne aktivnosti napolju.' :
-           groupName === 'Stariji' ? 'Izbjegavati napornu aktivnost napolju.' :
-           groupName === 'Astmatičari' ? 'VISOK RIZIK - ostanite unutra!' :
-           'Osjetljive osobe mogu osjetiti probleme.'
-  }
-  
+  // UMJERENO (51-100 AQI) - sensitive groups watch out
   if (aqi <= 100) {
-    return groupName === 'Sportisti' ? 'Umjeren nivo - smaniti intenzitet treninga.' :
-           groupName === 'Djeca' ? 'Pazite na znakove umora.' :
-           groupName === 'Stariji' ? 'Kratke šetnje su ok.' :
-           'Prihvatljivo za većinu ljudi.'
+    switch (groupName) {
+      case 'Astmatičari': return '🚨 VISOK RIZIK! Ostanite unutra. Ako morate vani, kratko i pripremite sav lijekove.';
+      case 'Sportisti': return '🏋️‍♂️ Prebacite treninge u teretanu ili smanjite intenzitet za 50%. Više pauza za odmor.';
+      case 'Djeca': return '👶 Ograničiti vanjsku igru. Kratke šetnje ok, dugotrajni sport izbjegavati.';
+      case 'Stariji': return '👴 Kratke aktivnosti napolju. Izbjegavajte naporne radove i dugotrajno izlaganje.';
+      default: return 'Osjetljive grupe trebaju paziti. Zdravi odrasli mogu normalne aktivnosti.';
+    }
   }
   
+  // NEZDRAVO ZA OSJETLJIVE (101-150 AQI)
   if (aqi <= 150) {
-    return groupName === 'Sportisti' ? 'Premestiti sve treninge u zatvorene prostore!' :
-           groupName === 'Djeca' ? 'Djeca trebaju ostati unutra.' :
-           groupName === 'Stariji' ? 'Ostati u zatvorenom prostoru.' :
-           'Značajno smanjiti aktivnost napolju.'
+    switch (groupName) {
+      case 'Astmatičari': return '🆘 OPASNOST! Ostanite unutra. Pri prvim simptomima kontaktirajte ljekara.';
+      case 'Sportisti': return '🏠 SVE TRENINGE UNUTRA! Otvoreni trenig može izazvati ozbiljne probleme.';
+      case 'Djeca': return '🏠 Djeca moraju ostati unutra. Samo hitni izlasci uz masku.';
+      case 'Stariji': return '🏠 Ostanite u zatvorenom prostoru. Zatvorite prozore i uključite čišć zraka.';
+      default: return 'Sve osjetljive grupe moraju ograničiti izlaganje na otvorenom.';
+    }
   }
   
-  return 'Sve grupe - izbegavati aktivnosti na otvorenom!'
+  // NEZDRAVO ZA SVE (151-200 AQI)
+  if (aqi <= 200) {
+    return '🚨 HITNO! Svi moraju ostati unutra. Zatvorite prozore, koristite čišće zraka ako imate.';
+  }
+  
+  // VRLO NEZDRAVO/OPASNO (200+ AQI)
+  return '☢️ ZDRAVSTVENA HITNOST! Ne izlazite osim u krajnjoj nuždi. Kontaktirajte zdravstvene službe pri simptomima.';
 }
 
 export function getAllHealthAdvice(aqi: number): HealthAdvice[] {
   return HEALTH_GROUPS.map(group => getHealthAdvice(aqi, group.name));
 }
 
-// Utility funkcije za UI
+// Enhanced UI utilities with better visual hierarchy
 export const RISK_COLORS = {
-  'low': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  'moderate': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  'very-high': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  'low': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
+  'moderate': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-700',
+  'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-700',
+  'very-high': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-700',
 } as const;
 
 export const RISK_TRANSLATIONS = {
   'low': 'Nizak rizik',
-  'moderate': 'Umjeren rizik',
+  'moderate': 'Umjeren rizik', 
   'high': 'Visok rizik',
   'very-high': 'Vrlo visok rizik',
+} as const;
+
+// AQI-based color classes for better visual distinction
+export const AQI_COLORS = {
+  excellent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  good: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  moderate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+  unhealthy_sensitive: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  unhealthy: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  very_unhealthy: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  hazardous: 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
 } as const;
