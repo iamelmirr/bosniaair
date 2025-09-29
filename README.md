@@ -169,11 +169,11 @@ You can use any SQLite browser or CLI to execute queries on the database.
 
 **Get latest live measurements for all cities:**
 ```sql
-SELECT DISTINCT City, AqiValue, DominantPollutant, Timestamp 
+SELECT City, AqiValue, DominantPollutant, MAX(Timestamp) as Timestamp 
 FROM AirQualityRecords 
 WHERE RecordType = 'LiveSnapshot' 
 GROUP BY City 
-ORDER BY City, Timestamp DESC;
+ORDER BY City;
 ```
 
 **Get latest forecast for all cities:**
