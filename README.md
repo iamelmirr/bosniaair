@@ -262,3 +262,7 @@ Contributions are welcome! If you have suggestions for improvements or want to r
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
 
+<<<<<<< HEAD
+=======
+[![FSnapshots of Sarajevo's AQI are stored in `bosniaair-aqi.db` (auto-created). The hosted worker keeps that table up to date every 10 minutes.ontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
+>>>>>>> b660bf62e963d1dee9f089d9a0957bbc2c14df5f
