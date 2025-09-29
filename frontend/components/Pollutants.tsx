@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Measurement } from '../lib/api-client'
 
 /// <summary>
@@ -8,9 +9,74 @@ import { Measurement } from '../lib/api-client'
 /// </summary>
 interface PollutantsProps {
   measurement: Measurement
+  isOpen?: boolean
+  onToggle?: () => void
 }
 
-export default function Pollutants({ measurement }: PollutantsProps) {
+export default function Pollutants({ measurement, isOpen = false, onToggle }: PollutantsProps) {
+  const [showTooltip, setShowTooltip] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const mobile = window.innerWidth < 768
+      console.log('checkIsMobile:', mobile, 'window.innerWidth:', window.innerWidth)
+      setIsMobile(mobile)
+    }
+
+    checkIsMobile()
+    window.addEventListener('resize', checkIsMobile)
+
+    return () => window.removeEventListener('resize', checkIsMobile)
+  }, [])
+
+  /// <summary>
+  /// Get detailed description for each pollutant parameter
+  /// </summary>
+  /// <param name="parameter">Pollutant parameter name</param>
+  const getPollutantDescription = (parameter: string) => {
+    const descriptions: Record<string, { title: string; description: string; source: string }> = {
+      'pm25': {
+        title: 'Fine čestice',
+        description: 'Sitne čestice iz izduvnih gasova koje prodiru duboko u pluća.',
+        source: 'Najopasnije za zdravlje'
+      },
+      'pm10': {
+        title: 'Krupne čestice',
+        description: 'Veće čestice iz prašine i peludi. Iritiraju nos i grlo.',
+        source: 'Uzrokuju kašalj'
+      },
+      'o3': {
+        title: 'Prizemni ozon',
+        description: 'Nastaje od sunčeva svjetla i zagađenja. Pogoršava astmu.',
+        source: 'Opasan za djecu'
+      },
+      'no2': {
+        title: 'Azot dioksid',
+        description: 'Gas iz automobila i elektrana. Upaljuje dišne putove.',
+        source: 'Više kod prometnica'
+      },
+      'so2': {
+        title: 'Sumpor dioksid',
+        description: 'Gas iz uglja i industrije. Otežava disanje.',
+        source: 'Od termoelektrana'
+      },
+      'co': {
+        title: 'Ugljen monoksid',
+        description: 'Bezbojni gas koji smanjuje kiseonik u krvi.',
+        source: 'Iz automobile'
+      },
+    }
+    
+    const paramKey = parameter.toLowerCase().replace('.', '')
+    return descriptions[paramKey] || {
+      title: parameter.toUpperCase(),
+      description: 'Mjerenje zagađenja zraka',
+      source: 'Monitoring okruženja'
+    }
+  }
+
   /// <summary>
   /// Determines the health status of a pollutant measurement based on EPA breakpoints
   /// </summary>
@@ -111,14 +177,50 @@ export default function Pollutants({ measurement }: PollutantsProps) {
   const status = getStatusColor(measurement.parameter, measurement.value)
   const colorClass = getStatusColorClass(status)
   const borderClass = getBorderColorClass(status)
+  const pollutantInfo = getPollutantDescription(measurement.parameter)
 
-  // Render pollutant card with color-coded status indicator
+  // Handle tooltip toggle (click for mobile, hover for desktop)
+  const handleCardClick = () => {
+    console.log('Card clicked, isMobile:', isMobile, 'isOpen:', isOpen, 'onToggle:', !!onToggle)
+    if (isMobile) { // Mobile
+      onToggle?.()
+    } else { // Desktop
+      setShowTooltip(!showTooltip)
+    }
+  }
+
+  const handleMouseEnter = () => {
+    if (!isMobile) { // Only on desktop
+      setShowTooltip(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (!isMobile) { // Only on desktop
+      setShowTooltip(false)
+    }
+  }
+
+  const isTooltipVisible = isMobile ? isOpen : showTooltip
+  
+  console.log('Render:', measurement.parameter, 'isMobile:', isMobile, 'isOpen:', isOpen, 'showTooltip:', showTooltip, 'isTooltipVisible:', isTooltipVisible)
+
+  // Render pollutant card with tooltip
   return (
-    <div className={`bg-[rgb(var(--card))] rounded-lg p-2 sm:p-3 border ${borderClass} md:hover:shadow-md transition-all duration-300 md:hover:-translate-y-1 md:hover:scale-105`}>
+    <div 
+      className={`relative bg-[rgb(var(--card))] rounded-lg p-2 sm:p-3 border ${borderClass} transition-all duration-300 cursor-pointer
+        md:hover:shadow-md md:hover:-translate-y-1 md:hover:scale-105
+        ${isTooltipVisible ? 'shadow-lg scale-105 z-10' : ''}
+      `}
+      onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Pollutant name header */}
       <div className="text-center mb-3">
-        <h3 className="text-sm font-medium text-[rgb(var(--text))]">
+        <h3 className="text-sm font-medium text-[rgb(var(--text))] flex items-center justify-center gap-1">
           {getParameterName(measurement.parameter)}
+          <span className="text-xs text-gray-400">ⓘ</span>
         </h3>
       </div>
 
@@ -131,6 +233,63 @@ export default function Pollutants({ measurement }: PollutantsProps) {
           {measurement.unit}
         </div>
       </div>
+
+      {/* Status indicator dot */}
+      <div className="absolute top-2 right-2">
+        <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
+      </div>
+
+      {/* Tooltip bubble */}
+      {isTooltipVisible && (
+        <>
+          {/* Backdrop for mobile to close tooltip */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-40 md:hidden" 
+            onClick={() => onToggle?.()}
+          ></div>
+          
+          {/* Tooltip content */}
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 w-60 max-w-[85vw]">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3">
+              {/* Arrow pointing down */}
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white dark:border-t-gray-800"></div>
+              
+              {/* Content */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                  {pollutantInfo.title}
+                </h4>
+                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {pollutantInfo.description}
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
+                    {status === 'good' ? 'Dobro' : 
+                     status === 'moderate' ? 'Umjereno' :
+                     status === 'unhealthy' ? 'Nezdrava' :
+                     status === 'very-unhealthy' ? 'Vrlo nezdrava' : status}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-500 italic">
+                  {pollutantInfo.source}
+                </p>
+              </div>
+
+              {/* Close button for mobile */}
+              <button 
+                className="absolute top-1 right-2 text-gray-400 hover:text-gray-600 md:hidden text-lg"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggle?.()
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

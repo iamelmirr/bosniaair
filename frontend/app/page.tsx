@@ -28,6 +28,7 @@ export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isPreferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [preferencesLoaded, setPreferencesLoaded] = useState(false)
+  const [openPollutantIndex, setOpenPollutantIndex] = useState<number | null>(null)
 
   const cityLabel = primaryCity ? cityIdToLabel(primaryCity) : ''
   const { data: aqiData, error, isLoading } = useLiveAqi(primaryCity)
@@ -181,7 +182,14 @@ export default function HomePage() {
                   })
                   .map((measurement, index) => (
                     <div key={measurement.parameter} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <Pollutants measurement={measurement} />
+                      <Pollutants 
+                        measurement={measurement} 
+                        isOpen={openPollutantIndex === index}
+                        onToggle={() => {
+                          console.log('onToggle called for index:', index, 'current openIndex:', openPollutantIndex)
+                          setOpenPollutantIndex(openPollutantIndex === index ? null : index)
+                        }}
+                      />
                     </div>
                   ))
               ) : isLoading ? (
