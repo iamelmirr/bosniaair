@@ -1,8 +1,4 @@
-# BosniaAir 🇧🇦docker-compose up --build
-
-# BosniaAir – Simplified Air Quality Monitoring
-
-# BosniaAir 🇧🇦
+# BosniaAir 🇧🇦 - Simplified Air Quality Monitoring
 
 **BosniaAir** is a modern web application for real-time air quality monitoring across cities in Bosnia and Herzegovina. The application provides users with up-to-date information about Air Quality Index (AQI), dominant pollutants, forecasts, and health recommendations.
 
@@ -109,10 +105,14 @@ To run the project locally, you need to set up and run both backend and frontend
    ```
 
 2. **Set up API key:**
-   - In the root directory of the project (`sarajevoairvibe`), create a `.env` file
-   - Add your WAQI API key to the `.env` file:
+   - Create a `.env` file in the `backend/src/BosniaAir.Api/` directory
+   - Add your WAQI API key using the configuration format:
      ```
-     WAQI_API_TOKEN=your_api_key_here
+     Aqicn__ApiToken=your_api_key_here
+     ```
+   - Alternatively, you can set it as an environment variable (overrides config):
+     ```bash
+     export WAQI_API_TOKEN=your_api_key_here
      ```
 
 3. **Run the backend server:**
@@ -144,7 +144,7 @@ Now you should have a fully functional application running locally!
 
 ## 🗃️ Database
 
-The project uses **SQLite** for local data storage, making setup and usage easy without requiring an external database server. The database file is located at `bosniaair-aqi.db` in the root directory.
+The project uses **SQLite** for local data storage, making setup and usage easy without requiring an external database server. The database file is located at `bosniaair-aqi.db` in the `backend/src/BosniaAir.Api/` directory.
 
 ### Schema
 
@@ -252,4 +252,3 @@ Contributions are welcome! If you have suggestions for improvements or want to r
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
 
-[![FSnapshots of Sarajevo's AQI are stored in `bosniaair-aqi.db` (auto-created). The hosted worker keeps that table up to date every 10 minutes.ontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
