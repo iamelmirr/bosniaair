@@ -38,7 +38,7 @@ export default function Pollutants({ measurement, isOpen = false, onToggle, inde
   const getPollutantDescription = (parameter: string) => {
     const descriptions: Record<string, { title: string; description: string; source: string }> = {
       'pm25': {
-        title: 'Fine čestice',
+        title: 'Sitne čestice',
         description: 'Sitne čestice iz izduvnih gasova koje prodiru duboko u pluća.',
         source: 'Najopasnije za zdravlje'
       },
@@ -54,7 +54,7 @@ export default function Pollutants({ measurement, isOpen = false, onToggle, inde
       },
       'no2': {
         title: 'Azot dioksid',
-        description: 'Gas iz automobila i elektrana. Upaljuje dišne putove.',
+        description: 'Gas iz automobila i elektrana. Upala dišnih puteva.',
         source: 'Više kod prometnica'
       },
       'so2': {
@@ -65,7 +65,7 @@ export default function Pollutants({ measurement, isOpen = false, onToggle, inde
       'co': {
         title: 'Ugljen monoksid',
         description: 'Bezbojni gas koji smanjuje kiseonik u krvi.',
-        source: 'Iz automobile'
+        source: 'Iz automobila'
       },
     }
     
@@ -296,11 +296,11 @@ export default function Pollutants({ measurement, isOpen = false, onToggle, inde
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                     {status === 'good' ? 'Dobro' : 
                      status === 'moderate' ? 'Umjereno' :
-                     status === 'unhealthy' ? 'Nezdrava' :
-                     status === 'very-unhealthy' ? 'Vrlo nezdrava' : status}
+                     status === 'unhealthy' ? 'Nezdravo' :
+                     status === 'very-unhealthy' ? 'Vrlo nezdravo' : status}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 italic">
