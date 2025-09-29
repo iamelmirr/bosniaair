@@ -11,18 +11,18 @@ interface PollutantsProps {
   measurement: Measurement
   isOpen?: boolean
   onToggle?: () => void
+  index?: number
+  totalInRow?: number
 }
 
-export default function Pollutants({ measurement, isOpen = false, onToggle }: PollutantsProps) {
+export default function Pollutants({ measurement, isOpen = false, onToggle, index = 0, totalInRow = 2 }: PollutantsProps) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
   // Detect mobile screen size
   useEffect(() => {
     const checkIsMobile = () => {
-      const mobile = window.innerWidth < 768
-      console.log('checkIsMobile:', mobile, 'window.innerWidth:', window.innerWidth)
-      setIsMobile(mobile)
+      setIsMobile(window.innerWidth < 768)
     }
 
     checkIsMobile()
@@ -181,7 +181,6 @@ export default function Pollutants({ measurement, isOpen = false, onToggle }: Po
 
   // Handle tooltip toggle (click for mobile, hover for desktop)
   const handleCardClick = () => {
-    console.log('Card clicked, isMobile:', isMobile, 'isOpen:', isOpen, 'onToggle:', !!onToggle)
     if (isMobile) { // Mobile
       onToggle?.()
     } else { // Desktop
@@ -202,12 +201,45 @@ export default function Pollutants({ measurement, isOpen = false, onToggle }: Po
   }
 
   const isTooltipVisible = isMobile ? isOpen : showTooltip
+
+  // Determine tooltip alignment for mobile (left vs right side)
+  const isLeftSide = isMobile && (index % totalInRow === 0) // First card in row (left side)
+  const isRightSide = isMobile && (index % totalInRow === totalInRow - 1) // Last card in row (right side)
   
-  console.log('Render:', measurement.parameter, 'isMobile:', isMobile, 'isOpen:', isOpen, 'showTooltip:', showTooltip, 'isTooltipVisible:', isTooltipVisible)
+  // Get tooltip positioning classes
+  const getTooltipPositionClasses = () => {
+    if (!isMobile) {
+      return "left-1/2 transform -translate-x-1/2" // Centered for desktop
+    }
+    
+    if (isLeftSide) {
+      return "left-0" // Align left edge
+    } else if (isRightSide) {
+      return "right-0" // Align right edge  
+    } else {
+      return "left-1/2 transform -translate-x-1/2" // Center for middle cards
+    }
+  }
+
+  // Get arrow positioning classes
+  const getArrowPositionClasses = () => {
+    if (!isMobile) {
+      return "left-1/2 transform -translate-x-1/2" // Centered for desktop
+    }
+    
+    if (isLeftSide) {
+      return "left-6" // Position arrow above the card, not at edge
+    } else if (isRightSide) {
+      return "right-6" // Position arrow above the card, not at edge
+    } else {
+      return "left-1/2 transform -translate-x-1/2" // Centered for middle cards
+    }
+  }
 
   // Render pollutant card with tooltip
   return (
     <div 
+      data-pollutant-card
       className={`relative bg-[rgb(var(--card))] rounded-lg p-2 sm:p-3 border ${borderClass} transition-all duration-300 cursor-pointer
         md:hover:shadow-md md:hover:-translate-y-1 md:hover:scale-105
         ${isTooltipVisible ? 'shadow-lg scale-105 z-10' : ''}
@@ -249,10 +281,10 @@ export default function Pollutants({ measurement, isOpen = false, onToggle }: Po
           ></div>
           
           {/* Tooltip content */}
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 w-60 max-w-[85vw]">
+          <div data-pollutant-tooltip className={`absolute bottom-full mb-2 z-50 w-60 max-w-[85vw] ${getTooltipPositionClasses()}`}>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3">
               {/* Arrow pointing down */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white dark:border-t-gray-800"></div>
+              <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white dark:border-t-gray-800 ${getArrowPositionClasses()}`}></div>
               
               {/* Content */}
               <div className="space-y-2">

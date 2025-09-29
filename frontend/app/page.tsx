@@ -46,6 +46,22 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', checkIsMobile)
   }, [])
 
+  // Close tooltip when clicking outside on mobile
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobile && openPollutantIndex !== null) {
+        const target = event.target as Element
+        // Check if click is outside pollutant cards and tooltips
+        if (!target.closest('[data-pollutant-card]') && !target.closest('[data-pollutant-tooltip]')) {
+          setOpenPollutantIndex(null)
+        }
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [isMobile, openPollutantIndex])
+
   // Load user's primary city preference from localStorage
   useEffect(() => {
     try {
@@ -185,10 +201,9 @@ export default function HomePage() {
                       <Pollutants 
                         measurement={measurement} 
                         isOpen={openPollutantIndex === index}
-                        onToggle={() => {
-                          console.log('onToggle called for index:', index, 'current openIndex:', openPollutantIndex)
-                          setOpenPollutantIndex(openPollutantIndex === index ? null : index)
-                        }}
+                        onToggle={() => setOpenPollutantIndex(openPollutantIndex === index ? null : index)}
+                        index={index}
+                        totalInRow={isMobile ? 2 : 6}
                       />
                     </div>
                   ))
