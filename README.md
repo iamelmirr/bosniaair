@@ -1,8 +1,4 @@
-# BosniaAir 🇧🇦docker-compose up --build
-
-# BosniaAir – Simplified Air Quality Monitoring
-
-# BosniaAir 🇧🇦
+# BosniaAir 🇧🇦 – Simplified Air Quality Monitoring
 
 **BosniaAir** is a modern web application for real-time air quality monitoring across cities in Bosnia and Herzegovina. The application provides users with up-to-date information about Air Quality Index (AQI), dominant pollutants, forecasts, and health recommendations.
 
