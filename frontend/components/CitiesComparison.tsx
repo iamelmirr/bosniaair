@@ -8,15 +8,6 @@ interface CitiesComparisonProps {
   primaryCity: CityId
 }
 
-const AQI_CATEGORY_TRANSLATIONS = {
-  Good: 'Dobro',
-  Moderate: 'Umjereno', 
-  'Unhealthy for Sensitive Groups': 'Osjetljivo',
-  Unhealthy: 'Nezdravo',
-  'Very Unhealthy': 'Opasno',
-  Hazardous: 'Fatalno'
-} as const
-
 const getAqiColorClass = (aqi: number, category: string) => {
   switch (category.toLowerCase()) {
     case 'good':
@@ -33,25 +24,6 @@ const getAqiColorClass = (aqi: number, category: string) => {
       return 'text-aqi-hazardous'
     default:
       return 'text-gray-600'
-  }
-}
-
-const getAqiBackgroundClass = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'good':
-      return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-    case 'moderate':
-      return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-    case 'unhealthy for sensitive groups':
-      return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-    case 'unhealthy':
-      return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-    case 'very unhealthy':
-      return 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
-    case 'hazardous':
-      return 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
-    default:
-      return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
   }
 }
 
@@ -138,15 +110,18 @@ export default function CitiesComparison({ primaryCity }: CitiesComparisonProps)
             onClick={() => setSelectedCity(selectedCity === option.id ? '' : option.id)}
             className={`
               px-3 py-2 sm:px-4 rounded-lg text-sm font-medium border 
-              mobile-minimal-animation mobile-simple-hover
+              transition-all duration-200 ease-out
               transform active:scale-95 
-              md:hover:scale-105 md:hover:-translate-y-0.5
+              md:hover:scale-102 md:hover:shadow-md
               ${selectedCity === option.id
-                ? 'bg-blue-600 text-white border-blue-600 shadow-lg animate-slide-in-right'
-                : 'bg-[rgb(var(--card))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-lg scale-105'
+                : 'bg-[rgb(var(--card))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }
             `}
-            style={{ animationDelay: `${index * 50}ms` }}
+            style={{ 
+              animationDelay: `${index * 75}ms`,
+              transform: selectedCity === option.id ? 'scale(1.05)' : 'scale(1)'
+            }}
           >
             {option.name}
           </button>
@@ -167,15 +142,15 @@ export default function CitiesComparison({ primaryCity }: CitiesComparisonProps)
             <CityCard cityId={selectedCity} data={displayData} />
           </div>
         ) : (
-          <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 sm:p-8 md:p-12 border-2 border-dashed border-gray-300 dark:border-gray-600 transition-all duration-300 md:hover:border-gray-400 dark:md:hover:border-gray-500 md:hover:bg-gray-100 dark:md:hover:bg-gray-800/50 group cursor-pointer animate-float">
+          <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 sm:p-8 md:p-12 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
-              <div className="text-2xl sm:text-3xl md:text-4xl opacity-50 mb-2 transition-all duration-300 md:group-hover:scale-110 md:group-hover:opacity-70 animate-float">
+              <div className="text-2xl sm:text-3xl md:text-4xl opacity-40 mb-2">
                 🏙️
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200 font-medium">
-                ✨ Odaberite grad za poređenje
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">
+                Odaberite grad za poređenje
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 hidden sm:block">
                 Kliknite na dugme iznad
               </p>
             </div>
