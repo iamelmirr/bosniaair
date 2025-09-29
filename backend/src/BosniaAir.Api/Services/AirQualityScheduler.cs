@@ -73,12 +73,12 @@ public class AirQualityScheduler : BackgroundService
     /// </summary>
     private async Task RunRefreshCycle(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting scheduled refresh for {CityCount} cities", _cities.Count);
+        _logger.LogInformation("Data refresh cycle started");
 
         var tasks = _cities.Select(city => RefreshCityAsync(city, cancellationToken)).ToList();
         await Task.WhenAll(tasks);
 
-        _logger.LogInformation("Completed scheduled refresh");
+        _logger.LogInformation("Data refresh cycle completed");
     }
 
     /// <summary>
@@ -92,7 +92,6 @@ public class AirQualityScheduler : BackgroundService
             var airQualityService = scope.ServiceProvider.GetRequiredService<IAirQualityService>();
             
             await airQualityService.RefreshCityAsync(city, cancellationToken);
-            _logger.LogInformation("Refreshed data for {City}", city);
         }
         catch (Exception ex)
         {

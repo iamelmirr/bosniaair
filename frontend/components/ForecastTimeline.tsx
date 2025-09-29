@@ -191,7 +191,7 @@ export default function ForecastTimeline({ city }: ForecastTimelineProps) {
   if (timelineData.length === 0) {
     return (
       <div className="w-full p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))]">
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Trenutno nema dovoljno podataka za vremensku liniju.</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Trenutno nema dovoljno podataka za prognozu.</p>
       </div>
     )
   }

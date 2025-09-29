@@ -8,10 +8,20 @@
 
 Built with modern technologies including **.NET 8** for the backend and **Next.js (React)** for the frontend, designed to be fast, responsive, and easy to use.
 
+## 🌐 Live Application
+
+**BosniaAir** is deployed and accessible at: **[https://bosniaair.vercel.app](https://bosniaair.vercel.app)**
+
+### Deployment Stack
+- **Frontend:** Deployed on [Vercel](https://vercel.com/) for optimal Next.js performance
+- **Backend API:** Deployed on [Railway](https://railway.app/) for reliable .NET hosting  
+- **Database:** Hosted on [Supabase](https://supabase.com/) PostgreSQL for production data storage
+
 ---
 
 ## 📋 Table of Contents
 
+- [Live Application](#-live-application)
 - [Key Features](#-key-features)
 - [Technologies](#️-technologies)
 - [Architecture](#️-architecture)

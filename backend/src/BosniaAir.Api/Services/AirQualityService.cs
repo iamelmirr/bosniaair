@@ -146,8 +146,6 @@ public class AirQualityService : IAirQualityService
     /// </summary>
     private async Task<RefreshResult> RefreshInternalAsync(City city, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Refreshing air quality data for {City}", city);
-
         var waqiData = await FetchWaqiDataAsync(city, cancellationToken);
         var timestamp = ParseTimestamp(waqiData.Time);
 
@@ -195,8 +193,6 @@ public class AirQualityService : IAirQualityService
     {
         var stationId = city.ToStationId();
         var requestUri = $"feed/{stationId}/?token={_apiToken}";
-
-        _logger.LogDebug("Calling WAQI API for {City} using station {StationId}", city, stationId);
 
         using var response = await _httpClient.GetAsync(requestUri, cancellationToken);
         response.EnsureSuccessStatusCode();
