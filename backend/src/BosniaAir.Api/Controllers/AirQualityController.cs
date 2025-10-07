@@ -39,13 +39,13 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(typeof(LiveAqiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<LiveAqiResponse>> GetLiveAqi(
+    public async Task<ActionResult<LiveAqiResponse>> GetLive(
         [FromRoute] City city,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetLiveAqi(city, cancellationToken);
+            var response = await _airQualityService.GetLive(city, cancellationToken);
             return Ok(response);
         }
         catch (DataUnavailableException ex)
@@ -70,13 +70,13 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(typeof(ForecastResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ForecastResponse>> GetAqiForecast(
+    public async Task<ActionResult<ForecastResponse>> GetForecast(
         [FromRoute] City city,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetAqiForecast(city, cancellationToken);
+            var response = await _airQualityService.GetForecast(city, cancellationToken);
             return Ok(response);
         }
         catch (DataUnavailableException ex)
@@ -101,13 +101,13 @@ public class AirQualityController : ControllerBase
     [ProducesResponseType(typeof(CompleteAqiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<CompleteAqiResponse>> GetLiveAqiAndForecast(
+    public async Task<ActionResult<CompleteAqiResponse>> GetComplete(
         [FromRoute] City city,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _airQualityService.GetLiveAqiAndForecast(city, cancellationToken);
+            var response = await _airQualityService.GetComplete(city, cancellationToken);
             return Ok(response);
         }
         catch (DataUnavailableException ex)

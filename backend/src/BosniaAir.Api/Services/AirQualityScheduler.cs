@@ -75,7 +75,7 @@ public class AirQualityScheduler : BackgroundService
     {
         _logger.LogInformation("Data refresh cycle started");
 
-        var tasks = _cities.Select(city => RefreshCityAsync(city, cancellationToken)).ToList();
+        var tasks = _cities.Select(city => RefreshSingleCity(city, cancellationToken)).ToList();
         await Task.WhenAll(tasks);
 
         _logger.LogInformation("Data refresh cycle completed");
@@ -84,14 +84,14 @@ public class AirQualityScheduler : BackgroundService
     /// <summary>
     /// Refreshes a single city using a scoped service instance. Logs errors but doesn't fail the whole cycle.
     /// </summary>
-    private async Task RefreshCityAsync(City city, CancellationToken cancellationToken)
+    private async Task RefreshSingleCity(City city, CancellationToken cancellationToken)
     {
         try
         {
             using var scope = _scopeFactory.CreateScope();
             var airQualityService = scope.ServiceProvider.GetRequiredService<IAirQualityService>();
             
-            await airQualityService.RefreshCityAsync(city, cancellationToken);
+            await airQualityService.RefreshCity(city, cancellationToken);
         }
         catch (Exception ex)
         {

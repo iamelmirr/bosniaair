@@ -16,26 +16,26 @@ public interface IAirQualityService
     /// <summary>
     /// Gets the latest live AQI data for a city. Throws if no cached data exists.
     /// </summary>
-    /// <example>var live = await service.GetLiveAqi(City.Sarajevo);</example>
-    Task<LiveAqiResponse> GetLiveAqi(City city, CancellationToken cancellationToken = default);
+    /// <example>var live = await service.GetLive(City.Sarajevo);</example>
+    Task<LiveAqiResponse> GetLive(City city, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetches forecast data for a city. Might throw if cache is empty or corrupted.
     /// </summary>
-    Task<ForecastResponse> GetAqiForecast(City city, CancellationToken cancellationToken = default);
+    Task<ForecastResponse> GetForecast(City city, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Combines live and forecast into one call. Always returns live data, forecast might be empty.
     /// </summary>
-    /// <example>var full = await service.GetLiveAqiAndForecast(City.Tuzla);</example>
-    Task<CompleteAqiResponse> GetLiveAqiAndForecast(
+    /// <example>var full = await service.GetComplete(City.Tuzla);</example>
+    Task<CompleteAqiResponse> GetComplete(
         City city,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Forces a refresh from the WAQI API for the given city.
     /// </summary>
-    Task RefreshCityAsync(City city, CancellationToken cancellationToken = default);
+    Task RefreshCity(City city, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -75,9 +75,9 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<LiveAqiResponse> GetLiveAqi(City city, CancellationToken cancellationToken = default)
+    public async Task<LiveAqiResponse> GetLive(City city, CancellationToken cancellationToken = default)
     {
-        var cached = await _repository.GetLatestAqi(city, cancellationToken);
+        var cached = await _repository.GetLiveData(city, cancellationToken);
         if (cached is not null)
         {
             return AirQualityMapper.MapToLiveResponse(cached);
@@ -88,9 +88,9 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<ForecastResponse> GetAqiForecast(City city, CancellationToken cancellationToken = default)
+    public async Task<ForecastResponse> GetForecast(City city, CancellationToken cancellationToken = default)
     {
-        var cached = await _repository.GetForecastAsync(city, cancellationToken);
+        var cached = await _repository.GetForecast(city, cancellationToken);
         if (cached is not null)
         {
             var forecast = DeserializeForecastCache(cached.ForecastJson);
@@ -111,16 +111,16 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public async Task<CompleteAqiResponse> GetLiveAqiAndForecast(
+    public async Task<CompleteAqiResponse> GetComplete(
         City city,
         CancellationToken cancellationToken = default)
     {
-        var live = await GetLiveAqi(city, cancellationToken);
+        var live = await GetLive(city, cancellationToken);
         ForecastResponse forecast;
 
         try
         {
-            forecast = await GetAqiForecast(city, cancellationToken);
+            forecast = await GetForecast(city, cancellationToken);
         }
         catch (DataUnavailableException)
         {
@@ -134,21 +134,21 @@ public class AirQualityService : IAirQualityService
     }
 
     /// <inheritdoc />
-    public Task RefreshCityAsync(City city, CancellationToken cancellationToken = default)
+    public Task RefreshCity(City city, CancellationToken cancellationToken = default)
     {
-        return RefreshInternalAsync(city, cancellationToken);
+        return RefreshInternal(city, cancellationToken);
     }
 
     /// <summary>
     /// Internal refresh logic: fetches from WAQI, saves to DB, returns fresh data.
     /// </summary>
-    private async Task<RefreshResult> RefreshInternalAsync(City city, CancellationToken cancellationToken)
+    private async Task<RefreshResult> RefreshInternal(City city, CancellationToken cancellationToken)
     {
-        var waqiData = await FetchWaqiDataAsync(city, cancellationToken);
+        var waqiData = await FetchApiData(city, cancellationToken);
         var timestamp = AirQualityMapper.ParseTimestamp(waqiData.Time);
 
         var record = AirQualityMapper.MapToEntity(city, waqiData, timestamp);
-        await _repository.AddLatestAqi(record, cancellationToken);
+        await _repository.AddLiveSnapshot(record, cancellationToken);
         
         var liveResponse = AirQualityMapper.MapToLiveResponse(record);
 
@@ -160,7 +160,7 @@ public class AirQualityService : IAirQualityService
             {
                 var cachePayload = new ForecastCache(timestamp, forecastResponse.Forecast);
                 var serialized = JsonSerializer.Serialize(cachePayload, CacheSerializerOptions);
-                await _repository.UpdateAqiForecast(city, serialized, timestamp, cancellationToken);
+                await _repository.UpdateForecast(city, serialized, timestamp, cancellationToken);
             }
         }
 
@@ -170,7 +170,7 @@ public class AirQualityService : IAirQualityService
     /// <summary>
     /// Hits the WAQI API for the city's station data. Validates response and deserializes.
     /// </summary>
-    private async Task<WaqiData> FetchWaqiDataAsync(City city, CancellationToken cancellationToken)
+    private async Task<WaqiData> FetchApiData(City city, CancellationToken cancellationToken)
     {
         var stationId = city.ToStationId();
         var requestUri = $"feed/{stationId}/?token={_apiToken}";

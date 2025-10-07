@@ -125,3 +125,15 @@ obj/
 
 # Screenshots folder
 screenshots/
+
+# Interview preparation files (private)
+CSHARP_FOR_REACT_DEVS.md
+INTERVIEW_CHECKLIST.md
+PRESENTATION_SCRIPT.md
+prepare.md
+priprema.md
+program.md
+SERVICE_REFACTORING.md
+COMPLETE_FLOW_DOCUMENTATION.md
+TROUBLESHOOTING.md
+APIREADME.md
