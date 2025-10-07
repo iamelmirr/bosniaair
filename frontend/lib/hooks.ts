@@ -149,7 +149,7 @@ export function useRefreshAll() {
  * Custom hook for setting up periodic refresh of air quality data.
  * Automatically refreshes all data at specified intervals.
  *
- * @param intervalMs - Refresh interval in milliseconds (default: 10 minutes)
+ * @param intervalMs - Refresh interval in milliseconds (default: 1 minute)
  * @returns Function to manually trigger refresh
  */
 export function usePeriodicRefresh(intervalMs: number = 10 * 60 * 1000) {

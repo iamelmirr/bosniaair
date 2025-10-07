@@ -34,6 +34,7 @@ public class AirQualityController : ControllerBase
     /// <param name="city">The city identifier</param>
     /// <param name="cancellationToken">Cancellation token for the operation</param>
     /// <returns>Live AQI data including current measurements and health advice</returns>
+
     [HttpGet("{city}/live")]
     [ProducesResponseType(typeof(LiveAqiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

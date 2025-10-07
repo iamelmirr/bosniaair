@@ -67,31 +67,310 @@ Built with modern technologies including **.NET 8** for the backend and **Next.j
 
 ## 🏗️ Architecture
 
-### Backend
+BosniaAir follows a modern **three-tier architecture** with clean separation of concerns, ensuring maintainability, testability, and scalability.
 
-The backend is built using clean architecture principles, separating logic into different layers:
+### 🎨 System Overview
 
-- **API Layer (`BosniaAir.Api`):** Contains controllers, DTOs (Data Transfer Objects), and middleware. Responsible for receiving HTTP requests and sending responses.
-- **Service Layer:** Contains business logic, such as fetching data from external APIs, data transformation, and caching.
-- **Repository Layer:** Abstracts data access, enabling communication with the database (SQLite) via Entity Framework Core.
-- **Entity Layer:** Contains domain models representing the basic data structures.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         BROWSER                                 │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │         Next.js Frontend (React + TypeScript)            │   │
+│  │                                                          │   │
+│  │  Components → Hooks → API Client → Observable Pattern   │   │
+│  │                         ↓                                │   │
+│  │                    SWR Cache                             │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↕ HTTP/REST (JSON)
+┌─────────────────────────────────────────────────────────────────┐
+│                  .NET 8 Backend API                             │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │         ASP.NET Core + Entity Framework                  │   │
+│  │                                                          │   │
+│  │  Controllers → Services → Repository → Database         │   │
+│  │                    ↓                                     │   │
+│  │         Background Scheduler (Hosted Service)           │   │
+│  │              Refreshes every 10 minutes                 │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↕ HTTP (External API)
+┌─────────────────────────────────────────────────────────────────┐
+│            WAQI API (World Air Quality Index)                   │
+│         https://api.waqi.info/feed/{station}                    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Frontend
+---
 
-The frontend is a modern **Next.js** application that uses **React Hooks** for state management and data fetching.
+### 🔧 Backend Architecture
 
-- **Components:** UI is divided into reactive components (`LiveAqiPanel`, `ForecastTimeline`, `Pollutants`, etc.)
-- **Data Fetching:** Uses **SWR** (`stale-while-revalidate`) for efficient caching and updating data from the backend API
-- **Styling:** **Tailwind CSS** is used for fast and consistent design with dark theme support
-- **State:** Local state is managed using `useState` and `useEffect`, while global settings (e.g., selected city) are stored in `localStorage`
+The backend follows **clean architecture** with clear layer separation and dependency injection:
 
-### Data Flow
+#### **1. API Layer (Controllers)**
+- **Purpose:** HTTP endpoint handling and request/response mapping
+- **Location:** `backend/src/BosniaAir.Api/Controllers/`
+- **Key Files:**
+  - `AirQualityController.cs` - REST API endpoints (`/live`, `/forecast`, `/complete`)
+- **Responsibilities:**
+  - Route HTTP requests to appropriate service methods
+  - Validate request parameters (city enum, cancellation tokens)
+  - Transform service responses to DTOs (Data Transfer Objects)
+  - Handle HTTP status codes (200 OK, 503 Service Unavailable, 500 Internal Server Error)
 
-1. **Background Service:** Periodically (every 10 minutes) fetches fresh data from **WAQI API**
-2. **Database Storage:** Fetched data (live and forecast) is processed and stored in **SQLite** database
-3. **Frontend Request:** When user opens the application, frontend sends request to backend API
-4. **API Response:** Backend retrieves latest data from its database and sends it to frontend in optimized format
-5. **UI Display:** Frontend receives data and displays it to user through various components. **SWR** automatically updates data in the background
+#### **2. Service Layer (Business Logic)**
+- **Purpose:** Core business logic, external API integration, data processing
+- **Location:** `backend/src/BosniaAir.Api/Services/`
+- **Key Files:**
+  - `AirQualityService.cs` - Main business logic implementation
+  - `AirQualityScheduler.cs` - Background service for periodic data refresh
+- **Responsibilities:**
+  - Fetch data from WAQI external API
+  - Transform raw API data into domain models
+  - Coordinate between repository and external APIs
+  - Execute scheduled background jobs (every 10 minutes)
+  - Error handling and logging
+
+#### **3. Repository Layer (Data Access)**
+- **Purpose:** Database abstraction and data persistence
+- **Location:** `backend/src/BosniaAir.Api/Repositories/`
+- **Key Files:**
+  - `IAirQualityRepository.cs` - Repository interface
+  - `AirQualityRepository.cs` - Entity Framework implementation
+- **Responsibilities:**
+  - Execute database queries via Entity Framework Core
+  - Abstract database operations from business logic
+  - Provide clean methods: `GetLive()`, `AddLive()`, `GetForecast()`, `UpdateForecast()`
+  - Handle database transactions and caching
+
+#### **4. Data Layer (Database Context)**
+- **Purpose:** ORM configuration and database schema management
+- **Location:** `backend/src/BosniaAir.Api/Data/`
+- **Key Files:**
+  - `AppDbContext.cs` - Entity Framework DbContext
+  - Database: SQLite (development) or PostgreSQL (production)
+- **Schema:** Single `AirQualityRecords` table with columns for live/forecast data
+
+#### **5. Background Service**
+- **Technology:** ASP.NET Core `IHostedService`
+- **Execution:** Runs continuously in background, independent of HTTP requests
+- **Schedule:** Refreshes all cities every 10 minutes
+- **Parallel Processing:** All cities refresh simultaneously using `Task.WhenAll()`
+- **Resilience:** City-level error isolation (one city failure doesn't affect others)
+
+#### **6. Middleware & Configuration**
+- **CORS Middleware:** Configured for frontend origins with credentials support
+- **Exception Handling Middleware:** Global error catching and logging
+- **Serilog:** Structured logging for debugging and monitoring
+- **Health Checks:** `/health` endpoint for deployment monitoring
+- **Swagger/OpenAPI:** Auto-generated API documentation at `/swagger`
+
+---
+
+### 🎨 Frontend Architecture
+
+The frontend is a **modern Next.js 14 application** with React Server Components and client-side interactivity:
+
+#### **1. Component Layer**
+- **Purpose:** UI presentation and user interaction
+- **Location:** `frontend/components/`
+- **Key Components:**
+  - `LiveAqiPanel.tsx` - Real-time AQI display with color-coded badges
+  - `ForecastTimeline.tsx` - 5-day forecast visualization
+  - `Pollutants.tsx` - Detailed pollutant concentrations
+  - `CitiesComparison.tsx` - Multi-city comparison view
+  - `SensitiveGroupsAdvice.tsx` - Health recommendations
+- **Patterns:**
+  - Functional components with React Hooks
+  - Props-based communication
+  - Conditional rendering based on data state
+
+#### **2. Hooks Layer (Data Management)**
+- **Purpose:** Data fetching, caching, and state synchronization
+- **Location:** `frontend/lib/hooks.ts`
+- **Key Hooks:**
+  - `useLiveAqi(cityId)` - Fetch live AQI data with SWR caching
+  - `useComplete(cityId)` - Fetch combined live + forecast data
+  - `usePeriodicRefresh(interval)` - Setup auto-refresh timer
+  - `useRefreshAll()` - Manual refresh trigger
+- **Technology:** Built on top of **SWR** (stale-while-revalidate pattern)
+- **Features:**
+  - Automatic caching with unique keys per city
+  - Background revalidation
+  - Request deduplication
+  - Observable integration for coordinated refresh
+
+#### **3. API Client Layer**
+- **Purpose:** HTTP communication with backend API
+- **Location:** `frontend/lib/api-client.ts`
+- **Key Methods:**
+  - `getLive(city)` - GET `/api/v1/air-quality/{city}/live`
+  - `getComplete(city)` - GET `/api/v1/air-quality/{city}/complete`
+- **Features:**
+  - Type-safe TypeScript interfaces
+  - Automatic date string → Date object conversion
+  - Error handling and retry logic
+  - Environment-based API URL configuration
+
+#### **4. Observable Pattern (Event Coordination)**
+- **Purpose:** Coordinate data refresh across multiple components
+- **Location:** `frontend/lib/observable.ts`
+- **How It Works:**
+  - Singleton `AirQualityObservable` instance
+  - Components subscribe to refresh events
+  - Timer triggers `notify()` every 60 seconds
+  - All subscribers execute simultaneously
+  - Automatic timer management (starts with first subscriber, stops when all unsubscribe)
+- **Benefits:**
+  - Single timer for entire app (efficient)
+  - Coordinated refresh (all components update together)
+  - Decoupled architecture (components don't know about each other)
+
+#### **5. State Management**
+- **Local State:** React `useState` for component-specific data
+- **Persistent State:** `localStorage` for user preferences (selected city)
+- **Server State:** SWR cache for API data
+- **Global Events:** Observable pattern for cross-component coordination
+
+---
+
+### 🔄 Complete Data Flow
+
+#### **Scenario 1: Background Data Refresh (Backend)**
+
+```
+Every 10 minutes:
+
+AirQualityScheduler (Background Service)
+    ↓
+ExecuteAsync() triggers RunRefreshCycle()
+    ↓
+For each city (Sarajevo, Tuzla, Mostar, etc.):
+    ↓
+AirQualityService.RefreshCity(city)
+    ↓
+HTTP GET → https://api.waqi.info/feed/@{stationId}/?token=xxx
+    ↓
+Parse JSON response (AQI, pollutants, forecast)
+    ↓
+Transform to AirQualityRecord entity
+    ↓
+Repository.AddLive(record) → INSERT INTO database
+    ↓
+Repository.UpdateForecast(forecast) → UPDATE/INSERT forecast
+    ↓
+Data ready for frontend requests ✓
+```
+
+**Key Points:**
+- Runs **independently** of frontend (even if no users online)
+- **Parallel processing** - all cities refresh simultaneously
+- **Error isolation** - one city failure doesn't stop others
+- **Database caching** - fresh data ready for instant API responses
+
+---
+
+#### **Scenario 2: User Opens Application (Frontend)**
+
+```
+1. Browser loads page
+    ↓
+2. HomePage component mounts
+    ↓
+3. Read city from localStorage
+    If empty → Show city selector modal
+    If exists → Continue with saved city
+    ↓
+4. useLiveAqi('Sarajevo') executes
+    ↓
+5. SWR checks cache
+    Cache MISS → Trigger fetch
+    ↓
+6. apiClient.getLive('Sarajevo')
+    ↓
+7. HTTP GET → http://localhost:5000/api/v1/air-quality/Sarajevo/live
+    ↓
+8. Backend: Controller → Service → Repository
+    ↓
+9. SQL: SELECT * FROM AirQualityRecords 
+        WHERE City='Sarajevo' AND RecordType='LiveSnapshot'
+        ORDER BY Timestamp DESC LIMIT 1
+    ↓
+10. Backend returns JSON response
+    ↓
+11. Frontend: Parse JSON, convert dates
+    ↓
+12. SWR updates cache
+    ↓
+13. React re-renders with fresh data
+    ↓
+14. UI displays AQI, pollutants, forecast ✓
+```
+
+**Key Points:**
+- **SWR caching** prevents duplicate requests
+- **Optimistic UI** - shows loading state while fetching
+- **Background revalidation** - automatically refreshes stale data
+- **Request deduplication** - multiple components share one request
+
+---
+
+#### **Scenario 3: Periodic Auto-Refresh (Frontend)**
+
+```
+Every 60 seconds:
+
+Observable timer fires
+    ↓
+airQualityObservable.notify()
+    ↓
+EventTarget dispatches 'aqi-refresh' event
+    ↓
+All subscribed components receive event:
+    - LiveAqiPanel → mutate()
+    - ForecastTimeline → mutate()
+    - CitiesComparison → mutate()
+    ↓
+Each component's SWR hook revalidates:
+    - Check cache freshness
+    - If stale → Fetch new data from backend
+    - If fresh → Use cached data
+    ↓
+Components re-render with latest data ✓
+```
+
+**Key Points:**
+- **Single timer** for entire app (60s interval)
+- **Coordinated refresh** - all components update together
+- **Smart caching** - SWR decides when to actually fetch
+- **Automatic cleanup** - timer stops when no subscribers
+
+---
+
+### 🔐 Key Design Patterns
+
+1. **Repository Pattern** - Abstracts data access, makes testing easier
+2. **Dependency Injection** - All services injected via ASP.NET Core DI container
+3. **Observer Pattern** - Frontend Observable for event-driven refresh
+4. **Cache-Aside Pattern** - Backend caches WAQI data, frontend caches API responses
+5. **Background Service Pattern** - Scheduled tasks independent of HTTP requests
+6. **Singleton Pattern** - Single Observable instance shared across components
+
+---
+
+### 📊 Performance Optimizations
+
+- **Backend:**
+  - Database caching reduces external API calls
+  - Parallel city refresh (all cities update simultaneously)
+  - Scoped services prevent memory leaks in background service
+  - Entity Framework query optimization with `AsNoTracking()`
+
+- **Frontend:**
+  - SWR automatic caching and deduplication
+  - Observable pattern reduces timer overhead (single timer)
+  - React Hooks prevent unnecessary re-renders
+  - Code splitting and lazy loading with Next.js
 
 ---
 
@@ -262,7 +541,16 @@ Contributions are welcome! If you have suggestions for improvements or want to r
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
 
-<<<<<<< HEAD
-=======
-[![FSnapshots of Sarajevo's AQI are stored in `bosniaair-aqi.db` (auto-created). The hosted worker keeps that table up to date every 10 minutes.ontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
->>>>>>> b660bf62e963d1dee9f089d9a0957bbc2c14df5f
+---
+
+## 📚 Additional Documentation
+
+For more detailed technical information, see:
+- **[COMPLETE_FLOW_DOCUMENTATION.md](./COMPLETE_FLOW_DOCUMENTATION.md)** - In-depth flow documentation with timelines and scenarios
+- **[APIREADME.md](./APIREADME.md)** - Detailed API endpoint documentation
+- **[CSHARP_FOR_REACT_DEVS.md](./CSHARP_FOR_REACT_DEVS.md)** - C# guide for React developers
+
+---
+
+**Built with ❤️ for Bosnia and Herzegovina**
+
