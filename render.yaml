@@ -1,0 +1,44 @@
+# Render.com Blueprint Configuration
+# This file enables automatic deployment from GitHub to Render
+
+services:
+  # Backend API Service
+  - type: web
+    name: bosniaair-api
+    env: docker
+    dockerfilePath: ./backend/src/BosniaAir.Api/Dockerfile.railway
+    dockerContext: ./backend/src/BosniaAir.Api
+    plan: free
+    region: frankfurt # Change to 'oregon', 'frankfurt', or 'singapore'
+    
+    # Environment Variables
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:5000
+      
+      - key: WAQI_API_TOKEN
+        sync: false # Will prompt you to enter this securely
+      
+      - key: FRONTEND_ORIGIN
+        value: https://bosniaair.vercel.app # Update with your Vercel URL
+      
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bosniaair-db
+          property: connectionString
+    
+    # Health Check
+    healthCheckPath: /health
+    
+    # Auto-deploy on push
+    autoDeploy: true
+
+# PostgreSQL Database
+databases:
+  - name: bosniaair-db
+    databaseName: bosniaair
+    plan: free # 90 days free, then $7/month
+    region: frankfurt

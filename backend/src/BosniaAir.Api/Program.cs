@@ -26,17 +26,35 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
-var frontendOrigin = builder.Configuration["FRONTEND_ORIGIN"] ?? "http://localhost:3000";
+
+// Get allowed origins from environment or use defaults
+var allowedOrigins = new List<string>
+{
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://localhost:3002",
+    "http://localhost:5000",
+    "http://localhost:5001"
+};
+
+// Add production frontend origin if specified
+var frontendOrigin = builder.Configuration["FRONTEND_ORIGIN"];
+if (!string.IsNullOrWhiteSpace(frontendOrigin))
+{
+    allowedOrigins.Add(frontendOrigin);
+    Log.Information("Added FRONTEND_ORIGIN to CORS: {Origin}", frontendOrigin);
+}
 
 // CORS policy allowing only specified frontend origins for security
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendOnly", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5000", "http://localhost:5001", frontendOrigin)
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // Cache preflight for 10 mins
     });
 });
 
@@ -116,9 +134,12 @@ builder.Services.AddHealthChecks();
 
 // Build the app and configure middleware pipeline
 var app = builder.Build();
+
+// CRITICAL: CORS must be before routing and endpoints!
+app.UseCors("FrontendOnly"); // Apply CORS policy FIRST
+
 app.UseSerilogRequestLogging(); // Log all requests
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Global error handling
-app.UseCors("FrontendOnly"); // Apply CORS policy
 
 // Development-only Swagger UI
 if (app.Environment.IsDevelopment())
