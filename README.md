@@ -13,9 +13,20 @@ Built with modern technologies including **.NET 8** for the backend and **Next.j
 **BosniaAir** is deployed and accessible at: **[https://bosniaair.vercel.app](https://bosniaair.vercel.app)**
 
 ### Deployment Stack
-- **Frontend:** Deployed on [Vercel](https://vercel.com/) for optimal Next.js performance
-- **Backend API:** Deployed on [Railway](https://railway.app/) for reliable .NET hosting  
-- **Database:** Hosted on [Supabase](https://supabase.com/) PostgreSQL for production data storage
+- **Frontend + API:** One [Vercel](https://vercel.com/) deployment. The API lives in Next.js route handlers (`frontend/app/api/v1`), ported from the .NET backend with the same JSON shape
+- **Caching:** Each WAQI station response is cached for 5 minutes in the Next.js Data Cache, which replaces the .NET background scheduler and database cache
+- **Secret:** `WAQI_API_TOKEN` (server-side env var on Vercel)
+- **Legacy:** The .NET 8 backend in `backend/` previously ran on Railway. It is kept for reference and is no longer deployed
+
+### Public API
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/v1/air-quality/{city}/live` | Current AQI, category, dominant pollutant, measurements |
+| `GET /api/v1/air-quality/{city}/forecast` | Daily forecast (PM2.5 / PM10 / O3) |
+| `GET /api/v1/air-quality/{city}/complete` | Live + forecast in one call |
+| `GET /api/v1/health` | Health check |
+
+`{city}` is one of `Sarajevo`, `Tuzla`, `Zenica`, `Mostar`, `Travnik`, `Bihac` (case-insensitive). Timestamps are UTC ISO 8601. CORS is open (`*`) for GET.
 
 ---
 

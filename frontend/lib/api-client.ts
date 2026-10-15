@@ -102,7 +102,9 @@ class ApiClient {
   private baseUrl: string
 
   constructor() {
-    const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+    // The API is served by this same Next.js app (app/api/v1). NEXT_PUBLIC_API_URL is
+    // deliberately not used anymore: it pointed at the retired Railway backend.
+    const baseApiUrl = process.env.NEXT_PUBLIC_BOSNIAAIR_API_ORIGIN || ''
     this.baseUrl = `${baseApiUrl}/api/v1`
   }
 

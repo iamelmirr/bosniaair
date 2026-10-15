@@ -153,7 +153,7 @@ export default function LiveAqiPanel({ city }: LiveAqiPanelProps) {
     return new Intl.DateTimeFormat('bs-BA', {
       dateStyle: 'short',
       timeStyle: 'short',
-      timeZone: 'UTC',
+      timeZone: 'Europe/Sarajevo',
     }).format(timestamp)
   }
 
