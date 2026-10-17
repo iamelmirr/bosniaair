@@ -1,286 +1,81 @@
-# BosniaAir 🇧🇦 - Simplified Air Quality Monitoring
+# BosniaAir
 
-**BosniaAir** is a modern web application for real-time air quality monitoring across cities in Bosnia and Herzegovina. The application provides users with up-to-date information about Air Quality Index (AQI), dominant pollutants, forecasts, and health recommendations.
+Real-time air quality for cities in Bosnia and Herzegovina, with forecasts and health advice.
 
-[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)](https://nextjs.org/)
-[![Backend](https://img.shields.io/badge/Backend-.NET%208-purple)](https://dotnet.microsoft.com/)
-[![Database](https://img.shields.io/badge/Database-SQLite-green)](https://www.sqlite.org/)
+**Live:** [bosniaair.vercel.app](https://bosniaair.vercel.app)
 
-Built with modern technologies including **.NET 8** for the backend and **Next.js (React)** for the frontend, designed to be fast, responsive, and easy to use.
+![BosniaAir dashboard: current AQI for Sarajevo, dominant pollutant and pollutant levels](docs/screenshot.jpg)
 
-## 🌐 Live Application
+## Why
 
-**BosniaAir** is deployed and accessible at: **[https://bosniaair.vercel.app](https://bosniaair.vercel.app)**
+In winter the air in Sarajevo and other Bosnian cities is among the worst in Europe, but the raw numbers
+are hard to read. BosniaAir puts the current AQI, the dominant pollutant, the forecast for the next days
+and plain advice for sensitive groups on one screen, per city, sized for a phone in the morning.
 
-### Deployment Stack
-- **Frontend + API:** One [Vercel](https://vercel.com/) deployment. The API lives in Next.js route handlers (`frontend/app/api/v1`), ported from the .NET backend with the same JSON shape
-- **Caching:** Each WAQI station response is cached for 5 minutes in the Next.js Data Cache, which replaces the .NET background scheduler and database cache
-- **Secret:** `WAQI_API_TOKEN` (server-side env var on Vercel)
-- **Legacy:** The .NET 8 backend in `backend/` previously ran on Railway. It is kept for reference and is no longer deployed
+## What it does
 
-### Public API
-| Endpoint | Description |
+- Live AQI and pollutant levels (PM2.5, PM10, O3, NO2, CO, SO2) for Sarajevo, Tuzla, Zenica, Mostar, Travnik and Bihać
+- Daily forecast for PM2.5, PM10 and O3
+- Health advice for the general population and sensitive groups, based on the current AQI
+- City comparison, a saved primary city, light and dark theme
+- A small public JSON API (below)
+
+## How it works
+
+```
+Browser (Next.js + React, SWR)
+   │  /api/v1/...
+   ▼
+Next.js route handlers on Vercel ──► WAQI API (one station per city)
+   (responses cached 5 min in the Next.js Data Cache)
+```
+
+The frontend and the API are one Next.js deployment on Vercel. The route handlers in
+`frontend/app/api/v1` fetch each city's WAQI station, normalise the data and cache it for five minutes,
+so the upstream API is hit at most once per city per five minutes no matter how many people open the page.
+The client refreshes with SWR and an observable that keeps all panels in sync.
+
+The first version had a separate .NET 8 API (ASP.NET Core, Entity Framework Core, SQLite and a background
+scheduler). It lives in `backend/` for reference; the Next.js handlers return the same JSON shape.
+
+## Public API
+
+| Endpoint | Returns |
 | --- | --- |
 | `GET /api/v1/air-quality/{city}/live` | Current AQI, category, dominant pollutant, measurements |
-| `GET /api/v1/air-quality/{city}/forecast` | Daily forecast (PM2.5 / PM10 / O3) |
-| `GET /api/v1/air-quality/{city}/complete` | Live + forecast in one call |
+| `GET /api/v1/air-quality/{city}/forecast` | Daily forecast (PM2.5, PM10, O3) |
+| `GET /api/v1/air-quality/{city}/complete` | Live and forecast in one call |
 | `GET /api/v1/health` | Health check |
 
-`{city}` is one of `Sarajevo`, `Tuzla`, `Zenica`, `Mostar`, `Travnik`, `Bihac` (case-insensitive). Timestamps are UTC ISO 8601. CORS is open (`*`) for GET.
+`{city}` is one of `Sarajevo`, `Tuzla`, `Zenica`, `Mostar`, `Travnik`, `Bihac` (case-insensitive).
+Timestamps are UTC ISO 8601. CORS is open for GET.
 
----
-
-## 📋 Table of Contents
-
-- [Live Application](#-live-application)
-- [Key Features](#-key-features)
-- [Technologies](#️-technologies)
-- [Architecture](#️-architecture)
-- [Getting Started](#-getting-started)
-- [Database](#️-database)
-- [API Endpoints](#-api-endpoints)
-- [Contributing](#-contributing)
-- [License](#-license)
-
----
-
-## ✨ Key Features
-
-- **Real-Time Monitoring:** Live AQI values for selected cities
-- **Weather Forecast:** Air quality forecast for upcoming days  
-- **Detailed Pollutant Data:** Display concentrations of key pollutants (PM2.5, PM10, O3, NO2, CO, SO2)
-- **Health Recommendations:** Advice for sensitive groups and general population based on current AQI
-- **City Comparison:** Compare air quality between different cities
-- **Responsive Design:** Optimized for both desktop and mobile devices
-- **Customizable Settings:** Users can select their primary city for monitoring
-- **Light and Dark Theme:** Automatic system theme detection with manual override option
-
----
-
-## 🛠️ Technologies
-
-| Component | Technology | Description |
-| --- | --- | --- |
-| **Backend** | **.NET 8** | Robust and scalable API for data processing and delivery |
-| | **ASP.NET Core** | Framework for building web APIs |
-| | **Entity Framework Core** | ORM for database interactions |
-| | **SQLite** | Lightweight, serverless database for local data storage |
-| | **Serilog** | Flexible logging for application monitoring |
-| **Frontend** | **Next.js 14** | React framework for server-rendered and static web pages |
-| | **React** | Library for building user interfaces |
-| | **TypeScript** | Static typing for more robust and maintainable code |
-| | **Tailwind CSS** | Utility-first CSS framework for rapid and responsive design |
-| | **SWR** | React Hooks library for data fetching and caching |
-| **Database** | **SQLite** | Storage for historical and forecast air quality data |
-| **API Source** | **WAQI API** | World Air Quality Index project for air quality data |
-
----
-
-## 🏗️ Architecture
-
-BosniaAir follows a modern **three-tier architecture** with clean separation of concerns.
-
-### System Overview
-
-```
-Frontend (Next.js + React)
-    ↕ HTTP/REST
-Backend (.NET 8 API)
-    ↕ HTTP
-WAQI External API
-```
-
-### Backend Structure
-
-The backend follows **clean architecture** with four main layers:
-
-1. **Controllers** - Handle HTTP requests and responses
-2. **Services** - Business logic and external API integration  
-3. **Repository** - Database operations via Entity Framework Core
-4. **Background Scheduler** - Auto-refresh data every 10 minutes
-
-### Frontend Structure  
-
-The frontend uses **Next.js 14** with the following layers:
-
-1. **Components** - UI presentation (LiveAqiPanel, ForecastTimeline, etc.)
-2. **Hooks** - Data fetching with SWR caching (`useLiveAqi`, `useComplete`)
-3. **API Client** - HTTP communication with backend
-4. **Observable** - Coordinated auto-refresh across components
-
-### Key Features
-
-- **Background Data Sync:** Scheduler fetches fresh data every 10 minutes
-- **Smart Caching:** SWR prevents duplicate requests and provides instant updates
-- **Auto-Refresh:** Frontend updates every 60 seconds via Observable pattern
-- **Error Isolation:** One city failure doesn't affect others
-
----
-
-## 🚀 Getting Started
-
-To run the project locally, you need to set up and run both backend and frontend separately.
-
-### Prerequisites
-
-- **.NET 8 SDK:** [Download here](https://dotnet.microsoft.com/download/dotnet/8.0)
-- **Node.js (v18+):** [Download here](https://nodejs.org/)
-- **Git:** [Download here](https://git-scm.com/)
-- **API Key:** Free API key required from [WAQI API](https://aqicn.org/data-platform/token/)
-
-### Backend Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/iamelmirr/sarajevoairvibe.git
-   cd sarajevoairvibe
-   ```
-
-2. **Set up API key:**
-   - Create a `.env` file in the `backend/src/BosniaAir.Api/` directory
-   - Add your WAQI API key using the configuration format:
-     ```
-     Aqicn__ApiToken=your_api_key_here
-     ```
-   - Alternatively, you can set it as an environment variable (overrides config):
-     ```bash
-     export WAQI_API_TOKEN=your_api_key_here
-     ```
-
-3. **Run the backend server:**
-   ```bash
-   cd backend/src/BosniaAir.Api
-   dotnet run
-   ```
-   - Backend API will be available at `http://localhost:5000`
-   - You can check the status at `http://localhost:5000/health`
-   - API documentation available at `http://localhost:5000/swagger`
-
-### Frontend Setup
-
-1. **Install dependencies:**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Run the frontend application:**
-   ```bash
-   npm run dev
-   ```
-   - Frontend application will be available at `http://localhost:3000`
-
-Now you should have a fully functional application running locally!
-
----
-
-## 🗃️ Database
-
-The project uses **SQLite** for local data storage, making setup and usage easy without requiring an external database server. The database file is located at `bosniaair-aqi.db` in the `backend/src/BosniaAir.Api/` directory.
-
-### Schema
-
-The main table is `AirQualityRecords` and contains the following important columns:
-
-| Column | Type | Description |
-| --- | --- | --- |
-| `Id` | INTEGER | Primary key |
-| `City` | TEXT | City name (e.g., `Sarajevo`) |
-| `RecordType` | TEXT | Record type (`LiveSnapshot` or `Forecast`) |
-| `StationId` | TEXT | Station identifier |
-| `Timestamp` | TEXT | Measurement time in UTC format |
-| `AqiValue` | INTEGER | Overall AQI value |
-| `DominantPollutant` | TEXT | Dominant pollutant |
-| `Pm25`, `Pm10`, etc. | REAL | Individual pollutant values |
-| `ForecastJson` | TEXT | JSON string containing forecast data |
-| `CreatedAt` | TEXT | Record creation time |
-
-### Useful Queries
-
-You can use any SQLite browser or CLI to execute queries on the database.
-
-**Get latest live measurements for all cities:**
-```sql
-SELECT City, AqiValue, DominantPollutant, MAX(Timestamp) as Timestamp 
-FROM AirQualityRecords 
-WHERE RecordType = 'LiveSnapshot' 
-GROUP BY City 
-ORDER BY City;
-```
-
-**Get latest forecast for all cities:**
-```sql
-SELECT City, ForecastJson, Timestamp 
-FROM AirQualityRecords 
-WHERE RecordType = 'Forecast' 
-ORDER BY City, Timestamp DESC;
-```
-
-**Get 5 most recent live measurements:**
-```sql
-SELECT City, AqiValue, DominantPollutant, Timestamp 
-FROM AirQualityRecords 
-WHERE RecordType = 'LiveSnapshot' 
-ORDER BY Timestamp DESC 
-LIMIT 5;
-```
-
----
-
-## 🔌 API Endpoints
-
-The backend provides the following REST API endpoints:
-
-### Live Data
-- `GET /api/v1/air-quality/{city}/live` - Get current live AQI data for a specific city
-- `GET /health` - Health check endpoint
-
-### Forecast Data  
-- `GET /api/v1/air-quality/{city}/forecast` - Get 5-day forecast for a specific city
-
-### Combined Data
-- `GET /api/v1/air-quality/{city}/complete` - Get both live and forecast data for a city
-
-### Available Cities
-Current supported cities: `Sarajevo`, `Tuzla`, `Banja Luka`, `Mostar`, `Zenica`, `Bihac`, `Travnik`
-
-### Example Usage
 ```bash
-# Get live data for Sarajevo
-curl http://localhost:5000/api/v1/air-quality/Sarajevo/live
-
-# Get forecast for Tuzla
-curl http://localhost:5000/api/v1/air-quality/Tuzla/forecast
-
-# Check API health
-curl http://localhost:5000/health
+curl https://bosniaair.vercel.app/api/v1/air-quality/sarajevo/live
 ```
 
----
+## Stack
 
-## 🧪 Testing
+Next.js 14, React, TypeScript, Tailwind CSS, SWR, Framer Motion, Vercel. Data from the
+[World Air Quality Index project](https://aqicn.org). Legacy backend: .NET 8, ASP.NET Core, EF Core, SQLite.
 
-Run the backend tests:
+## Run it locally
+
+You need Node.js 18+ and a free WAQI token from [aqicn.org/data-platform/token](https://aqicn.org/data-platform/token/).
+
 ```bash
-cd backend
-dotnet test
+git clone https://github.com/iamelmirr/bosniaair.git
+cd bosniaair/frontend
+npm install
+WAQI_API_TOKEN=your_token npm run dev
 ```
 
----
+Open http://localhost:3000. The API runs in the same process under `/api/v1`.
 
-## 🤝 Contributing
+## License
 
-Contributions are welcome! If you have suggestions for improvements or want to report a bug, feel free to open an issue or submit a pull request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+MIT, see [LICENSE](LICENSE).
 
 ---
 
-## 📄 License
-
-This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
-
+Built by [Elmir Beširović](https://itselmotech.com/elmir).
