@@ -56,7 +56,7 @@ curl https://bosniaair.vercel.app/api/v1/air-quality/sarajevo/live
 
 ## Stack
 
-Next.js 14, React, TypeScript, Tailwind CSS, SWR, Framer Motion, Vercel. Data from the
+Next.js 14, React, TypeScript, Tailwind CSS, SWR, Vercel. Data from the
 [World Air Quality Index project](https://aqicn.org). Legacy backend: .NET 8, ASP.NET Core, EF Core, SQLite.
 
 ## Run it locally
