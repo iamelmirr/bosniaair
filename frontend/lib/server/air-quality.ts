@@ -24,12 +24,16 @@ export const UPSTREAM_REVALIDATE_SECONDS = 300
 const WAQI_BASE_URL = 'https://api.waqi.info'
 
 /**
- * WAQI token. Set WAQI_API_TOKEN in the hosting environment.
- * The fallback is the token that was already committed to this public repository's
- * history (free, read-only WAQI key); it keeps the deployment working when the env
- * var is missing. Rotate it and set the env var to stop relying on it.
+ * WAQI token from the hosting environment (WAQI_API_TOKEN). There is no fallback:
+ * read per request, so a missing token fails with a clear error instead of at build time.
  */
-const WAQI_TOKEN = process.env.WAQI_API_TOKEN || '4017a1c616179160829bd7e3abb9cc9c8449958e'
+function waqiToken(): string {
+  const token = process.env.WAQI_API_TOKEN?.trim()
+  if (!token) {
+    throw new Error('WAQI_API_TOKEN is not set: add it to the environment (free token: https://aqicn.org/data-platform/token/)')
+  }
+  return token
+}
 
 /** Supported cities and their WAQI station identifiers. */
 export const CITIES = {
@@ -126,7 +130,7 @@ interface WaqiData {
 }
 
 async function fetchStationUncached(city: CityKey): Promise<WaqiData> {
-  const url = `${WAQI_BASE_URL}/feed/${CITIES[city].station}/?token=${WAQI_TOKEN}`
+  const url = `${WAQI_BASE_URL}/feed/${CITIES[city].station}/?token=${waqiToken()}`
   let res: Response
   try {
     res = await fetch(url, {
