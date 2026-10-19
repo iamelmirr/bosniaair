@@ -9,8 +9,8 @@
 /** A station older than this is treated as not reporting. */
 export const MAX_STATION_AGE_HOURS = 6
 
-/** A fallback station further away than this would describe another place, not the city. */
-export const MAX_FALLBACK_DISTANCE_KM = 40
+/** A fallback station further away than this would describe another place, not the city (Vareš at 35 km read "good" while Sarajevo was forecast "unhealthy", 2026-10-19). */
+export const MAX_FALLBACK_DISTANCE_KM = 25
 
 /** One entry of WAQI's /v2/map/bounds response. */
 export interface WaqiBoundsStation {

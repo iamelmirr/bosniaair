@@ -41,15 +41,16 @@ test('rankFallbackCandidates: skips stale, no-AQI, too-far and primary stations;
     station(10557, 43.8567, 18.3982, '-', hoursAgo(46), 'Sarajevo US Embassy, Bosnia Herzegovina'), // primary, silent
     station(9272, 43.8483, 18.3634, 91, hoursAgo(40)), // close but stale
     station(9263, 43.8647, 18.4194, '-', hoursAgo(1)), // close, fresh time, no AQI
-    station(-706618, 44.162, 18.3266, '44', hoursAgo(0.3), 'Vareš (Župni ured Vareš)'), // ~34 km, fresh
+    station(-706618, 44.162, 18.3266, '44', hoursAgo(0.3), 'Vareš (Župni ured Vareš)'), // ~34 km: past the 25 km limit
     station(-475627, 44.1492, 17.811, '152', hoursAgo(0.2)), // ~57 km: another town
     station(-1, 43.95, 18.3, '60', hoursAgo(2), 'Closer one'), // ~14 km, fresh
+    station(-2, 43.70, 18.25, '70', hoursAgo(0.5), 'Southwest'), // ~21 km, fresh
     station(10557, 43.8567, 18.3982, '50', hoursAgo(1)), // primary id is never a fallback
   ]
   const ranked = rankFallbackCandidates(stations, SARAJEVO, { excludeUid: 10557, now: NOW })
-  assert.deepEqual(ranked.map(c => c.uid), [-1, -706618])
-  assert.equal(ranked[1].name, 'Vareš (Župni ured Vareš)')
-  assert.equal(ranked[1].updatedAt, hoursAgo(0.3))
+  assert.deepEqual(ranked.map(c => c.uid), [-1, -2])
+  assert.equal(ranked[1].name, 'Southwest')
+  assert.equal(ranked[1].updatedAt, hoursAgo(0.5))
 })
 
 test('rankFallbackCandidates: nothing usable gives an empty list', () => {
