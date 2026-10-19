@@ -26,14 +26,19 @@ and plain advice for sensitive groups on one screen, per city, sized for a phone
 Browser (Next.js + React, SWR)
    │  /api/v1/...
    ▼
-Next.js route handlers on Vercel ──► WAQI API (one station per city)
+Next.js route handlers on Vercel ──► WAQI API (a primary station per city, nearest live one as fallback)
    (responses cached 5 min in the Next.js Data Cache)
 ```
 
 The frontend and the API are one Next.js deployment on Vercel. The route handlers in
 `frontend/app/api/v1` fetch each city's WAQI station, normalise the data and cache it for five minutes,
-so the upstream API is hit at most once per city per five minutes no matter how many people open the page.
+so the upstream API is hit at most a few times per city per five minutes no matter how many people open the page.
 The client refreshes with SWR and an observable that keeps all panels in sync.
+
+If a city's primary station has not reported for more than 6 hours, the API uses the nearest station
+within 40 km of the city centre that has (WAQI map bounds, all networks), and says so in `source`
+(the UI then shows "izvor: <station>, <distance> od centra"). If no station nearby reports, it serves the
+last values with `source.stale: true`. Rules: `frontend/lib/server/stations.ts`, tests: `npm test`.
 
 The first version had a separate .NET 8 API (ASP.NET Core, Entity Framework Core, SQLite and a background
 scheduler). It lives in `backend/` for reference; the Next.js handlers return the same JSON shape.
@@ -42,8 +47,8 @@ scheduler). It lives in `backend/` for reference; the Next.js handlers return th
 
 | Endpoint | Returns |
 | --- | --- |
-| `GET /api/v1/air-quality/{city}/live` | Current AQI, category, dominant pollutant, measurements |
-| `GET /api/v1/air-quality/{city}/forecast` | Daily forecast (PM2.5, PM10, O3) |
+| `GET /api/v1/air-quality/{city}/live` | Current AQI, category, dominant pollutant, measurements, `source` (station used, fallback/stale flags) |
+| `GET /api/v1/air-quality/{city}/forecast` | Daily forecast (PM2.5, PM10, O3); `available: false` and an empty list when there is none |
 | `GET /api/v1/air-quality/{city}/complete` | Live and forecast in one call |
 | `GET /api/v1/health` | Health check |
 

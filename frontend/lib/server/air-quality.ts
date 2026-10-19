@@ -10,6 +10,16 @@
 
 import net from 'node:net'
 import { unstable_cache } from 'next/cache'
+import {
+  boundsAround,
+  cleanStationName,
+  distanceKm,
+  feedId,
+  isFresh,
+  MAX_STATION_AGE_HOURS,
+  rankFallbackCandidates,
+  WaqiBoundsStation,
+} from './stations'
 
 // api.waqi.info is hosted in Tokyo. Node's default happy-eyeballs timeout (250 ms per
 // address) is shorter than the TCP connect time from Europe, and its IPv6 address is
@@ -35,14 +45,17 @@ function waqiToken(): string {
   return token
 }
 
-/** Supported cities and their WAQI station identifiers. */
+/**
+ * Supported cities: the primary WAQI station and the city centre (lat, lng) that the
+ * fallback measures distance from when the primary station stops reporting.
+ */
 export const CITIES = {
-  Sarajevo: { name: 'Sarajevo', station: '@10557' }, // Sarajevo US Embassy
-  Tuzla: { name: 'Tuzla', station: '@9319' }, // Tuzla Skver (old A462985 stopped reporting)
-  Zenica: { name: 'Zenica', station: '@9267' },
-  Mostar: { name: 'Mostar', station: '@14726' },
-  Travnik: { name: 'Travnik', station: '@14693' },
-  Bihac: { name: 'Bihac', station: '@13578' },
+  Sarajevo: { name: 'Sarajevo', station: '@10557', geo: [43.8563, 18.4131] }, // Sarajevo US Embassy
+  Tuzla: { name: 'Tuzla', station: '@9319', geo: [44.5384, 18.6671] }, // Tuzla Skver (old A462985 stopped reporting)
+  Zenica: { name: 'Zenica', station: '@9267', geo: [44.2017, 17.9039] },
+  Mostar: { name: 'Mostar', station: '@14726', geo: [43.3438, 17.8078] },
+  Travnik: { name: 'Travnik', station: '@14693', geo: [44.2264, 17.6658] },
+  Bihac: { name: 'Bihac', station: '@13578', geo: [44.8169, 15.8708] },
 } as const
 
 export type CityKey = keyof typeof CITIES
@@ -73,6 +86,24 @@ export interface MeasurementDto {
   averagingPeriod: null
 }
 
+/** Which WAQI station the numbers come from. */
+export interface StationSourceDto {
+  /** WAQI station id, e.g. "@10557" (crowd-sourced stations have negative ids, e.g. "@-706618"). */
+  stationId: string
+  stationName: string
+  /** True when the city's primary station is silent and a nearby station is used instead. */
+  isFallback: boolean
+  /** Distance from the city centre (km, one decimal). */
+  distanceKm: number
+  /** When this station last reported (UTC ISO). */
+  updatedAt: string
+  /** True when no station near the city reported within maxAgeHours: the values shown are old. */
+  stale: boolean
+  maxAgeHours: number
+  primaryStationId: string
+  primaryStationName: string
+}
+
 export interface LiveAqiResponse {
   city: string
   overallAqi: number
@@ -82,6 +113,7 @@ export interface LiveAqiResponse {
   timestamp: string
   measurements: MeasurementDto[]
   dominantPollutant: string
+  source: StationSourceDto
 }
 
 interface PollutantRange {
@@ -102,6 +134,8 @@ export interface ForecastResponse {
   city: string
   forecast: ForecastDayDto[]
   timestamp: string
+  /** False when WAQI has no current forecast for this city (forecast is then empty). */
+  available: boolean
 }
 
 export interface CompleteAqiResponse {
@@ -123,14 +157,17 @@ interface WaqiForecastEntry {
 
 interface WaqiData {
   aqi: number | string
+  idx?: number
+  city?: { name?: string; geo?: number[] }
   dominentpol?: string
   iaqi?: Record<string, { v: number } | undefined>
   time?: { s?: string; tz?: string; v?: number; iso?: string }
   forecast?: { daily?: { pm25?: WaqiForecastEntry[]; pm10?: WaqiForecastEntry[]; o3?: WaqiForecastEntry[] } }
 }
 
-async function fetchStationUncached(city: CityKey): Promise<WaqiData> {
-  const url = `${WAQI_BASE_URL}/feed/${CITIES[city].station}/?token=${waqiToken()}`
+async function waqiGet<T>(path: string, what: string): Promise<T> {
+  const sep = path.includes('?') ? '&' : '?'
+  const url = `${WAQI_BASE_URL}${path}${sep}token=${waqiToken()}`
   let res: Response
   try {
     res = await fetch(url, {
@@ -139,24 +176,97 @@ async function fetchStationUncached(city: CityKey): Promise<WaqiData> {
       signal: AbortSignal.timeout(15000),
     })
   } catch (err) {
-    throw new DataUnavailableError(`WAQI request failed for ${city}: ${(err as Error).message}`)
+    throw new DataUnavailableError(`WAQI request failed for ${what}: ${(err as Error).message}`)
   }
   if (!res.ok) {
-    throw new DataUnavailableError(`WAQI returned HTTP ${res.status} for ${city}`)
+    throw new DataUnavailableError(`WAQI returned HTTP ${res.status} for ${what}`)
   }
-  const body = (await res.json()) as { status?: string; data?: WaqiData | string }
+  const body = (await res.json()) as { status?: string; data?: T | string }
   if (body.status !== 'ok' || !body.data || typeof body.data !== 'object') {
-    throw new DataUnavailableError(`WAQI returned status '${body.status}' for ${city}`)
+    throw new DataUnavailableError(`WAQI returned status '${body.status}' for ${what}`)
   }
-  return body.data
+  return body.data as T
+}
+
+function fetchFeed(stationId: string, what: string): Promise<WaqiData> {
+  return waqiGet<WaqiData>(`/feed/${stationId}/`, what)
+}
+
+/** A station feed counts as reporting when it has an AQI and a measurement time within the age limit. */
+function feedIsLive(data: WaqiData, now: Date): boolean {
+  return overallAqi(data) !== null && isFresh(data.time?.iso, now)
+}
+
+/** What the endpoints are built from: the primary station plus the station the live numbers come from. */
+interface CityStations {
+  primary: WaqiData
+  live: WaqiData
+  source: StationSourceDto
+}
+
+/** How many nearby candidates are tried (one feed call each) before giving up. */
+const MAX_FALLBACK_ATTEMPTS = 3
+
+async function fetchCityStationsUncached(city: CityKey): Promise<CityStations> {
+  const cfg = CITIES[city]
+  const now = new Date()
+  const primary = await fetchFeed(cfg.station, city)
+  const primaryName = cleanStationName(primary.city?.name)
+  const sourceFor = (data: WaqiData, stationId: string, isFallback: boolean, stale: boolean): StationSourceDto => {
+    const geo = data.city?.geo
+    const km = geo && geo.length >= 2 ? distanceKm(cfg.geo, [geo[0], geo[1]]) : 0
+    return {
+      stationId,
+      stationName: cleanStationName(data.city?.name),
+      isFallback,
+      distanceKm: Math.round(km * 10) / 10,
+      updatedAt: parseTimestamp(data.time),
+      stale,
+      maxAgeHours: MAX_STATION_AGE_HOURS,
+      primaryStationId: cfg.station,
+      primaryStationName: primaryName,
+    }
+  }
+
+  if (feedIsLive(primary, now)) {
+    return { primary, live: primary, source: sourceFor(primary, cfg.station, false, false) }
+  }
+
+  // The primary station is silent: use the nearest station around the city that still reports.
+  try {
+    const stations = await waqiGet<WaqiBoundsStation[]>(
+      `/v2/map/bounds?latlng=${boundsAround(cfg.geo)}&networks=all`,
+      `stations near ${city}`,
+    )
+    const candidates = rankFallbackCandidates(Array.isArray(stations) ? stations : [], cfg.geo, {
+      excludeUid: typeof primary.idx === 'number' ? primary.idx : undefined,
+      now,
+    })
+    for (const candidate of candidates.slice(0, MAX_FALLBACK_ATTEMPTS)) {
+      const id = feedId(candidate.uid)
+      try {
+        const data = await fetchFeed(id, `${city} fallback ${id}`)
+        if (feedIsLive(data, now)) {
+          return { primary, live: data, source: sourceFor(data, id, true, false) }
+        }
+      } catch (err) {
+        console.warn((err as Error).message)
+      }
+    }
+  } catch (err) {
+    console.warn((err as Error).message)
+  }
+
+  // Nothing nearby reports either: serve the primary station's last values, flagged as stale.
+  return { primary, live: primary, source: sourceFor(primary, cfg.station, false, true) }
 }
 
 /**
- * Cached station fetch: one WAQI call per city per UPSTREAM_REVALIDATE_SECONDS,
+ * Cached per city: a few WAQI calls at most per city per UPSTREAM_REVALIDATE_SECONDS,
  * shared by all requests (replaces the .NET background scheduler + DB cache).
  * Errors are thrown and therefore never cached.
  */
-const fetchStation = unstable_cache(fetchStationUncached, ['waqi-station-v1'], {
+const fetchCityStations = unstable_cache(fetchCityStationsUncached, ['waqi-city-stations-v2'], {
   revalidate: UPSTREAM_REVALIDATE_SECONDS,
 })
 
@@ -215,7 +325,7 @@ function overallAqi(data: WaqiData): number | null {
   return subs.length > 0 ? Math.round(Math.max(...subs)) : null
 }
 
-function mapLive(city: CityKey, data: WaqiData): LiveAqiResponse {
+function mapLive(city: CityKey, data: WaqiData, source: StationSourceDto): LiveAqiResponse {
   const aqi = overallAqi(data)
   if (aqi === null) {
     throw new DataUnavailableError(`No AQI value available for ${city}`)
@@ -231,7 +341,7 @@ function mapLive(city: CityKey, data: WaqiData): LiveAqiResponse {
     measurements.push({
       id: `${city}_${timestamp}_${parameter.toLowerCase()}`,
       city: name,
-      locationName: name,
+      locationName: source.stationName,
       parameter,
       value: v,
       unit,
@@ -257,6 +367,7 @@ function mapLive(city: CityKey, data: WaqiData): LiveAqiResponse {
     timestamp,
     measurements,
     dominantPollutant: POLLUTANT_NAMES[(data.dominentpol ?? '').toLowerCase()] ?? 'Unknown',
+    source,
   }
 }
 
@@ -286,7 +397,16 @@ function mapForecast(city: CityKey, data: WaqiData): ForecastResponse {
       return { date, aqi, category, color, pollutants }
     })
 
-  return { city: CITIES[city].name, forecast, timestamp: parseTimestamp(data.time) }
+  return { city: CITIES[city].name, forecast, timestamp: parseTimestamp(data.time), available: forecast.length > 0 }
+}
+
+/** The primary station's forecast; if it has none from today on, the live station's (when that is another station). */
+function forecastFor(city: CityKey, stations: CityStations): ForecastResponse {
+  const primary = mapForecast(city, stations.primary)
+  // (Compare by flag, not identity: the cache hands back deserialised copies.)
+  if (primary.available || !stations.source.isFallback) return primary
+  const live = mapForecast(city, stations.live)
+  return live.available ? live : primary
 }
 
 // ---------------------------------------------------------------------------
@@ -294,22 +414,20 @@ function mapForecast(city: CityKey, data: WaqiData): ForecastResponse {
 // ---------------------------------------------------------------------------
 
 export async function getLive(city: CityKey): Promise<LiveAqiResponse> {
-  return mapLive(city, await fetchStation(city))
+  const stations = await fetchCityStations(city)
+  return mapLive(city, stations.live, stations.source)
 }
 
+/** A city without a current forecast gets 200 with forecast: [] and available: false, not an error. */
 export async function getForecast(city: CityKey): Promise<ForecastResponse> {
-  const result = mapForecast(city, await fetchStation(city))
-  if (result.forecast.length === 0) {
-    throw new DataUnavailableError(`No forecast available for ${city}`)
-  }
-  return result
+  return forecastFor(city, await fetchCityStations(city))
 }
 
 export async function getComplete(city: CityKey): Promise<CompleteAqiResponse> {
-  const data = await fetchStation(city)
+  const stations = await fetchCityStations(city)
   return {
-    liveData: mapLive(city, data),
-    forecastData: mapForecast(city, data),
+    liveData: mapLive(city, stations.live, stations.source),
+    forecastData: forecastFor(city, stations),
     retrievedAt: new Date().toISOString(),
   }
 }

@@ -157,6 +157,16 @@ export default function LiveAqiPanel({ city }: LiveAqiPanelProps) {
     }).format(timestamp)
   }
 
+  /// <summary>
+  /// Formats a distance in km for display ("6 km", "0,8 km")
+  /// </summary>
+  const formatDistance = (km: number) => {
+    const rounded = km < 10 ? Math.round(km * 10) / 10 : Math.round(km)
+    return `${new Intl.NumberFormat('bs-BA').format(rounded)} km`
+  }
+
+  const source = aqiData.source
+
   // Main card content with AQI data
   return (
     <section className="bg-[rgb(var(--card))] rounded-xl p-6 md:p-8 border border-[rgb(var(--border))] shadow-card md:hover:shadow-card-hover transition-all duration-300 md:hover:-translate-y-1">
@@ -194,6 +204,25 @@ export default function LiveAqiPanel({ city }: LiveAqiPanelProps) {
           {getHealthAdvice(aqiData.aqiCategory)}
         </p>
       </div>
+
+      {/* Station the values come from: subtle normally, highlighted for a fallback or old data */}
+      {source && (
+        source.stale ? (
+          <p className="mt-3 md:mt-0 md:mb-3 px-3 py-2 rounded-lg text-xs text-center md:text-left bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+            Podaci kasne: nijedna stanica u blizini nije javila mjerenje u zadnjih {source.maxAgeHours} h.
+            Prikazano je zadnje mjerenje ({formatTimestamp(source.updatedAt)}), izvor: {source.stationName}
+          </p>
+        ) : source.isFallback ? (
+          <p className="mt-3 md:mt-0 md:mb-3 px-3 py-2 rounded-lg text-xs text-center md:text-left bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+            izvor: {source.stationName}, {formatDistance(source.distanceKm)} od centra.
+            Stanica {source.primaryStationName} trenutno ne šalje podatke, pa koristimo najbližu aktivnu stanicu.
+          </p>
+        ) : (
+          <p className="mt-3 md:mt-0 md:mb-2 text-xs text-center md:text-left text-gray-500">
+            izvor: {source.stationName}
+          </p>
+        )
+      )}
 
       {/* Footer with timestamp and share button */}
       <div className="hidden md:flex items-center justify-between text-xs text-gray-500">

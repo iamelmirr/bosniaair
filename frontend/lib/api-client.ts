@@ -36,6 +36,22 @@ export interface CompleteAqiResponse {
 }
 
 /**
+ * The WAQI station the live values come from. isFallback: the city's primary station
+ * is silent and a nearby one is used; stale: no station nearby reported recently.
+ */
+export interface StationSource {
+  stationId: string
+  stationName: string
+  isFallback: boolean
+  distanceKm: number
+  updatedAt: Date
+  stale: boolean
+  maxAgeHours: number
+  primaryStationId: string
+  primaryStationName: string
+}
+
+/**
  * Response structure for live air quality data.
  */
 export interface AqiResponse {
@@ -47,6 +63,7 @@ export interface AqiResponse {
   timestamp: Date
   measurements: Measurement[]
   dominantPollutant?: string
+  source?: StationSource
 }
 
 /**
@@ -71,6 +88,8 @@ export interface ForecastResponse {
   city: string
   forecast: ForecastData[]
   timestamp: string
+  /** False when there is no current forecast for the city (forecast is then empty). */
+  available?: boolean
 }
 
 /**
